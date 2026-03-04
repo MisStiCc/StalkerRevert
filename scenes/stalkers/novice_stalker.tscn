@@ -24,8 +24,12 @@ pathfinding_desired_distance = 0.5
 pathfinding_engine = 1
 pathfinding_layers = 1
 
+[sub_resource type="BoxMesh" id="BoxMesh_xxxxx"]
+size = Vector3(0.8, 1.8, 0.8)
+
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.9, 0)
+mesh = SubResource("BoxMesh_xxxxx")
 
 [node name="Label3D" type="Label3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
