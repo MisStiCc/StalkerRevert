@@ -100,18 +100,49 @@ func create_anomaly(type: String, position: Vector2):
 		print("Недостаточно энергии для создания аномалии ", type)
 		return null
 	
-	# В реальной реализации здесь будет создание экземпляра аномалии
-	# и добавление в список аномалий
-	var anomaly = {
-		"type": type,
-		"position": position,
-		"lifetime": 60.0  # условное время жизни
-	}
-	anomalies.append(anomaly)
+	# Создание экземпляра аномалии на основе типа
+	var anomaly_instance = null
+	var scene_path = ""
 	
-	print("Аномалия ", type, " создана на позиции ", position)
-	emit_signal("anomaly_created", anomaly)
-	return anomaly
+	match type:
+		"heat":
+			scene_path = "res://scenes/zone/anomalies/fire_anomaly/anomaly_fire.tscn"
+		"electric":
+			scene_path = "res://scenes/zone/anomalies/electric_anomaly/electric_anomaly.tscn"
+		"fire":
+			scene_path = "res://scenes/zone/anomalies/fire_anomaly/anomaly_fire.tscn"
+		_:
+			print("Неизвестный тип аномалии: ", type)
+			return null
+	
+	# Загрузка сцены аномалии
+	var scene = load(scene_path)
+	if scene:
+		anomaly_instance = scene.instantiate()
+		if anomaly_instance:
+			# Установка позиции аномалии
+			anomaly_instance.global_position = Vector3(position.x, 0, position.y)
+			
+			# Подписка на сигнал потребления энергии
+			if anomaly_instance.has_signal("energy_consumed"):
+				anomaly_instance.energy_consumed.connect(_on_anomaly_energy_consumed)
+			
+			# Добавление аномалии в список
+			anomalies.append(anomaly_instance)
+			
+			# Добавление аномалии в дерево сцены (если ZoneController является частью дерева)
+			if get_parent():
+				get_parent().add_child(anomaly_instance)
+			
+			print("Аномалия ", type, " создана на позиции ", position)
+			emit_signal("anomaly_created", anomaly_instance)
+			return anomaly_instance
+		else:
+			print("Не удалось создать экземпляр аномалии из сцены: ", scene_path)
+			return null
+	else:
+		print("Не удалось загрузить сцену аномалии: ", scene_path)
+		return null
 
 func spawn_mutant(type: String, position: Vector2):
 	"""Призыв мутанта - возвращает объект мутанта или null"""
