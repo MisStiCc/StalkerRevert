@@ -298,5 +298,6 @@ func _on_exited_zone():
 
 # Обновление статуса в ZoneController
 func _process(delta):
-	if zone_controller and zone_controller.has_method("update_stalker_status"):
+	# Обновляем статус в ZoneController только если сталкер жив
+	if is_alive and zone_controller and zone_controller.has_method("update_stalker_status"):
 		zone_controller.update_stalker_status(self)
