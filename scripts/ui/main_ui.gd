@@ -38,28 +38,28 @@ func _on_biomass_changed(new_biomass: float):
     biomass_label.text = str(int(new_biomass))
 
 func _on_fire_button_pressed():
-	if zone_controller.spend_energy(50):
-		var pos = _get_mouse_map_position()
-		if pos:
-			zone_controller.spawn_anomaly("heat", pos)
-	else:
-		print("Недостаточно энергии!")
+    if zone_controller.spend_energy(50):
+        var pos = _get_mouse_map_position()
+        if pos:
+            zone_controller.spawn_anomaly("heat", pos)
+    else:
+        print("Недостаточно энергии!")
 
 func _on_electric_button_pressed():
-	if zone_controller.spend_energy(60):
-		var pos = _get_mouse_map_position()
-		if pos:
-			zone_controller.spawn_anomaly("electric", pos)
+    if zone_controller.spend_energy(60):
+        var pos = _get_mouse_map_position()
+        if pos:
+            zone_controller.spawn_anomaly("electric", pos)
 
 func _on_acid_button_pressed():
-	if zone_controller.spend_energy(70):
-		var pos = _get_mouse_map_position()
-		if pos:
-			zone_controller.spawn_anomaly("acid", pos)
+    if zone_controller.spend_energy(70):
+        var pos = _get_mouse_map_position()
+        if pos:
+            zone_controller.spawn_anomaly("acid", pos)
 
 func _on_emission_button_pressed():
-	if zone_controller.spend_energy(200):
-		zone_controller.start_emission(10.0)
+    if zone_controller.spend_energy(200):
+        zone_controller.start_emission(10.0)
 
 func _get_mouse_map_position():
     return get_viewport().get_mouse_position()

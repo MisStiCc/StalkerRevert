@@ -6,8 +6,7 @@
 height = 1.8
 radius = 0.4
 
-[sub_resource type="NavigationRegion3D" id="NavigationRegion3D_xxxxx"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+
 
 [node name="NoviceStalker" type="CharacterBody3D"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)

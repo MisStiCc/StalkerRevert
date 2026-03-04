@@ -1,4 +1,4 @@
-[gd_scene load_steps=4 format=3 uid="uid://b5w5a6y7x8j8q"]
+[gd_scene load_steps=4 format=3 uid="uid://testscenecustomid"]
 
 [ext_resource type="PackedScene" uid="uid://dsqmr1y262j2a" path="res://scenes/zone/zone_controller.tscn" id="1_abcde"]
 [ext_resource type="PackedScene" uid="uid://c6w0d2f8xqy3c" path="res://scenes/stalkers/novice_stalker.tscn" id="2_fghij"]

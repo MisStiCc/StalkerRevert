@@ -304,3 +304,7 @@ func _process(delta):
 	# Обновляем статус в ZoneController только если сталкер жив
 	if is_alive and zone_controller and zone_controller.has_method("update_stalker_status"):
 		zone_controller.update_stalker_status(self)
+
+func _attack_target():
+	if target and has_method("take_damage"):
+		target.take_damage(damage)
