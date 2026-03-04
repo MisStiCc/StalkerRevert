@@ -1,64 +1,58 @@
-extends "res://scripts/stalkers/base_stalker.gd"
-
-class_name NoviceStalker
+extends BaseStalker
+# class_name NoviceStalker  # ← закомментировал
 
 # Параметры новичка-сталкера
 @export var novice_health: float = 80.0
 @export var novice_speed: float = 4.0
 @export var novice_damage: float = 8.0
 
+
 func _ready():
-	super._ready()
-	
-	# Установка параметров для новичка
+	# Установка параметров ДО вызова super._ready()
 	health = novice_health
 	max_health = novice_health
 	speed = novice_speed
 	damage = novice_damage
-	# stalker_type уже установлен в базовом классе
 	
-	# Можно добавить специфичное для новичка поведение
-	print("Novice stalker initialized")
+	super._ready()
+	
+	# Переопределяем тип сталкера
+	stalker_type = "novice"
+	
+	print("Novice stalker initialized: ", name)
+
 
 func _handle_idle_state(delta):
-	# Новички более осторожны в состоянии ожидания
 	super._handle_idle_state(delta)
-	
-	# Новички могут заметить цель с меньшего расстояния
-	if target and global_position.distance_to(target.global_position) < 15.0:
-		_change_state(StalkerState.CHASE)
+
 
 func _handle_chase_state(delta):
-	# Новички бегут медленнее
-	var chase_speed = speed * 0.8
-	if target:
-		var direction = global_position.direction_to(target.global_position)
-		if direction.length() > 0:
-			velocity = direction * chase_speed
-		else:
-			velocity = Vector3.ZERO
-		
-		# Новички атакуют с меньшего расстояния
+	var original_speed = speed
+	speed = original_speed * 0.8
+	super._handle_chase_state(delta)
+	speed = original_speed
+	
+	if target and current_state == StalkerState.CHASE:
 		var distance_to_target = global_position.distance_to(target.global_position)
 		if distance_to_target < 1.5:
 			_change_state(StalkerState.ATTACK)
-	else:
-		_change_state(StalkerState.IDLE)
 
-func attack_target():
-	if target and current_state == StalkerState.ATTACK:
-		# Новички наносят меньше урона
-		if target.has_method("take_damage"):
-			target.take_damage(damage * 0.7)  # 70% от базового урона
-		
-		# Новички чаще бегут после атаки
-		if randf() < 0.4:  # 40% шанс бегства
-			_change_state(StalkerState.FLEE)
 
-func take_damage(amount: float):
-	super.take_damage(amount)
+func _handle_attack_state(delta):
+	super._handle_attack_state(delta)
 	
-	# Новички более склонны к бегству при получении урона
-	if health < max_health * 0.5 and current_state != StalkerState.FLEE:
-		if randf() < 0.6:  # 60% шанс начать бегство
+	if current_state == StalkerState.ATTACK and target:
+		if randf() < 0.4:
 			_change_state(StalkerState.FLEE)
+
+
+func take_damage(amount: float, damage_type: String = "physical"):
+	super.take_damage(amount, damage_type)
+	
+	if health < max_health * 0.5 and current_state != StalkerState.FLEE:
+		if randf() < 0.6:
+			_change_state(StalkerState.FLEE)
+
+
+func _on_velocity_computed(safe_velocity):
+	super._on_velocity_computed(safe_velocity)

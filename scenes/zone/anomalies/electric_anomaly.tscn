@@ -1,12 +1,25 @@
-[gd_scene load_steps=4 format=3 uid="uid://dgu2q2j2q2q2q"]
+[gd_scene load_steps=5 format=3 uid="uid://electric_anomaly"]
 
-[ext_resource type="Script" path="res://scripts/electric_anomaly.gd" id="1_f2j2j"]
+[ext_resource type="Script" path="res://scripts/electric_anomaly.gd" id="1"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_electric"]
+radius = 4.0
+
+[sub_resource type="SphereMesh" id="SphereMesh_electric"]
+radius = 4.0
+height = 8.0
+
+[sub_resource type="StandardMaterial3D" id="Material_electric"]
+albedo_color = Color(0.2, 0.6, 1, 1)
+emission_enabled = true
+emission = Color(0.2, 0.6, 1, 1)
 
 [node name="ElectricAnomaly" type="Area3D"]
-script = ExtResource("1_f2j2j")
+script = ExtResource("1")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
-shape = SubResource("SphereShape3D_1")
+shape = SubResource("SphereShape3D_electric")
 
-[sub_resource type="SphereShape3D" id="SphereShape3D_1"]
-radius = 1.5
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("SphereMesh_electric")
+material_override = SubResource("Material_electric")

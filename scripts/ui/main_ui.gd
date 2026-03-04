@@ -1,78 +1,131 @@
 extends CanvasLayer
+class_name MainUI
 
 var zone_controller: Node
 
-@onready var resource_panel = $ResourcePanel
-@onready var energy_bar: ProgressBar = $Panel/EnergyBar
-@onready var biomass_bar: ProgressBar = $Panel/BiomassBar
-@onready var energy_label: Label = $Panel/EnergyLabel
-@onready var biomass_label: Label = $Panel/BiomassLabel
-@onready var fire_button: Button = $Panel/FireButton
-@onready var electric_button: Button = $Panel/ElectricButton
-@onready var acid_button: Button = $Panel/AcidButton
-@onready var emission_button: Button = $Panel/EmissionButton
+@onready var energy_label: Label = $EnergyValue
+@onready var biomass_label: Label = $BiomassValue
+@onready var energy_bar: ProgressBar = $EnergyBar
+@onready var biomass_bar: ProgressBar = $BiomassBar
+@onready var fire_button: Button = $FireButton
+@onready var electric_button: Button = $ElectricButton
+@onready var acid_button: Button = $AcidButton
+@onready var emission_button: Button = $EmissionButton
+
 
 func _ready():
-	zone_controller = get_node("/root/MainScene/ZoneController")
+	# Поиск ZoneController
+	zone_controller = get_tree().get_first_node_in_group("zone_controller")
+	
 	if not zone_controller:
-		push_error("ZoneController not found!")
+		push_error("ZoneController not found! UI будет неактивен")
+		_disable_buttons()
 		return
 	
-	zone_controller.resources_changed.connect(update_resources)
+	# Подключаемся к сигналам
+	if zone_controller.has_signal("energy_changed"):
+		zone_controller.energy_changed.connect(_on_energy_changed)
+	if zone_controller.has_signal("biomass_changed"):
+		zone_controller.biomass_changed.connect(_on_biomass_changed)
+	if zone_controller.has_signal("emission_started"):
+		zone_controller.emission_started.connect(_on_emission_started)
+	if zone_controller.has_signal("emission_ended"):
+		zone_controller.emission_ended.connect(_on_emission_ended)
 	
+	# Подключаем кнопки
 	fire_button.pressed.connect(_on_fire_button_pressed)
 	electric_button.pressed.connect(_on_electric_button_pressed)
 	acid_button.pressed.connect(_on_acid_button_pressed)
 	emission_button.pressed.connect(_on_emission_button_pressed)
 	
-	update_resources(zone_controller.energy, zone_controller.biomass)
+	# Обновляем UI с начальными значениями
+	if zone_controller.has_method("get_energy"):
+		_on_energy_changed(zone_controller.get_energy())
+	if zone_controller.has_method("get_biomass"):
+		_on_biomass_changed(zone_controller.get_biomass())
 
-func update_resources(energy: float, biomass: float):
-	resource_panel.update_resources(energy, biomass)
-	energy_bar.value = energy
-	energy_bar.max_value = zone_controller.max_energy
+
+func _disable_buttons():
+	fire_button.disabled = true
+	electric_button.disabled = true
+	acid_button.disabled = true
+	emission_button.disabled = true
+
+
+func _on_energy_changed(energy: float):
 	energy_label.text = str(int(energy))
-	biomass_bar.value = biomass
+	energy_bar.max_value = zone_controller.max_energy if zone_controller else 1000
+	energy_bar.value = energy
+	
+	# Обновляем состояние кнопок в зависимости от энергии
+	_update_buttons_state()
+
+
+func _on_biomass_changed(biomass: float):
 	biomass_label.text = str(int(biomass))
+	biomass_bar.value = biomass
+
+
+func _on_emission_started():
+	emission_button.disabled = true
+	emission_button.text = "ВЫБРОС ИДЁТ"
+
+
+func _on_emission_ended():
+	emission_button.disabled = false
+	emission_button.text = "ВЫБРОС"
+	_update_buttons_state()
+
+
+func _update_buttons_state():
+	if not zone_controller or not zone_controller.has_method("can_afford"):
+		return
+	
+	# Проверяем, хватает ли энергии на каждую аномалию (цены из ZoneController)
+	fire_button.disabled = not zone_controller.can_afford(50, 0)
+	electric_button.disabled = not zone_controller.can_afford(75, 0)  # исправлено с 60 на 75
+	acid_button.disabled = not zone_controller.can_afford(100, 0)    # исправлено с 70 на 100
+	
+	# Выброс может быть недоступен во время другого выброса
+	if emission_button.text != "ВЫБРОС ИДЁТ":
+		emission_button.disabled = not zone_controller.can_afford(200, 0)
+
 
 func _on_fire_button_pressed():
-	if zone_controller.spend_energy(50):
-		var pos = _get_mouse_map_position()
-		if pos:
-			zone_controller.create_anomaly("heat", pos)
-	else:
-		print("Недостаточно энергии!")
+	if zone_controller and zone_controller.has_method("spawn_anomaly"):
+		if zone_controller.spawn_anomaly("fire", _get_spawn_position()):
+			print("Аномалия Жарка создана")
+		else:
+			print("Недостаточно энергии для создания аномалии")
+
 
 func _on_electric_button_pressed():
-	if zone_controller.spend_energy(60):
-		var pos = _get_mouse_map_position()
-		if pos:
-			zone_controller.create_anomaly("electric", pos)
+	if zone_controller and zone_controller.has_method("spawn_anomaly"):
+		if zone_controller.spawn_anomaly("electric", _get_spawn_position()):
+			print("Аномалия Электра создана")
+		else:
+			print("Недостаточно энергии для создания аномалии")
+
 
 func _on_acid_button_pressed():
-	if zone_controller.spend_energy(70):
-		var pos = _get_mouse_map_position()
-		if pos:
-			zone_controller.create_anomaly("acid", pos)
+	if zone_controller and zone_controller.has_method("spawn_anomaly"):
+		if zone_controller.spawn_anomaly("acid", _get_spawn_position()):
+			print("Аномалия Кислота создана")
+		else:
+			print("Недостаточно энергии для создания аномалии")
+
 
 func _on_emission_button_pressed():
-	if zone_controller.spend_energy(200):
-		zone_controller.start_emission(10.0)
+	if zone_controller and zone_controller.has_method("start_emission"):
+		if zone_controller.can_afford(200, 0):
+			zone_controller.start_emission(10.0)
+		else:
+			print("Недостаточно энергии для выброса")
 
-func _get_mouse_map_position():
-	# Получаем позицию мыши в 3D пространстве
+
+func _get_spawn_position() -> Vector3:
+	# Простая логика: спавним перед камерой
 	var camera = get_viewport().get_camera_3d()
-	if not camera:
-		return null
-	
-	var mouse_pos = get_viewport().get_mouse_position()
-	var ray_origin = camera.project_ray_origin(mouse_pos)
-	var ray_end = ray_origin + camera.project_ray_normal(mouse_pos) * 1000
-	
-	# Создаем луч для пересечения с землей (предполагаем, что Y=0 - это земля)
-	var plane = Plane(Vector3.UP, 0)
-	var intersection = plane.intersects_ray(ray_origin, ray_end)
-	
-	if intersection:
-		return intersection
-	return null
+	if camera:
+		return camera.global_position + camera.global_transform.basis.z * -10 + Vector3.UP * 2
+	return Vector3.ZERO

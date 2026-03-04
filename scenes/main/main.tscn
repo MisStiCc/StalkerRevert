@@ -1,6 +1,30 @@
-[gd_scene load_steps=2 format=3 uid="uid://mainmainscene123"]
+[gd_scene load_steps=5 format=3 uid="uid://main_scene"]
 
-[ext_resource type="Script" path="res://scripts/zone_controller.gd" id="1_zone_controller"]
+[ext_resource type="Script" path="res://scripts/zone_controller.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/stalkers/stalker_spawner.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://scenes/ui/main_ui.tscn" id="3"]
 
-[node name="MainScene" type="Node3D"]
-script = ExtResource("1_zone_controller")
+[sub_resource type="Environment" id="1"]
+
+[node name="Main" type="Node3D"]
+
+[node name="ZoneController" type="Node" parent="."]
+script = ExtResource("1")
+
+[node name="StalkerSpawner" parent="." instance=ExtResource("2")]
+position = Vector3(0, 0, 0)
+
+[node name="MainUI" parent="." instance=ExtResource("3")]
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 20, 10, 20)
+current = true
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("1")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.5, 0.866025, 0, -0.866025, 0.5, 0, 10, 0)
+light_energy = 1.0
+light_indirect_energy = 1.0
+shadow_enabled = true
