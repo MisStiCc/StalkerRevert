@@ -60,4 +60,19 @@ func _on_emission_button_pressed():
 		zone_controller.start_emission(10.0)
 
 func _get_mouse_map_position():
-	return get_viewport().get_mouse_position()
+	# Получаем позицию мыши в 3D пространстве
+	var camera = get_viewport().get_camera_3d()
+	if not camera:
+		return null
+	
+	var mouse_pos = get_viewport().get_mouse_position()
+	var ray_origin = camera.project_ray_origin(mouse_pos)
+	var ray_end = ray_origin + camera.project_ray_normal(mouse_pos) * 1000
+	
+	# Создаем луч для пересечения с землей (предполагаем, что Y=0 - это земля)
+	var plane = Plane(Vector3.UP, 0)
+	var intersection = plane.intersects_ray(ray_origin, ray_end)
+	
+	if intersection:
+		return intersection
+	return null

@@ -6,7 +6,7 @@ extends "res://scripts/artifact.gd"
 var effect_duration: float = 5.0  # длительность эффекта в секундах
 var effect_power: float = 1.5  # сила эффекта
 
-func _init(pos: Vector2) -> void:
+func _init(pos: Vector3) -> void:
 	"""Инициализация редкого артефакта"""
 	super._init(pos, "rare", 25)
 	name = "RareArtifact"

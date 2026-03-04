@@ -52,8 +52,9 @@ func _spawn_stalker():
     var stalker = stalker_scene.instantiate()
     
     var angle = randf() * 2 * PI
-    var pos = Vector2(cos(angle) * spawn_radius, sin(angle) * spawn_radius)
-    pos += Vector2(randf_range(-50, 50), randf_range(-50, 50))
+    var height_variation = randf_range(-10, 10)  # Добавляем высоту для 3D
+    var pos = Vector3(cos(angle) * spawn_radius, height_variation, sin(angle) * spawn_radius)
+    pos += Vector3(randf_range(-50, 50), randf_range(-10, 10), randf_range(-50, 50))
     stalker.position = pos
     
     if stalker.has_signal("died"):

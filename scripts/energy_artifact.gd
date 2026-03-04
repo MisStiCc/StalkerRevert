@@ -8,7 +8,7 @@ var energy_damage: float = 15.0  # урон от энергетического 
 var pulse_cooldown: float = 2.0  # перезарядка между импульсами
 var pulse_timer: float = 0.0
 
-func _init(pos: Vector2) -> void:
+func _init(pos: Vector3) -> void:
 	"""Инициализация энергетического артефакта"""
 	super._init(pos, "energy", 40)
 	name = "EnergyArtifact"
@@ -53,4 +53,4 @@ func apply_effect_to_stalker(stalker) -> void:
 		print("Сталкер ", stalker.name, " не поддерживает эффекты артефактов")
 
 # Дополнительные сигналы для энергетического артефакта
-signal energy_pulse_created(position: Vector2, radius: float, damage: float)
+signal energy_pulse_created(position: Vector3, radius: float, damage: float)

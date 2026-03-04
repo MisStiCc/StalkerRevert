@@ -1,16 +1,16 @@
 class_name Artifact
-extends Node2D
+extends Node3D
 
 ## Базовый класс для всех артефактов в игре "Сталкер наоборот"
 ## Артефакты являются целью сталкеров и ресурсом для Зоны
 
 # Параметры артефакта
-var position: Vector2  # позиция артефакта на карте
+var position: Vector3  # позиция артефакта на карте
 var artifact_type: String  # тип артефакта
 var value: int  # ценность артефакта
 var effect: String  # эффект артефакта (опционально)
 
-func _init(pos: Vector2, type: String = "common", val: int = 10) -> void:
+func _init(pos: Vector3, type: String = "common", val: int = 10) -> void:
 	"""Инициализация артефакта с заданными параметрами"""
 	position = pos
 	global_position = pos

@@ -1,11 +1,11 @@
 class_name Anomaly
-extends Node2D
+extends Node3D
 
 ## Базовый класс для всех аномалий в игре "Сталкер наоборот"
 ## Аномалии служат защитным механизмом Зоны, нанося урон сталкерам и ограничивая их передвижение
 
 # Параметры аномалии
-var position: Vector2  # позиция аномалии на карте
+var position: Vector3  # позиция аномалии на карте
 var radius: float = 50.0  # радиус действия аномалии
 var duration: float = 60.0  # длительность существования аномалии (в секундах)
 var pulse_interval: float = 2.0  # интервал между импульсами эффекта (в секундах)
@@ -17,7 +17,7 @@ signal anomaly_activated
 signal anomaly_deactivated
 signal effect_applied(target)
 
-func _init(pos: Vector2) -> void:
+func _init(pos: Vector3) -> void:
 	"""Инициализация аномалии с заданной позицией"""
 	position = pos
 	global_position = pos
@@ -56,7 +56,7 @@ func apply_pulse_effect() -> void:
 
 func get_targets_in_range():
 	"""Поиск целей в радиусе действия аномалии"""
-	# В реальной реализации будет использоваться Area2D или PhysicsBody2D
+	# В реальной реализации будет использоваться Area3D или PhysicsBody3D
 	# для обнаружения сталкеров и других объектов в радиусе
 	var targets = []
 	# Заглушка - возвращаем пустой массив

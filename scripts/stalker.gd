@@ -1,5 +1,5 @@
 class_name Stalker
-extends CharacterBody2D
+extends CharacterBody3D
 
 ## Базовый класс для всех сталкеров в игре "Сталкер наоборот"
 ## Сталкеры приходят на территорию Зоны, чтобы украсть артефакты
@@ -13,7 +13,7 @@ var speed: float  # скорость перемещения
 var stalker_name: String  # имя/тип сталкера
 
 # Навигация
-var navigation_agent: NavigationAgent2D  # для поиска пути
+var navigation_agent: NavigationAgent3D  # для поиска пути
 
 # Сигналы
 signal stalker_damaged(amount: float, type: String)
@@ -29,26 +29,26 @@ func _init(name: String = "Stalker") -> void:
 	health = max_health
 	armor = 0.0
 	damage = 10.0
-	speed = 100.0
+	speed = 5.0
 
 func _ready() -> void:
 	"""Подготовка сталкера к игре"""
 	print("Сталкер ", stalker_name, " появился")
 	
 	# Установка навигационного агента
-	navigation_agent = NavigationAgent2D.new()
+	navigation_agent = NavigationAgent3D.new()
 	add_child(navigation_agent)
 	
 	# Настройка навигационного агента
-	navigation_agent.target_desired_distance = 5.0
-	navigation_agent.path_desired_distance = 10.0
+	navigation_agent.target_desired_distance = 2.0
+	navigation_agent.path_desired_distance = 1.0
 	navigation_agent.navigation_layers = 1
 
 func _physics_process(delta: float) -> void:
 	"""Обработка физики движения"""
 	# Обновление направления движения через навигационный агент
 	if navigation_agent.is_navigation_finished():
-		velocity = Vector2.ZERO
+		velocity = Vector3.ZERO
 	else:
 		var next_waypoint = navigation_agent.get_next_path_position()
 		var direction = (next_waypoint - global_position).normalized()
@@ -73,7 +73,7 @@ func die() -> void:
 	emit_signal("stalker_died")
 	queue_free()  # удаляем ноду из сцены
 
-func move_to(target_position: Vector2) -> void:
+func move_to(target_position: Vector3) -> void:
 	"""Движение к целевой позиции"""
 	navigation_agent.set_target_position(target_position)
 

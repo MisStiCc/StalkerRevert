@@ -8,7 +8,7 @@ var damage: float = 10.0  # урон за импульс
 var damage_type: String = "fire"  # тип урона
 var color: Color = Color.RED  # цвет аномалии
 
-func _init(pos: Vector2) -> void:
+func _init(pos: Vector3) -> void:
 	"""Инициализация аномалии 'Жарка' с заданной позицией"""
 	super._init(pos)
 	radius = 40.0

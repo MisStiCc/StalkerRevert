@@ -3,7 +3,7 @@ extends "res://scripts/artifact.gd"
 
 ## Коллекционный артефакт - простой для получения, базовая цель для новичков
 
-func _init(pos: Vector2) -> void:
+func _init(pos: Vector3) -> void:
 	"""Инициализация коллекционного артефакта"""
 	super._init(pos, "common", 10)
 	name = "CommonArtifact"

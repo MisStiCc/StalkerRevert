@@ -101,7 +101,7 @@ func spend_biomass(amount: float) -> bool:
 func is_afford(energy_cost: float, biomass_cost: float) -> bool:
 	return energy >= energy_cost and biomass >= biomass_cost
 
-func create_anomaly(type: String, position: Vector2) -> Node:
+func create_anomaly(type: String, position: Vector3) -> Node:
 	"""Создание аномалии - возвращает объект аномалии или null"""
 	var cost = get_anomaly_cost(type)
 	if not spend_energy(cost):
@@ -121,7 +121,7 @@ func create_anomaly(type: String, position: Vector2) -> Node:
 		return anomaly
 	return null
 
-func spawn_mutant(mutant_type: String, position: Vector2) -> Node:
+func spawn_mutant(mutant_type: String, position: Vector3) -> Node:
 	var cost = get_mutant_cost(mutant_type)
 	if not spend_biomass(cost):
 		print("Недостаточно биомассы для призыва мутанта ", mutant_type)
@@ -169,7 +169,7 @@ func expand_territory(radius_increase: float):
 	emit_signal("territory_expanded", territory_radius)
 	print("Территория расширена. Новый радиус: ", territory_radius)
 
-func generate_artifact(position: Vector2):
+func generate_artifact(position: Vector3):
 	var artifact = {
 		"position": position,
 		"type": "common",
@@ -215,7 +215,7 @@ func get_mutant_cost(type: String) -> float:
 
 func is_stalker_in_zone(stalker) -> bool:
 	if stalker != null and stalker.position != null:
-		return stalker.position.distance_to(Vector2.ZERO) <= territory_radius
+		return stalker.position.distance_to(Vector3.ZERO) <= territory_radius
 	else:
 		return false
 

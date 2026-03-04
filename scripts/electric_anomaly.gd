@@ -10,7 +10,7 @@ var stun_duration: float = 1.5  # длительность оглушения в
 var damage_type: String = "electric"  # тип урона
 var color: Color = Color.BLUE  # цвет аномалии
 
-func _init(pos: Vector2) -> void:
+func _init(pos: Vector3) -> void:
 	"""Инициализация аномалии 'Электра' с заданной позицией"""
 	super._init(pos)
 	radius = 35.0

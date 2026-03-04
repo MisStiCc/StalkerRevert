@@ -6,7 +6,7 @@
 [ext_resource type="PackedScene" uid="uid://d0j3j1j3j1j3" path="res://scenes/stalkers/veteran_stalker.tscn" id="4_veteran"]
 [ext_resource type="PackedScene" uid="uid://b5w02x0gu246c" path="res://scenes/ui/main_ui.tscn" id="5_main_ui"]
 
-[node name="MainScene" type="Node2D"]
+[node name="MainScene" type="Node3D"]
 
 [node name="ZoneController" parent="." instance=ExtResource("1_abcde")]
 
@@ -16,10 +16,10 @@ stalker_types = [ExtResource("3_novice"), ExtResource("4_veteran")]
 [node name="MainUI" parent="." instance=ExtResource("5_main_ui")]
 
 [node name="NoviceStalker1" parent="." instance=ExtResource("3_novice")]
-position = Vector2(100, 100)
+position = Vector3(100, 0, 100)
 
 [node name="NoviceStalker2" parent="." instance=ExtResource("3_novice")]
-position = Vector2(200, 200)
+position = Vector3(200, 0, 200)
 
 [node name="NoviceStalker3" parent="." instance=ExtResource("3_novice")]
-position = Vector2(300, 150)
+position = Vector3(300, 0, 150)

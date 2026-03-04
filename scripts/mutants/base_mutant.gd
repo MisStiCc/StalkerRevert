@@ -1,4 +1,4 @@
-extends CharacterBody2D
+extends CharacterBody3D
 
 signal died(mutant)
 signal attacked_stalker(stalker)
@@ -6,10 +6,10 @@ signal spotted_stalker(stalker)
 
 # Общие параметры
 @export var health: float = 100.0
-@export var speed: float = 100.0
+@export var speed: float = 5.0
 @export var damage: float = 20.0
 @export var armor: float = 0.0
-@export var detection_radius: float = 200.0
+@export var detection_radius: float = 20.0
 @export var attack_cooldown: float = 1.0
 @export var biomass_cost: float = 50.0
 
@@ -21,7 +21,7 @@ var patrol_points: Array = []
 var current_patrol_index: int = 0
 
 # Ноды
-@onready var detection_area: Area2D = $DetectionArea
+@onready var detection_area: Area3D = $DetectionArea
 @onready var attack_timer: Timer = $AttackTimer
 
 func _ready():

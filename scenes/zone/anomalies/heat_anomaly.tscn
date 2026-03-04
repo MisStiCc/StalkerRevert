@@ -1,6 +1,12 @@
-[gd_scene load_steps=2 format=3 uid="uid://cgu2q2j2q2q2q"]
+[gd_scene load_steps=4 format=3 uid="uid://cgu2q2j2q2q2q"]
 
 [ext_resource type="Script" path="res://scripts/heat_anomaly.gd" id="1_f1j1j"]
 
-[node name="HeatAnomaly" type="Node2D"]
+[node name="HeatAnomaly" type="Area3D"]
 script = ExtResource("1_f1j1j")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("SphereShape3D_1")
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_1"]
+radius = 2.0
