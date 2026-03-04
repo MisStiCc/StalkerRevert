@@ -67,7 +67,7 @@ func _on_stalker_died(stalker):
     if stalker in active_stalkers:
         active_stalkers.erase(stalker)
     
-    var zone_controller = get_node("/root/Main/ZoneController")
+    var zone_controller = owner
     if zone_controller and zone_controller.has_method("add_biomass"):
         var biomass_value = 10
         if stalker.has_method("get_biomass_value"):

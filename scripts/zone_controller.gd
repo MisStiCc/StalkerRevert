@@ -29,6 +29,8 @@ signal stalker_entered_zone(stalker)
 signal stalker_left_zone(stalker)
 signal stalker_died(stalker)
 
+@export var stalker_spawner: Node
+
 func _ready():
 	"""Инициализация контроллера"""
 	print("ZoneController initialized")
@@ -36,6 +38,12 @@ func _ready():
 	# Установка начальных значений
 	energy = max_energy / 2
 	biomass = max_biomass / 2
+
+	if not stalker_spawner:
+		stalker_spawner = find_child("StalkerSpawner")
+	
+	if stalker_spawner:
+		start_stalker_spawning()
 	
 	# Подписка на сигналы других объектов (если они существуют)
 	pass
@@ -235,3 +243,15 @@ func is_stalker_in_zone(stalker) -> bool:
 		return stalker.position.distance_to(Vector2.ZERO) <= territory_radius
 	else:
 		return false
+
+func start_stalker_spawning():
+	if stalker_spawner and stalker_spawner.has_method("start_spawning"):
+		stalker_spawner.start_spawning()
+
+func stop_stalker_spawning():
+	if stalker_spawner and stalker_spawner.has_method("stop_spawning"):
+		stalker_spawner.stop_spawning()
+
+func clear_all_stalkers():
+	if stalker_spawner and stalker_spawner.has_method("clear_all_stalkers"):
+		stalker_spawner.clear_all_stalkers()

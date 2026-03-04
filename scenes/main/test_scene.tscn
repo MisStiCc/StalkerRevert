@@ -1,13 +1,13 @@
 [gd_scene load_steps=5 format=3 uid="uid://bu2y732bcy2r3"]
 
-[ext_resource type="Script" path="res://scripts/main.gd" id="1_abcde"]
-[ext_resource type="Script" path="res://scripts/stalker_spawner.gd" id="2_spawner"]
+[ext_resource type="PackedScene" uid="uid://dsqmr1y262j2a" path="res://scenes/zone/zone_controller.tscn" id="1_abcde"]
+[ext_resource type="PackedScene" uid="uid://b5w7p2v2g2g2w" path="res://scenes/stalkers/stalker_spawner.tscn" id="2_spawner"]
 [ext_resource type="PackedScene" uid="uid://dixv5w0s0c8a" path="res://scenes/stalkers/novice_stalker.tscn" id="3_novice"]
 [ext_resource type="PackedScene" uid="uid://d0j3j1j3j1j3" path="res://scenes/stalkers/veteran_stalker.tscn" id="4_veteran"]
 
 [node name="Main" type="Node2D"]
-script = ExtResource("1_abcde")
 
-[node name="StalkerSpawner" type="Node" parent="."]
-script = ExtResource("2_spawner")
+[node name="ZoneController" parent="." instance=ExtResource("1_abcde")]
+
+[node name="StalkerSpawner" parent="ZoneController" instance=ExtResource("2_spawner")]
 stalker_types = [ExtResource("3_novice"), ExtResource("4_veteran")]
