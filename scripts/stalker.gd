@@ -35,6 +35,9 @@ func _ready() -> void:
 	"""Подготовка сталкера к игре"""
 	print("Сталкер ", stalker_name, " появился")
 	
+	# Добавление в группу сталкеров
+	add_to_group("stalker")
+	
 	# Установка навигационного агента
 	navigation_agent = NavigationAgent2D.new()
 	add_child(navigation_agent)
@@ -48,6 +51,8 @@ func _physics_process(delta: float) -> void:
 	"""Обработка физики движения"""
 	# Обновление направления движения через навигационный агент
 	if navigation_agent.is_navigation_finished():
+		# Если путь завершен, ищем новый артефакт
+		find_and_move_to_artifact()
 		velocity = Vector2.ZERO
 	else:
 		var next_waypoint = navigation_agent.get_next_path_position()
@@ -55,6 +60,28 @@ func _physics_process(delta: float) -> void:
 		velocity = direction * speed
 	
 	move_and_slide()
+
+func find_and_move_to_artifact() -> void:
+	"""Поиск ближайшего артефакта и движение к нему"""
+	var zone_controller = get_tree().get_nodes_in_group("zone_controller")[0]
+	if zone_controller and zone_controller.artifacts.size() > 0:
+		var nearest_artifact = null
+		var min_distance = INF
+		
+		for artifact_data in zone_controller.artifacts:
+			if artifact_data and is_instance_valid(artifact_data):
+				var distance = global_position.distance_to(artifact_data.global_position)
+				if distance < min_distance:
+					min_distance = distance
+					nearest_artifact = artifact_data
+		
+		if nearest_artifact:
+			move_to(nearest_artifact.global_position)
+			print("Сталкер ", stalker_name, " движется к артефакту ", nearest_artifact.name)
+		else:
+			print("Сталкер ", stalker_name, " не нашел артефактов")
+	else:
+		print("Сталкер ", stalker_name, " не нашел контроллер зоны или артефактов")
 
 func take_damage(amount: float, damage_type: String = "physical") -> void:
 	"""Получение урона сталкером"""

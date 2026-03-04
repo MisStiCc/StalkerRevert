@@ -33,6 +33,7 @@ var mutants: Array = []
 var artifacts: Array = []
 var stalkers: Array = []
 var territory_radius: float = 100.0
+@export var emission_damage: float = 50.0
 
 @export var stalker_spawner: Node
 @onready var main_ui = get_node("/root/MainScene/MainUI")
@@ -42,7 +43,10 @@ var _regen_timer: Timer
 
 # Инициализация контроллера зоны
 func _ready():
-	self.resources_changed.connect(main_ui.update_resources)
+	if main_ui:
+		self.resources_changed.connect(main_ui.update_resources)
+	else:
+		print("Ошибка: main_ui не найден или не инициализирован в ZoneController.")
 	energy = starting_energy
 	biomass = starting_biomass
 	
@@ -69,6 +73,11 @@ func _process(delta: float):
 		emission_duration -= delta
 		if emission_duration <= 0:
 			_on_emission_end()
+		else:
+			# Наносим урон сталкерам во время выброса
+			for stalker in stalkers:
+				if stalker != null and is_instance_valid(stalker):
+					stalker.take_damage(emission_damage * delta)
 
 func _on_regen_timer():
 	# Регенерируем энергию
@@ -170,15 +179,20 @@ func expand_territory(radius_increase: float):
 	print("Территория расширена. Новый радиус: ", territory_radius)
 
 func generate_artifact(position: Vector2):
-	var artifact = {
-		"position": position,
-		"type": "common",
-		"value": 10
-	}
-	artifacts.append(artifact)
-	emit_signal("artifact_generated", artifact)
-	print("Артефакт создан на позиции ", position)
-	return artifact
+	var scene_path = "res://scenes/artifacts/base_artifact.tscn"
+	var scene = load(scene_path)
+	if scene:
+		var artifact = scene.instantiate()
+		artifact.global_position = position
+		add_child(artifact)
+		artifacts.append(artifact)
+		
+		emit_signal("artifact_generated", artifact)
+		print("Артефакт создан на позиции ", position)
+		return artifact
+	else:
+		print("Ошибка: Не удалось загрузить сцену артефакта по пути: ", scene_path)
+		return null
 
 func update_stalker_status(stalker):
 	var stalker_in_zone = is_stalker_in_zone(stalker)
