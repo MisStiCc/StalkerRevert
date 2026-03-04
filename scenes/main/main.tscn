@@ -1,4 +1,4 @@
-[gd_scene load_steps=2 format=3 uid="uid://dsqmr1y262j2a"]
+[gd_scene load_steps=2 format=3 uid="uid://mainmainscene123"]
 
 [ext_resource type="Script" path="res://scripts/zone_controller.gd" id="1_zone_controller"]
 

@@ -1,5 +1,5 @@
 class_name ElectricAnomaly
-extends "res://scripts/anomaly.gd"
+extends Anomaly
 
 ## Аномалия "Электра" - наносит урон электричеством и может оглушать цели
 

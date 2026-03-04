@@ -161,8 +161,8 @@ func start_emission(duration: float = 10.0):
 	timer.start()
 
 func _on_emission_end():
-    is_emission_active = false
-    emission_ended.emit()
+	is_emission_active = false
+	emission_ended.emit()
 
 func expand_territory(radius_increase: float):
 	territory_radius += radius_increase

@@ -1,5 +1,5 @@
 class_name HeatAnomaly
-extends "res://scripts/anomaly.gd"
+extends Anomaly
 
 ## Аномалия "Жарка" - наносит урон огнем всем объектам в радиусе действия
 
