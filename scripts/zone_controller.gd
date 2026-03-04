@@ -43,7 +43,10 @@ var _regen_timer: Timer
 
 # Инициализация контроллера зоны
 func _ready():
-	self.resources_changed.connect(main_ui.update_resources)
+	if main_ui:
+		self.resources_changed.connect(main_ui.update_resources)
+	else:
+		print("Ошибка: main_ui не найден или не инициализирован в ZoneController.")
 	energy = starting_energy
 	biomass = starting_biomass
 	
@@ -176,15 +179,20 @@ func expand_territory(radius_increase: float):
 	print("Территория расширена. Новый радиус: ", territory_radius)
 
 func generate_artifact(position: Vector2):
-	var artifact = {
-		"position": position,
-		"type": "common",
-		"value": 10
-	}
-	artifacts.append(artifact)
-	emit_signal("artifact_generated", artifact)
-	print("Артефакт создан на позиции ", position)
-	return artifact
+	var scene_path = "res://scenes/artifacts/base_artifact.tscn"
+	var scene = load(scene_path)
+	if scene:
+		var artifact = scene.instantiate()
+		artifact.global_position = position
+		add_child(artifact)
+		artifacts.append(artifact)
+		
+		emit_signal("artifact_generated", artifact)
+		print("Артефакт создан на позиции ", position)
+		return artifact
+	else:
+		print("Ошибка: Не удалось загрузить сцену артефакта по пути: ", scene_path)
+		return null
 
 func update_stalker_status(stalker):
 	var stalker_in_zone = is_stalker_in_zone(stalker)

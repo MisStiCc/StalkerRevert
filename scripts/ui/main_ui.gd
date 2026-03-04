@@ -60,4 +60,8 @@ func _on_emission_button_pressed():
 		zone_controller.start_emission(10.0)
 
 func _get_mouse_map_position():
-	return get_viewport().get_mouse_position()
+	var viewport = get_viewport()
+	if viewport:
+		return viewport.get_camera_2d().get_global_mouse_position()
+	else:
+		return null
