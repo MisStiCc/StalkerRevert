@@ -113,26 +113,30 @@ func create_anomaly(type: String, position: Vector2):
 	emit_signal("anomaly_created", anomaly)
 	return anomaly
 
-func spawn_mutant(type: String, position: Vector2):
-	"""Призыв мутанта - возвращает объект мутанта или null"""
-	# Проверяем, достаточно ли биомассы для призыва мутанта
-	var cost = get_mutant_cost(type)
-	if not spend_biomass(cost):
-		print("Недостаточно биомассы для призыва мутанта ", type)
-		return null
-	
-	# В реальной реализации здесь будет создание экземпляра мутанта
-	# и добавление в список мутантов
-	var mutant = {
-		"type": type,
-		"position": position,
-		"health": 100
-	}
-	mutants.append(mutant)
-	
-	print("Мутант ", type, " призван на позиции ", position)
-	emit_signal("mutant_spawned", mutant)
-	return mutant
+func spawn_mutant(mutant_type: String, position: Vector2) -> Node:
+    var cost = get_mutant_cost(mutant_type)
+    if not spend_biomass(cost):
+        print("Недостаточно биомассы для призыва мутанта ", mutant_type)
+        return null
+
+    var scene_path = "res://scenes/zone/mutants/" + mutant_type + "_mutant.tscn"
+    var scene = load(scene_path)
+    if scene:
+        var mutant = scene.instantiate()
+        mutant.position = position
+        add_child(mutant)
+        mutants.append(mutant)
+        
+        mutant.died.connect(_on_mutant_died)
+        
+        print("Мутант ", mutant_type, " призван на позиции ", position)
+        emit_signal("mutant_spawned", mutant)
+        return mutant
+    return null
+
+func _on_mutant_died(mutant):
+    if mutant in mutants:
+        mutants.erase(mutant)
 
 func do_emission() -> void:
 	"""Выполнение выброса"""
