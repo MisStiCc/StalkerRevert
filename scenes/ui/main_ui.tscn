@@ -1,18 +1,63 @@
-[gd_scene load_steps=2 format=3 uid="uid://b5w02x0gu246c"]
+[gd_scene load_steps=3 format=3 uid="uid://c6g2w3f8dqv7x"]
 
+[ext_resource type="Script" path="res://scripts/ui/main_ui.gd" id="1_abcde"]
 [ext_resource type="PackedScene" uid="uid://dqi86k8nswd5y" path="res://scenes/ui/resource_panel.tscn" id="2_abcde"]
-[ext_resource type="Script" path="res://scripts/ui/main_ui.gd" id="1_wexrl"]
 
-[node name="MainUI" type="Control"]
-layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-script = ExtResource("1_wexrl")
+[node name="MainUI" type="CanvasLayer"]
+script = ExtResource("1_abcde")
 
 [node name="ResourcePanel" parent="." instance=ExtResource("2_abcde")]
 layout_mode = 0
 offset_right = 180.0
 offset_bottom = 60.0
+
+[node name="Panel" type="Panel" parent="."]
+offset_left = 200.0
+offset_right = 240.0
+offset_bottom = 40.0
+
+[node name="EnergyBar" type="ProgressBar" parent="Panel"]
+layout_mode = 0
+offset_right = 8.0
+offset_bottom = 8.0
+
+[node name="BiomassBar" type="ProgressBar" parent="Panel"]
+layout_mode = 0
+offset_right = 8.0
+offset_bottom = 8.0
+
+[node name="EnergyLabel" type="Label" parent="Panel"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 23.0
+text = "Energy"
+
+[node name="BiomassLabel" type="Label" parent="Panel"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 23.0
+text = "Biomass"
+
+[node name="FireButton" type="Button" parent="Panel"]
+layout_mode = 0
+offset_right = 8.0
+offset_bottom = 8.0
+text = "Жарка"
+
+[node name="ElectricButton" type="Button" parent="Panel"]
+layout_mode = 0
+offset_right = 8.0
+offset_bottom = 8.0
+text = "Электра"
+
+[node name="AcidButton" type="Button" parent="Panel"]
+layout_mode = 0
+offset_right = 8.0
+offset_bottom = 8.0
+text = "Кислота"
+
+[node name="EmissionButton" type="Button" parent="Panel"]
+layout_mode = 0
+offset_right = 8.0
+offset_bottom = 8.0
+text = "Выброс"

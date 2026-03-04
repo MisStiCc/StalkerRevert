@@ -1,6 +1,6 @@
 [gd_scene load_steps=4 format=3 uid="uid://xxxxxxxxxxxxx"]
 
-[ext_resource type="Script" path="res://scripts/stalkers/base_stalker.gd" id="1_xxxxx"]
+[ext_resource type="Script" path="res://scripts/stalkers/veteran_stalker.gd" id="1_xxxxx"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_xxxxx"]
 height = 1.8
@@ -9,7 +9,7 @@ radius = 0.4
 [sub_resource type="NavigationRegion3D" id="NavigationRegion3D_xxxxx"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 
-[node name="BaseStalker" type="CharacterBody3D"]
+[node name="VeteranStalker" type="CharacterBody3D"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 script = ExtResource("1_xxxxx")
 
@@ -29,7 +29,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.9, 0)
 
 [node name="Label3D" type="Label3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
-text = "Stalker"
+text = "Veteran Stalker"
 horizontal_alignment = 1
 
 [node name="HealthBar" type="Control" parent="."]

@@ -3,19 +3,6 @@ extends Node
 ## Контроллер Зоны - главный элемент управления защитой территории
 ## Управляет ресурсами, создает аномалии и мутантов, контролирует выбросы
 
-# Переменные
-var energy: float = 100.0  # уровень энергии Зоны
-var biomass: float = 100.0  # уровень биомассы Зоны
-var max_energy: float = 1000.0  # максимальный уровень энергии
-var max_biomass: float = 1000.0  # максимальный уровень биомассы
-var emission_cooldown: float = 0.0  # время до следующего выброса
-var emission_duration: float = 0.0  # длительность выброса
-var anomalies: Array = []  # список текущих аномалий
-var mutants: Array = []  # список текущих мутантов
-var artifacts: Array = []  # список текущих артефактов
-var stalkers: Array = []  # список текущих сталкеров
-var territory_radius: float = 100.0  # радиус территории Зоны
-
 # Сигналы
 signal resources_changed(energy: float, biomass: float)
 signal anomaly_created(anomaly)
@@ -27,36 +14,52 @@ signal artifact_generated(artifact)
 signal stalker_entered_zone(stalker)
 signal stalker_left_zone(stalker)
 signal stalker_died(stalker)
+signal energy_depleted
+
+# Параметры (можно менять в инспекторе)
+@export var max_energy: float = 1000.0
+@export var energy_regen_rate: float = 5.0  # в секунду
+@export var starting_energy: float = 500.0
+@export var starting_biomass: float = 0.0
+
+# Текущие значения
+var energy: float
+var biomass: float
+var is_emission_active: bool = false
+var emission_cooldown: float = 0.0
+var emission_duration: float = 0.0
+var anomalies: Array = []
+var mutants: Array = []
+var artifacts: Array = []
+var stalkers: Array = []
+var territory_radius: float = 100.0
 
 @export var stalker_spawner: Node
 @onready var main_ui = get_node("/root/MainScene/MainUI")
 
+# Внутренние переменные
+var _regen_timer: Timer
+
+# Инициализация контроллера зоны
 func _ready():
 	self.resources_changed.connect(main_ui.update_resources)
-	"""Инициализация контроллера"""
-	print("ZoneController initialized")
+	energy = starting_energy
+	biomass = starting_biomass
 	
-	# Установка начальных значений
-	energy = max_energy / 2
-	biomass = max_biomass / 2
+	# Создаем и настраиваем таймер регенерации энергии
+	_regen_timer = Timer.new()
+	_regen_timer.wait_time = 1.0
+	_regen_timer.timeout.connect(_on_regen_timer)
+	add_child(_regen_timer)
+	_regen_timer.start()
 
 	if not stalker_spawner:
 		stalker_spawner = find_child("StalkerSpawner")
 	
 	if stalker_spawner:
 		start_stalker_spawning()
-	
-	# Подписка на сигналы других объектов (если они существуют)
-	pass
 
 func _process(delta: float):
-	"""Основной цикл обновления"""
-	# Обновление ресурсов
-	if energy < max_energy:
-		add_energy(5.0 * delta)  # медленное восстановление энергии
-	if biomass < max_biomass:
-		add_biomass(3.0 * delta)  # медленное восстановление биомассы
-	
 	# Уменьшение времени до следующего выброса
 	if emission_cooldown > 0:
 		emission_cooldown -= delta
@@ -65,41 +68,38 @@ func _process(delta: float):
 	if emission_duration > 0:
 		emission_duration -= delta
 		if emission_duration <= 0:
-			emit_signal("emission_ended")
+			_on_emission_end()
 
-func add_energy(amount: float) -> void:
-	"""Добавление энергии"""
+func _on_regen_timer():
+	# Регенерируем энергию
 	var old_energy = energy
-	energy = min(energy + amount, max_energy)
-	if abs(old_energy - energy) > 0.01:  # если энергия действительно изменилась
+	energy = min(energy + energy_regen_rate, max_energy)
+	
+	if old_energy != energy:
 		emit_signal("resources_changed", energy, biomass)
 
+func add_biomass(amount: float):
+	biomass += amount
+	emit_signal("resources_changed", energy, biomass)
+
 func spend_energy(amount: float) -> bool:
-	"""Расход энергии"""
 	if energy >= amount:
 		energy -= amount
 		emit_signal("resources_changed", energy, biomass)
+		if energy <= 0:
+			energy_depleted.emit()
 		return true
-	else:
-		print("Недостаточно энергии для выполнения операции")
-		return false
-
-func add_biomass(amount: float) -> void:
-	"""Добавление биомассы"""
-	var old_biomass = biomass
-	biomass = min(biomass + amount, max_biomass)
-	if abs(old_biomass - biomass) > 0.01:  # если биомасса действительно изменилась
-		emit_signal("resources_changed", energy, biomass)
+	return false
 
 func spend_biomass(amount: float) -> bool:
-	"""Расход биомассы"""
 	if biomass >= amount:
 		biomass -= amount
 		emit_signal("resources_changed", energy, biomass)
 		return true
-	else:
-		print("Недостаточно биомассы для выполнения операции")
-		return false
+	return false
+
+func is_afford(energy_cost: float, biomass_cost: float) -> bool:
+	return energy >= energy_cost and biomass >= biomass_cost
 
 func create_anomaly(type: String, position: Vector2) -> Node:
 	"""Создание аномалии - возвращает объект аномалии или null"""
@@ -122,68 +122,54 @@ func create_anomaly(type: String, position: Vector2) -> Node:
 	return null
 
 func spawn_mutant(mutant_type: String, position: Vector2) -> Node:
-    var cost = get_mutant_cost(mutant_type)
-    if not spend_biomass(cost):
-        print("Недостаточно биомассы для призыва мутанта ", mutant_type)
-        return null
+	var cost = get_mutant_cost(mutant_type)
+	if not spend_biomass(cost):
+		print("Недостаточно биомассы для призыва мутанта ", mutant_type)
+		return null
 
-    var scene_path = "res://scenes/zone/mutants/" + mutant_type + "_mutant.tscn"
-    var scene = load(scene_path)
-    if scene:
-        var mutant = scene.instantiate()
-        mutant.position = position
-        add_child(mutant)
-        mutants.append(mutant)
-        
-        mutant.died.connect(_on_mutant_died)
-        
-        print("Мутант ", mutant_type, " призван на позиции ", position)
-        emit_signal("mutant_spawned", mutant)
-        return mutant
-    return null
+	var scene_path = "res://scenes/zone/mutants/" + mutant_type + "_mutant.tscn"
+	var scene = load(scene_path)
+	if scene:
+		var mutant = scene.instantiate()
+		mutant.position = position
+		add_child(mutant)
+		mutants.append(mutant)
+		
+		mutant.died.connect(_on_mutant_died)
+		
+		print("Мутант ", mutant_type, " призван на позиции ", position)
+		emit_signal("mutant_spawned", mutant)
+		return mutant
+	return null
 
 func _on_mutant_died(mutant):
-    if mutant in mutants:
-        mutants.erase(mutant)
+	if mutant in mutants:
+		mutants.erase(mutant)
 
-func do_emission() -> void:
-	"""Выполнение выброса"""
-	if emission_cooldown <= 0:
-		# Выброс требует много ресурсов
-		var energy_cost = 500.0
-		var biomass_cost = 300.0
-		
-		if energy >= energy_cost and biomass >= biomass_cost:
-			spend_energy(energy_cost)
-			spend_biomass(biomass_cost)
-			
-			# Устанавливаем время действия выброса
-			emission_duration = 10.0  # 10 секунд выброса
-			# Сбрасываем таймер до следующего выброса
-			emission_cooldown = 120.0  # 2 минуты до следующего выброса
-			
-			print("Выброс активирован!")
-			emit_signal("emission_started")
-			
-			# В реальной игре выброс будет наносить урон всем объектам в зоне
-			for stalker in stalkers:
-				if stalker != null:
-					# Урон сталкеру при выбросе
-					pass
-		else:
-			print("Недостаточно ресурсов для выброса")
-	else:
-		var remaining_time = ceil(emission_cooldown)
-		print("Выброс недоступен, осталось времени: ", remaining_time, " секунд")
+func start_emission(duration: float = 10.0):
+    if is_emission_active:
+        return
+    is_emission_active = true
+    emission_started.emit()
+    
+    # Создаем таймер для автоматического окончания выброса
+    var timer = Timer.new()
+    timer.wait_time = duration
+    timer.one_shot = true
+    timer.timeout.connect(_on_emission_end)
+    add_child(timer)
+    timer.start()
 
-func expand_territory(radius_increase: float) -> void:
-	"""Расширение территории"""
+func _on_emission_end():
+    is_emission_active = false
+    emission_ended.emit()
+
+func expand_territory(radius_increase: float):
 	territory_radius += radius_increase
 	emit_signal("territory_expanded", territory_radius)
 	print("Территория расширена. Новый радиус: ", territory_radius)
 
 func generate_artifact(position: Vector2):
-	"""Генерация артефакта - возвращает объект артефакта"""
 	var artifact = {
 		"position": position,
 		"type": "common",
@@ -194,33 +180,25 @@ func generate_artifact(position: Vector2):
 	print("Артефакт создан на позиции ", position)
 	return artifact
 
-func update_stalker_status(stalker) -> void:
-	"""Обновление статуса сталкера"""
-	# Проверяем, находится ли сталкер в зоне
+func update_stalker_status(stalker):
 	var stalker_in_zone = is_stalker_in_zone(stalker)
 	
 	if stalker_in_zone and not stalkers.has(stalker):
-		# Сталкер вошел в зону
 		stalkers.append(stalker)
 		emit_signal("stalker_entered_zone", stalker)
 	elif not stalker_in_zone and stalkers.has(stalker):
-		# Сталкер покинул зону
 		stalkers.erase(stalker)
 		emit_signal("stalker_left_zone", stalker)
 
 func get_resource_efficiency() -> float:
-	"""Эффективность использования ресурсов"""
 	var total_resources = energy + biomass
-	var max_possible = max_energy + max_biomass
+	var max_possible = max_energy + starting_biomass
 	if max_possible > 0:
 		return total_resources / max_possible
 	else:
 		return 0.0
 
-# Вспомогательные функции
-
 func get_anomaly_cost(type: String) -> float:
-	"""Получение стоимости создания аномалии"""
 	match type:
 		"heat": return 50.0
 		"electric": return 75.0
@@ -229,7 +207,6 @@ func get_anomaly_cost(type: String) -> float:
 		_: return 50.0
 
 func get_mutant_cost(type: String) -> float:
-	"""Получение стоимости призыва мутанта"""
 	match type:
 		"dog": return 50.0
 		"snork": return 100.0
@@ -237,9 +214,6 @@ func get_mutant_cost(type: String) -> float:
 		_: return 50.0
 
 func is_stalker_in_zone(stalker) -> bool:
-	"""Проверка, находится ли сталкер в зоне"""
-	# В реальной реализации это будет зависеть от позиции сталкера
-	# и размера территории
 	if stalker != null and stalker.position != null:
 		return stalker.position.distance_to(Vector2.ZERO) <= territory_radius
 	else:

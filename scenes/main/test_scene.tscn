@@ -1,4 +1,4 @@
-[gd_scene load_steps=5 format=3 uid="uid://bu2y732bcy2r3"]
+[gd_scene load_steps=6 format=3 uid="uid://b5w5a6y7x8j8q"]
 
 [ext_resource type="PackedScene" uid="uid://dsqmr1y262j2a" path="res://scenes/zone/zone_controller.tscn" id="1_abcde"]
 [ext_resource type="PackedScene" uid="uid://b5w7p2v2g2g2w" path="res://scenes/stalkers/stalker_spawner.tscn" id="2_spawner"]
@@ -14,3 +14,12 @@
 stalker_types = [ExtResource("3_novice"), ExtResource("4_veteran")]
 
 [node name="MainUI" parent="." instance=ExtResource("5_main_ui")]
+
+[node name="NoviceStalker1" parent="." instance=ExtResource("3_novice")]
+position = Vector2(100, 100)
+
+[node name="NoviceStalker2" parent="." instance=ExtResource("3_novice")]
+position = Vector2(200, 200)
+
+[node name="NoviceStalker3" parent="." instance=ExtResource("3_novice")]
+position = Vector2(300, 150)
