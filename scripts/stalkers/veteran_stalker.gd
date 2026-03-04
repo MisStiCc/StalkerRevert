@@ -1,6 +1,7 @@
 extends "res://scripts/stalkers/base_stalker.gd"
 
 func _ready():
+    super._ready() # Вызываем родительский _ready
     stalker_type = "veteran"
     health = 80.0
     speed = 150.0

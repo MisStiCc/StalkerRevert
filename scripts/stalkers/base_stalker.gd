@@ -3,14 +3,17 @@ extends CharacterBody3D
 class_name BaseStalker
 
 # Базовые параметры сталкера
+@export var stalker_type: String = ""
 @export var health: float = 100.0
-@export var max_health: float = 100.0
-@export var speed: float = 5.0
+@export var speed: float = 100.0
 @export var damage: float = 10.0
 @export var armor: float = 0.0
+@export var detection_radius: float = 200.0
+@export var attack_cooldown: float = 1.0
+@export var biomass_cost: float = 50.0
+@export var max_health: float = 100.0
 @export var detection_range: float = 20.0
 @export var carry_capacity: int = 5
-@export var stalker_type: String = "common"
 
 # Состояния сталкера
 enum StalkerState {
