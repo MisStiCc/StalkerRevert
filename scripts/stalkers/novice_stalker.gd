@@ -6,7 +6,6 @@ class_name NoviceStalker
 @export var novice_health: float = 80.0
 @export var novice_speed: float = 4.0
 @export var novice_damage: float = 8.0
-@export var stalker_type: String = "novice"
 
 func _ready():
 	super._ready()
@@ -16,7 +15,7 @@ func _ready():
 	max_health = novice_health
 	speed = novice_speed
 	damage = novice_damage
-	stalker_type = "novice"
+	# stalker_type уже установлен в базовом классе
 	
 	# Можно добавить специфичное для новичка поведение
 	print("Novice stalker initialized")
