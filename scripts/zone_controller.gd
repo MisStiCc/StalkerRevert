@@ -33,6 +33,7 @@ var mutants: Array = []
 var artifacts: Array = []
 var stalkers: Array = []
 var territory_radius: float = 100.0
+@export var emission_damage: float = 50.0
 
 @export var stalker_spawner: Node
 @onready var main_ui = get_node("/root/MainScene/MainUI")
@@ -69,6 +70,11 @@ func _process(delta: float):
 		emission_duration -= delta
 		if emission_duration <= 0:
 			_on_emission_end()
+		else:
+			# Наносим урон сталкерам во время выброса
+			for stalker in stalkers:
+				if stalker != null and is_instance_valid(stalker):
+					stalker.take_damage(emission_damage * delta)
 
 func _on_regen_timer():
 	# Регенерируем энергию
