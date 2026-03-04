@@ -10,7 +10,18 @@ var max_energy: float = 1000.0  # максимальный уровень эне
 var max_biomass: float = 1000.0  # максимальный уровень биомассы
 var emission_cooldown: float = 0.0  # время до следующего выброса
 var emission_duration: float = 0.0  # длительность выброса
-var anomalies: Array = []  # список текущих аномалий
+var anomalies: Array = []
+
+func spawn_anomaly(anomaly_type: String, position: Vector2) -> Node:
+	var scene_path = "res://scenes/zone/anomalies/anomaly_" + anomaly_type + ".tscn"
+	var scene = load(scene_path)
+	if scene:
+		var anomaly = scene.instantiate()
+		anomaly.position = position
+		add_child(anomaly)
+		anomalies.append(anomaly)
+		return anomaly
+	return null
 var mutants: Array = []  # список текущих мутантов
 var artifacts: Array = []  # список текущих артефактов
 var stalkers: Array = []  # список текущих сталкеров
