@@ -1,9 +1,7 @@
 extends CanvasLayer
 
-# Ссылки на ZoneController (устанавливаются в _ready)
 var zone_controller: Node
 
-# Ссылки на элементы интерфейса
 @onready var energy_bar: ProgressBar = $Panel/EnergyBar
 @onready var biomass_bar: ProgressBar = $Panel/BiomassBar
 @onready var energy_label: Label = $Panel/EnergyLabel
@@ -14,13 +12,30 @@ var zone_controller: Node
 @onready var emission_button: Button = $Panel/EmissionButton
 
 func _ready():
-    pass # Логика будет добавлена в следующих задачах
+    zone_controller = get_node("/root/Main/ZoneController")
+    if not zone_controller:
+        push_error("ZoneController not found!")
+        return
+    
+    zone_controller.energy_changed.connect(_on_energy_changed)
+    zone_controller.biomass_changed.connect(_on_biomass_changed)
+    
+    fire_button.pressed.connect(_on_fire_button_pressed)
+    electric_button.pressed.connect(_on_electric_button_pressed)
+    acid_button.pressed.connect(_on_acid_button_pressed)
+    emission_button.pressed.connect(_on_emission_button_pressed)
+    
+    _on_energy_changed(zone_controller.zone_energy)
+    _on_biomass_changed(zone_controller.biomass)
 
 func _on_energy_changed(new_energy: float):
-    pass
+    energy_bar.value = new_energy
+    energy_bar.max_value = zone_controller.max_energy
+    energy_label.text = str(int(new_energy))
 
 func _on_biomass_changed(new_biomass: float):
-    pass
+    biomass_bar.value = new_biomass
+    biomass_label.text = str(int(new_biomass))
 
 func _on_fire_button_pressed():
     pass
