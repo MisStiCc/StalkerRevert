@@ -30,6 +30,8 @@ func _handle_idle_state(delta):
 		_change_state(StalkerState.CHASE)
 
 func _handle_chase_state(delta):
+	super._handle_chase_state(delta)
+	
 	# Новички бегут медленнее
 	var chase_speed = speed * 0.8
 	if target:

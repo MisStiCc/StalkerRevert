@@ -28,20 +28,11 @@ func _handle_idle_state(delta):
 		_change_state(StalkerState.CHASE)
 
 func _handle_chase_state(delta):
-	# Ветераны бегут быстрее
-	if target:
-		var direction = global_position.direction_to(target.global_position)
-		if direction.length() > 0:
-			velocity = direction * speed
-		else:
-			velocity = Vector3.ZERO
-		
-		# Ветераны атакуют с большего расстояния
-		var distance_to_target = global_position.distance_to(target.global_position)
-		if distance_to_target < 2.5:
-			_change_state(StalkerState.ATTACK)
-	else:
-		_change_state(StalkerState.IDLE)
+	super._handle_chase_state(delta)
+	
+	# Ветераны атакуют с большего расстояния
+	if target and global_position.distance_to(target.global_position) < 2.5:
+		_change_state(StalkerState.ATTACK)
 
 func attack_target():
 	if target and current_state == StalkerState.ATTACK:
