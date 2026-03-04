@@ -17,8 +17,7 @@ var stalkers: Array = []  # список текущих сталкеров
 var territory_radius: float = 100.0  # радиус территории Зоны
 
 # Сигналы
-signal energy_changed(new_energy: float)
-signal biomass_changed(new_biomass: float)
+signal resources_changed(energy: float, biomass: float)
 signal anomaly_created(anomaly)
 signal mutant_spawned(mutant)
 signal emission_started
@@ -30,8 +29,10 @@ signal stalker_left_zone(stalker)
 signal stalker_died(stalker)
 
 @export var stalker_spawner: Node
+@onready var main_ui = get_node("/root/MainScene/MainUI")
 
 func _ready():
+	self.resources_changed.connect(main_ui.update_resources)
 	"""Инициализация контроллера"""
 	print("ZoneController initialized")
 	
@@ -71,13 +72,13 @@ func add_energy(amount: float) -> void:
 	var old_energy = energy
 	energy = min(energy + amount, max_energy)
 	if abs(old_energy - energy) > 0.01:  # если энергия действительно изменилась
-		emit_signal("energy_changed", energy)
+		emit_signal("resources_changed", energy, biomass)
 
 func spend_energy(amount: float) -> bool:
 	"""Расход энергии"""
 	if energy >= amount:
 		energy -= amount
-		emit_signal("energy_changed", energy)
+		emit_signal("resources_changed", energy, biomass)
 		return true
 	else:
 		print("Недостаточно энергии для выполнения операции")
@@ -88,13 +89,13 @@ func add_biomass(amount: float) -> void:
 	var old_biomass = biomass
 	biomass = min(biomass + amount, max_biomass)
 	if abs(old_biomass - biomass) > 0.01:  # если биомасса действительно изменилась
-		emit_signal("biomass_changed", biomass)
+		emit_signal("resources_changed", energy, biomass)
 
 func spend_biomass(amount: float) -> bool:
 	"""Расход биомассы"""
 	if biomass >= amount:
 		biomass -= amount
-		emit_signal("biomass_changed", biomass)
+		emit_signal("resources_changed", energy, biomass)
 		return true
 	else:
 		print("Недостаточно биомассы для выполнения операции")
