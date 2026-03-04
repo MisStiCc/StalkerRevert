@@ -240,6 +240,12 @@ func attack_target():
 	# Метод для атаки цели
 	pass
 
+func _attack_target():
+	"""Внутренний метод атаки цели"""
+	if target and target.has_method("take_damage"):
+		target.take_damage(damage)
+		print("Сталкер ", name, " атакует цель ", target.name, ", нанося ", damage, " урона")
+
 func set_target(new_target: Node3D):
 	if not is_alive:
 		return

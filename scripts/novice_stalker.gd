@@ -27,4 +27,4 @@ func update(delta: float) -> void:
 	pass
 
 func get_biomass_value() -> int:
-	   return 5
+	return 5

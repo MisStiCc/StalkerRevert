@@ -156,18 +156,18 @@ func _on_mutant_died(mutant):
 		mutants.erase(mutant)
 
 func start_emission(duration: float = 10.0):
-    if is_emission_active:
-        return
-    is_emission_active = true
-    emission_started.emit()
-    
-    # Создаем таймер для автоматического окончания выброса
-    var timer = Timer.new()
-    timer.wait_time = duration
-    timer.one_shot = true
-    timer.timeout.connect(_on_emission_end)
-    add_child(timer)
-    timer.start()
+	if is_emission_active:
+		return
+	is_emission_active = true
+	emission_started.emit()
+	
+	# Создаем таймер для автоматического окончания выброса
+	var timer = Timer.new()
+	timer.wait_time = duration
+	timer.one_shot = true
+	timer.timeout.connect(_on_emission_end)
+	add_child(timer)
+	timer.start()
 
 func _on_emission_end():
     is_emission_active = false
