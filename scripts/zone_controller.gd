@@ -92,26 +92,25 @@ func spend_biomass(amount: float) -> bool:
 		print("Недостаточно биомассы для выполнения операции")
 		return false
 
-func create_anomaly(type: String, position: Vector2):
+func create_anomaly(type: String, position: Vector2) -> Node:
 	"""Создание аномалии - возвращает объект аномалии или null"""
-	# Проверяем, достаточно ли энергии для создания аномалии
 	var cost = get_anomaly_cost(type)
 	if not spend_energy(cost):
 		print("Недостаточно энергии для создания аномалии ", type)
 		return null
-	
-	# В реальной реализации здесь будет создание экземпляра аномалии
-	# и добавление в список аномалий
-	var anomaly = {
-		"type": type,
-		"position": position,
-		"lifetime": 60.0  # условное время жизни
-	}
-	anomalies.append(anomaly)
-	
-	print("Аномалия ", type, " создана на позиции ", position)
-	emit_signal("anomaly_created", anomaly)
-	return anomaly
+
+	var scene_path = "res://scenes/zone/anomalies/" + type + "_anomaly.tscn"
+	var scene = load(scene_path)
+	if scene:
+		var anomaly = scene.instantiate()
+		anomaly.position = position
+		add_child(anomaly)
+		anomalies.append(anomaly)
+		
+		print("Аномалия ", type, " создана на позиции ", position)
+		emit_signal("anomaly_created", anomaly)
+		return anomaly
+	return null
 
 func spawn_mutant(mutant_type: String, position: Vector2) -> Node:
     var cost = get_mutant_cost(mutant_type)
