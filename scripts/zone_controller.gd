@@ -113,26 +113,30 @@ func create_anomaly(type: String, position: Vector2):
 	emit_signal("anomaly_created", anomaly)
 	return anomaly
 
-func spawn_mutant(type: String, position: Vector2):
-	"""Призыв мутанта - возвращает объект мутанта или null"""
-	# Проверяем, достаточно ли биомассы для призыва мутанта
-	var cost = get_mutant_cost(type)
-	if not spend_biomass(cost):
-		print("Недостаточно биомассы для призыва мутанта ", type)
-		return null
-	
-	# В реальной реализации здесь будет создание экземпляра мутанта
-	# и добавление в список мутантов
-	var mutant = {
-		"type": type,
-		"position": position,
-		"health": 100
-	}
-	mutants.append(mutant)
-	
-	print("Мутант ", type, " призван на позиции ", position)
-	emit_signal("mutant_spawned", mutant)
-	return mutant
+@export var mutant_scenes: Dictionary = {
+    "dog": preload("res://scenes/zone/mutants/dog_mutant.tscn"),
+    "snork": preload("res://scenes/zone/mutants/snork_mutant.tscn"),
+    "controller": preload("res://scenes/zone/mutants/controller_mutant.tscn")
+}
+var mutants: Array = []
+
+func spawn_mutant(mutant_type: String, position: Vector2):
+    if not mutant_scenes.has(mutant_type):
+        print("Error: Unknown mutant type: ", mutant_type)
+        return
+
+    var mutant_scene = mutant_scenes[mutant_type]
+    var mutant = mutant_scene.instantiate()
+    
+    if not spend_biomass(mutant.biomass_cost):
+        print("Not enough biomass to spawn mutant: ", mutant_type)
+        mutant.queue_free() # Освобождаем память, если не можем создать
+        return
+
+    mutant.position = position
+    add_child(mutant)
+    mutants.append(mutant)
+    print("Spawned mutant: ", mutant_type)
 
 func do_emission() -> void:
 	"""Выполнение выброса"""

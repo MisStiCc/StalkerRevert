@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://b5w5g5f5g5g5g"]
+
+[ext_resource type="Script" path="res://scripts/mutants/controller_mutant.gd" id="1_f5g5g"]
+
+[node name="ControllerMutant" type="CharacterBody2D"]
+script = ExtResource("1_f5g5g")
