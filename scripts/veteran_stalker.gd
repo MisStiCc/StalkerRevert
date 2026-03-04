@@ -34,3 +34,6 @@ func update(delta: float) -> void:
 	# Ветеран может координировать действия с другими сталкерами
 	# и более осторожно подходить к аномалиям
 	pass
+
+func get_biomass_value() -> int:
+	   return 15

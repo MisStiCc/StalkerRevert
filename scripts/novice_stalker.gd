@@ -25,3 +25,6 @@ func update(delta: float) -> void:
 	# Новички менее осторожны и могут идти прямо к цели
 	# даже если рядом есть аномалии
 	pass
+
+func get_biomass_value() -> int:
+	   return 5
