@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3 uid="uid://dhe2s82i7v25l"]
+[gd_scene load_steps=10 format=3 uid="uid://dhe2s82i7v25l"]
 
 [ext_resource type="PackedScene" uid="uid://bxo8p5w39s3gj" path="res://scenes/zone/zone_controller.tscn" id="1_2kc4p"]
 [ext_resource type="PackedScene" uid="uid://b5w7p1avgvhtw" path="res://scenes/stalkers/stalker_spawner.tscn" id="2_8yexf"]
@@ -9,8 +9,6 @@
 [ext_resource type="Script" path="res://scripts/rare_artifact.gd" id="7_h04a7"]
 [ext_resource type="Script" path="res://scripts/energy_artifact.gd" id="8_qgfbv"]
 [ext_resource type="Script" path="res://scripts/common_artifact.gd" id="9_u8yem"]
-
-[sub_resource type="Node2D" id="Node2D_f6lqg"]
 
 [node name="Main" type="Node2D"]
 
@@ -42,6 +40,3 @@ position = Vector2(300, 200)
 
 [node name="ElectricAnomaly" parent="Anomalies" instance=ExtResource("6_d1x0i")]
 position = Vector2(700, 600)
-
-[node name="TestRoot" type="Node2D" parent="." groups=["test_root"]]
-script = SubResource("Node2D_f6lqg")

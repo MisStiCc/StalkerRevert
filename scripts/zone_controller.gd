@@ -226,7 +226,7 @@ func get_all_anomalies() -> Array[Node3D]:
 func get_anomalies_in_zone(radius: float) -> Array[Node3D]:
 	var anomalies_in_zone = []
 	for anomaly in anomalies:
-		if anomaly.position.distance_to(get_global_transform().origin) <= radius:
+		if anomaly.position.distance_to(Vector3.ZERO) <= radius:
 			anomalies_in_zone.append(anomaly)
 	return anomalies_in_zone
 
