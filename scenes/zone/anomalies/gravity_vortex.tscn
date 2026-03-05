@@ -1,0 +1,72 @@
+[gd_scene load_steps=2 format=3 uid="uid://byr0y5v2x1q7c"]
+
+[ext_resource type="Script" path="res://scripts/gravity_vortex.gd" id="1_5q4m"]
+
+[node name="GravityVortex" type="Node3D"]
+
+[node name="GravityVortexInstance" type="Area3D" parent="."]
+script = ExtResource("1_5q4m")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="GravityVortexInstance"]
+shape = null
+
+[node name="VisualIndicator" type="MeshInstance3D" parent="GravityVortexInstance"]
+mesh = CylinderMesh.new()
+mesh.height = 3.0
+mesh.radius_top = 0.3
+mesh.radius_bottom = 0.3
+mesh.height_top = 0.5
+mesh.height_bottom = 0.5
+
+[node name="Material" type="StandardMaterial3D" parent="GravityVortexInstance/VisualIndicator"]
+albedo_color = Color(0.4, 0.0, 0.6, 0.8)
+transmission_enabled = true
+transmission = 0.5
+roughness = 0.2
+
+[node name="Particles" type="GPUParticles3D" parent="GravityVortexInstance"]
+emitting = true
+amount = 100
+lifetime = 2.0
+process_material = null
+process_callback = 0
+scale_amount = 1.0
+scale_amount_curve = null
+scale_amount_curve = null
+
+[node name="VortexRing" type="MeshInstance3D" parent="GravityVortexInstance"]
+mesh = TorusMesh.new()
+mesh.radius = 1.0
+mesh.tube = 0.05
+
+[node name="VortexRingMaterial" type="StandardMaterial3D" parent="GravityVortexInstance/VortexRing"]
+albedo_color = Color(0.5, 0.0, 0.7, 0.6)
+transmission_enabled = true
+transmission = 0.3
+roughness = 0.1
+blend_mode = 1
+blend_mode = 1
+
+[node name="VortexRing2" type="MeshInstance3D" parent="GravityVortexInstance"]
+mesh = TorusMesh.new()
+mesh.radius = 0.7
+mesh.tube = 0.03
+
+[node name="VortexRing2Material" type="StandardMaterial3D" parent="GravityVortexInstance/VortexRing2"]
+albedo_color = Color(0.6, 0.1, 0.8, 0.5)
+transmission_enabled = true
+transmission = 0.4
+roughness = 0.2
+blend_mode = 1
+
+[node name="VortexRing3" type="MeshInstance3D" parent="GravityVortexInstance"]
+mesh = TorusMesh.new()
+mesh.radius = 0.4
+mesh.tube = 0.02
+
+[node name="VortexRing3Material" type="StandardMaterial3D" parent="GravityVortexInstance/VortexRing3"]
+albedo_color = Color(0.7, 0.2, 0.9, 0.4)
+transmission_enabled = true
+transmission = 0.5
+roughness = 0.3
+blend_mode = 1

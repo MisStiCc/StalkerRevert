@@ -1,6 +1,6 @@
-[gd_scene load_steps=2 format=3 uid="uid://b5w7p2v2g2g2w"]
+[gd_scene load_steps=2 format=3 uid="uid://stalker_spawner"]
 
-[ext_resource type="Script" path="res://scripts/stalker_spawner.gd" id="1_w8xjg"]
+[ext_resource type="Script" path="res://scripts/stalker_spawner.gd" id="1"]
 
-[node name="StalkerSpawner" type="Node"]
-script = ExtResource("1_w8xjg")
+[node name="StalkerSpawner" type="Node3D"]
+script = ExtResource("1")

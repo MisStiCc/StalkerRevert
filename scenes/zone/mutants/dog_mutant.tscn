@@ -1,6 +1,14 @@
-[gd_scene load_steps=2 format=3 uid="uid://c2vj6q3vj3d3y"]
+[gd_scene load_steps=4 format=3 uid="uid://c2vj6q3vj3d3y"]
 
 [ext_resource type="Script" path="res://scripts/mutants/dog_mutant.gd" id="1_t0j1h"]
 
-[node name="DogMutant" type="CharacterBody2D"]
+[node name="DogMutant" type="CharacterBody3D"]
 script = ExtResource("1_t0j1h")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+shape = SubResource("CapsuleShape3D_1")
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
+height = 1.5
+radius = 0.3

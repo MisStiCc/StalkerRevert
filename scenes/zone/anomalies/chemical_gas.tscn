@@ -1,0 +1,36 @@
+[gd_scene load_steps=2 format=3 uid="uid://c2r3s4t5u6v7w"]
+
+[ext_resource type="Script" path="res://scripts/chemical_gas.gd" id="1_chemical_gas"]
+
+[node name="ChemicalGas" type="Node3D"]
+script = ExtResource("1_chemical_gas")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+visible = false
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SphereMesh.new()
+material_override = null
+visible = true
+
+[node name="ParticleSystem3D" type="ParticleSystem3D" parent="."]
+emitting = true
+amount = 100
+process_material = null
+visible = true
+
+[node name="OmniLight3D" type="OmniLight3D" parent="."]
+light_color = Color(0.3, 0.8, 0.3, 0.3)
+light_energy = 0.5
+light_indirect_energy = 1.0
+light_bake_mode = 1
+shadow_enabled = true
+shadow_bias = 0.2
+shadow_normal_bias = 0.5
+shadow_transparency = 0.0
+shadow_blur = 0.8
+shadow_filter = 1
+distance = 18.0
+omni_range = 18.0
+omni_attenuation = 1.0
+visible = true

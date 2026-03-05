@@ -1,0 +1,14 @@
+[gd_scene load_steps=3 format=3 uid="uid://test3dscene"]
+
+[ext_resource type="PackedScene" uid="uid://dsqmr1y262j2a" path="res://scenes/main/main.tscn" id="1_main"]
+[ext_resource type="Script" path="res://scripts/test_3d_systems.gd" id="2_test"]
+
+[sub_resource type="Camera3D" id="Camera3D_1"]
+transform = Transform3D(1, 0, 0, 0, 0.866025, 0.5, 0, -0.5, 0.866025, 0, 10, 20)
+
+[node name="Test3DScene" type="Node3D"]
+script = ExtResource("2_test")
+
+[node name="MainScene" parent="." instance=ExtResource("1_main")]
+
+[node name="Camera3D" parent="." instance=SubResource("Camera3D_1")]

@@ -5,7 +5,7 @@ extends Node2D
 ## Аномалии служат защитным механизмом Зоны, нанося урон сталкерам и ограничивая их передвижение
 
 # Параметры аномалии
-var position: Vector2  # позиция аномалии на карте
+var anomaly_position: Vector2  # позиция аномалии на карте
 var radius: float = 50.0  # радиус действия аномалии
 var duration: float = 60.0  # длительность существования аномалии (в секундах)
 var pulse_interval: float = 2.0  # интервал между импульсами эффекта (в секундах)
@@ -20,12 +20,12 @@ signal effect_applied(target)
 
 func _init(pos: Vector2) -> void:
 	"""Инициализация аномалии с заданной позицией"""
-	position = pos
+	anomaly_position = pos
 	global_position = pos
 
 func _ready() -> void:
 	"""Подготовка аномалии к работе"""
-	print("Аномалия создана на позиции: ", position)
+	print("Аномалия создана на позиции: ", anomaly_position)
 	
 	# Создаем область обнаружения
 	detection_area = Area2D.new()

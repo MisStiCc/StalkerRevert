@@ -1,47 +1,64 @@
-[gd_scene load_steps=11 format=3 uid="uid://dhe2s82i7v25l"]
+[gd_scene load_steps=7 format=3 uid="uid://main_scene"]
 
-[ext_resource type="PackedScene" uid="uid://bxo8p5w39s3gj" path="res://scenes/zone/zone_controller.tscn" id="1_2kc4p"]
-[ext_resource type="PackedScene" uid="uid://b5w7p1avgvhtw" path="res://scenes/stalkers/stalker_spawner.tscn" id="2_8yexf"]
-[ext_resource type="PackedScene" uid="uid://b75v5n51k0f6c" path="res://scenes/ui/main_ui.tscn" id="3_iixw7"]
-[ext_resource type="PackedScene" uid="uid://dpg2q42n676p1" path="res://scenes/artifacts/base_artifact.tscn" id="4_m6bsh"]
-[ext_resource type="PackedScene" uid="uid://c6a3v6346h1v" path="res://scenes/zone/anomalies/heat_anomaly.tscn" id="5_26grw"]
-[ext_resource type="PackedScene" uid="uid://dgpjeqjprt3vl" path="res://scenes/zone/anomalies/electric_anomaly.tscn" id="6_d1x0i"]
-[ext_resource type="Script" path="res://scripts/rare_artifact.gd" id="7_h04a7"]
-[ext_resource type="Script" path="res://scripts/energy_artifact.gd" id="8_qgfbv"]
-[ext_resource type="Script" path="res://scripts/common_artifact.gd" id="9_u8yem"]
+[ext_resource type="Script" path="res://scripts/zone_controller.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/stalkers/stalker_spawner.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://scenes/ui/main_ui.tscn" id="3"]
+[ext_resource type="Script" path="res://scripts/terrain_generator.gd" id="4"]
+[ext_resource type="Script" path="res://scripts/game_camera.gd" id="5"]
 
-[sub_resource type="Node2D" id="Node2D_f6lqg"]
+[sub_resource type="Environment" id="1"]
+background_mode = 1
+sky_rotation = Vector3(0.171, 0, 0)
+ambient_light_source = 2
+ambient_light_color = Color(0.3, 0.3, 0.35, 1)
+ambient_light_energy = 0.5
+tonemap_mode = 2
+glow_enabled = true
+glow_intensity = 0.5
 
-[node name="Main" type="Node2D"]
+[node name="Main" type="Node3D"]
 
-[node name="ZoneController" parent="." instance=ExtResource("1_2kc4p")]
+[node name="ZoneController" type="Node" parent="."]
+script = ExtResource("1")
 
-[node name="StalkerSpawner" parent="." instance=ExtResource("2_8yexf")]
-position = Vector2(500, 500)
+[node name="TerrainGenerator" type="Node3D" parent="."]
+script = ExtResource("4")
+chunk_size = 32
+chunk_load_distance = 3
+terrain_height = 10.0
+terrain_scale = 0.02
+water_level = 2.0
 
-[node name="UI" parent="." instance=ExtResource("3_iixw7")]
+[node name="StalkerSpawner" parent="." instance=ExtResource("2")]
+position = Vector3(0, 0, 0)
 
-[node name="Artifacts" type="Node2D" parent="."]
+[node name="MainUI" parent="." instance=ExtResource("3")]
 
-[node name="CommonArtifact" parent="Artifacts" instance=ExtResource("4_m6bsh")]
-position = Vector2(200, 300)
-script = ExtResource("9_u8yem")
+[node name="GameCamera" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 0, 10, 10)
+current = true
+script = ExtResource("5")
+current_mode = 1
+top_down_height = 30.0
+top_down_angle = -70.0
+third_person_distance = 8.0
+third_person_height = 3.0
+rotation_speed = 2.0
+smooth_speed = 5.0
 
-[node name="RareArtifact" parent="Artifacts" instance=ExtResource("4_m6bsh")]
-position = Vector2(800, 400)
-script = ExtResource("7_h04a7")
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("1")
 
-[node name="EnergyArtifact" parent="Artifacts" instance=ExtResource("4_m6bsh")]
-position = Vector2(400, 700)
-script = ExtResource("8_qgfbv")
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.5, 0.866025, 0, -0.866025, 0.5, 0, 10, 0)
+light_color = Color(1, 0.95, 0.8, 1)
+light_energy = 1.2
+light_indirect_energy = 1.0
+shadow_enabled = true
 
-[node name="Anomalies" type="Node2D" parent="."]
+[node name="WorldBoundaries" type="StaticBody3D" parent="."]
 
-[node name="HeatAnomaly" parent="Anomalies" instance=ExtResource("5_26grw")]
-position = Vector2(300, 200)
-
-[node name="ElectricAnomaly" parent="Anomalies" instance=ExtResource("6_d1x0i")]
-position = Vector2(700, 600)
-
-[node name="TestRoot" type="Node2D" parent="." groups=["test_root"]]
-script = SubResource("Node2D_f6lqg")
+[node name="Ground" type="CollisionShape3D" parent="WorldBoundaries"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)
+shape = BoxShape3D.new()
+size = Vector3(500, 2, 500)

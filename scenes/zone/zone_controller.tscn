@@ -2,5 +2,5 @@
 
 [ext_resource type="Script" path="res://scripts/zone_controller.gd" id="1_t5w8c"]
 
-[node name="ZoneController" type="Node2D"]
+[node name="ZoneController" type="Node3D"]
 script = ExtResource("1_t5w8c")

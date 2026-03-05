@@ -1,0 +1,94 @@
+[gd_scene load_steps=2 format=3 uid="uid://b5y8v3z2x1q7e"]
+
+[ext_resource type="Script" path="res://scripts/gravity_whirlwind.gd" id="1_5q4o"]
+
+[node name="GravityWhirlwind" type="Node3D"]
+
+[node name="GravityWhirlwindInstance" type="Area3D" parent="."]
+script = ExtResource("1_5q4o")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="GravityWhirlwindInstance"]
+shape = null
+
+[node name="VisualIndicator" type="MeshInstance3D" parent="GravityWhirlwindInstance"]
+mesh = CylinderMesh.new()
+mesh.height = 2.5
+mesh.radius_top = 0.4
+mesh.radius_bottom = 0.4
+mesh.height_top = 0.5
+mesh.height_bottom = 0.5
+
+[node name="Material" type="StandardMaterial3D" parent="GravityWhirlwindInstance/VisualIndicator"]
+albedo_color = Color(0.6, 0.7, 0.8, 0.7)
+transmission_enabled = true
+transmission = 0.5
+roughness = 0.15
+blend_mode = 1
+
+[node name="Particles" type="GPUParticles3D" parent="GravityWhirlwindInstance"]
+emitting = true
+amount = 150
+lifetime = 2.0
+process_material = null
+process_callback = 0
+scale_amount = 1.0
+
+[node name="Tornado" type="MeshInstance3D" parent="GravityWhirlwindInstance"]
+mesh = CylinderMesh.new()
+mesh.height = 5.0
+mesh.radius_top = 0.2
+mesh.radius_bottom = 0.8
+mesh.height_top = 0.3
+mesh.height_bottom = 0.3
+
+[node name="TornadoMaterial" type="StandardMaterial3D" parent="GravityWhirlwindInstance/Tornado"]
+albedo_color = Color(0.5, 0.6, 0.7, 0.4)
+transmission_enabled = true
+transmission = 0.3
+roughness = 0.2
+blend_mode = 1
+
+[node name="Rings" type="Node3D" parent="GravityWhirlwindInstance"]
+
+[node name="Ring1" type="MeshInstance3D" parent="GravityWhirlwindInstance/Rings"]
+mesh = TorusMesh.new()
+mesh.radius = 1.5
+mesh.tube = 0.1
+
+[node name="Ring1Material" type="StandardMaterial3D" parent="GravityWhirlwindInstance/Rings/Ring1"]
+albedo_color = Color(0.7, 0.8, 0.9, 0.5)
+transmission_enabled = true
+transmission = 0.4
+roughness = 0.1
+blend_mode = 1
+
+[node name="Ring2" type="MeshInstance3D" parent="GravityWhirlwindInstance/Rings"]
+mesh = TorusMesh.new()
+mesh.radius = 1.0
+mesh.tube = 0.08
+
+[node name="Ring2Material" type="StandardMaterial3D" parent="GravityWhirlwindInstance/Rings/Ring2"]
+albedo_color = Color(0.8, 0.9, 1.0, 0.4)
+transmission_enabled = true
+transmission = 0.5
+roughness = 0.15
+blend_mode = 1
+
+[node name="Ring3" type="MeshInstance3D" parent="GravityWhirlwindInstance/Rings"]
+mesh = TorusMesh.new()
+mesh.radius = 0.5
+mesh.tube = 0.06
+
+[node name="Ring3Material" type="StandardMaterial3D" parent="GravityWhirlwindInstance/Rings/Ring3"]
+albedo_color = Color(0.9, 1.0, 1.0, 0.3)
+transmission_enabled = true
+transmission = 0.6
+roughness = 0.2
+blend_mode = 1
+
+[node name="Light" type="OmniLight3D" parent="GravityWhirlwindInstance"]
+light_energy = 0.4
+light_color = Color(0.6, 0.7, 0.8, 0.4)
+light_indirect_energy = 0.2
+shadow_enabled = false
+shadow_blur = 0.0
