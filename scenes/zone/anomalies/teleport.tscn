@@ -1,0 +1,36 @@
+[gd_scene load_steps=2 format=3 uid="uid://e4ajr9m0f5stu"]
+
+[ext_resource type="Script" path="res://scripts/teleport.gd" id="1"]
+
+[node name="Teleport" type="Area3D"]
+script = ExtResource("1")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SphereShape3D.new()
+radius = 3.5
+
+[node name="Visuals" type="Node3D" parent="."]
+
+[node name="Ring1" type="MeshInstance3D" parent="Visuals"]
+mesh = TorusMesh.new()
+
+[node name="Ring2" type="MeshInstance3D" parent="Visuals"]
+mesh = TorusMesh.new()
+
+[node name="Ring3" type="MeshInstance3D" parent="Visuals"]
+mesh = TorusMesh.new()
+
+[node name="Ring4" type="MeshInstance3D" parent="Visuals"]
+mesh = TorusMesh.new()
+
+[node name="Center" type="MeshInstance3D" parent="Visuals"]
+mesh = SphereMesh.new()
+
+[node name="Particles" type="GPUParticles3D" parent="Visuals"]
+
+[node name="OmniLight3D" type="OmniLight3D" parent="."]
+light_color = Color(0.4, 0.2, 0.8, 1)
+light_energy = 1.5
+omni_range = 10.5
+
+[node name="Destination" type="Marker3D" parent="."]

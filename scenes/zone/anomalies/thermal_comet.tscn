@@ -1,0 +1,76 @@
+[gd_scene load_steps=8 format=3 uid="uid://thermal_comet"]
+
+[ext_resource type="Script" path="res://scripts/thermal_comet.gd" id="1"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_comet"]
+radius = 3.5
+
+[sub_resource type="SphereMesh" id="SphereMesh_comet"]
+radius = 3.5
+height = 7.0
+
+[sub_resource type="StandardMaterial3D" id="Material_comet"]
+albedo_color = Color(1, 0.3, 0, 0.9)
+emission_enabled = true
+emission = Color(1, 0.3, 0, 1)
+
+[sub_resource type="Curve" id="Curve_comet"]
+_point_count = 2
+_points = Array[int]([0, 0, 1, 0, 1, 0])
+
+[sub_resource type="GPUParticles3DMaterial" id="GPUParticles3DMaterial_comet"]
+emission_shape = 0
+emission_sphere_radius = 1.75
+color = Color(1, 0.3, 0, 0.6)
+color_initial = Color(1, 0.3, 0, 0.8)
+color_scale = 1.0
+gravity = Vector3(0, 0, 0)
+lifetime = 2.0
+amount = 300
+amount_curve = SubResource("Curve_comet")
+speed = 1.0
+scale_min = 1.0
+scale_max = 3.0
+scale_curve = SubResource("Curve_comet")
+tangential_accel = 0.5
+radial_accel = 0.5
+initial_angle = 3.14159
+spread = 0.5
+emission_rate = 150.0
+linear_velocity = 0.5
+angular_velocity = 1.0
+tangential_velocity = 0.5
+damping = 0.3
+size = 1.5
+
+[sub_resource type="Curve3D" id="Curve3D_orbit"]
+_point_count = 6
+_points = Array[Vector3]([
+	Vector3(0, 0, 0),
+	Vector3(3.5, 0, 0),
+	Vector3(0, 0, 3.5),
+	Vector3(-3.5, 0, 0),
+	Vector3(0, 0, -3.5),
+	Vector3(3.5, 0, 0)
+])
+
+[node name="ThermalComet" type="Area3D"]
+script = ExtResource("1")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("SphereShape3D_comet")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("SphereMesh_comet")
+material_override = SubResource("Material_comet")
+
+[node name="OrbitPath" type="Path3D" parent="."]
+curve = SubResource("Curve3D_orbit")
+
+[node name="TailParticles" type="GPUParticles3D" parent="."]
+material = SubResource("GPUParticles3DMaterial_comet")
+amount = 300
+one_shot = false
+lifetime = 2.0
+autorestart = true
+restart_on_restart = true

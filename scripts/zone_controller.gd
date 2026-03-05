@@ -118,14 +118,39 @@ func spawn_anomaly(anomaly_type: String, position: Vector3) -> Node3D:
 	
 	# Маппинг типов к именам файлов
 	var type_map = {
+		# Базовые
 		"fire": "heat",
 		"heat": "heat",
 		"electric": "electric",
-		"acid": "acid"
+		"acid": "acid",
+		# Гравитационные
+		"gravity_vortex": "gravity_vortex",
+		"gravity_lift": "gravity_lift",
+		"gravity_whirlwind": "gravity_whirlwind",
+		# Термические
+		"thermal_steam": "thermal_steam",
+		"thermal_comet": "thermal_comet",
+		# Электрические
+		"electric_tesla": "electric_tesla",
+		# Химические
+		"chemical_jelly": "chemical_jelly",
+		"chemical_gas": "chemical_gas",
+		"chemical_acid_cloud": "chemical_acid_cloud",
+		# Временные
+		"time_dilation": "time_dilation",
+		# Радиационные
+		"radiation_hotspot": "radiation_hotspot",
+		# Биологические
+		"bio_burning_fluff": "bio_burning_fluff",
+		# Телепортационные
+		"teleport": "teleport"
 	}
 	
 	var file_type = type_map.get(anomaly_type, anomaly_type)
-	var scene_path = "res://scenes/zone/anomalies/" + file_type + "_anomaly.tscn"
+	# Проверяем разные варианты путей к сценам
+	var scene_path = "res://scenes/zone/anomalies/" + file_type + ".tscn"
+	if not ResourceLoader.exists(scene_path):
+		scene_path = "res://scenes/zone/anomalies/" + file_type + "_anomaly.tscn"
 	
 	if not ResourceLoader.exists(scene_path):
 		push_error("Сцена аномалии не найдена: ", scene_path)
@@ -149,13 +174,85 @@ func create_anomaly(type: String, position: Vector3) -> Node3D:
 	return spawn_anomaly(type, position)
 
 
+# Метод для создания аномалии на основе базового класса
+func create_base_anomaly(position: Vector3, name: String = "Базовая Аномалия", damage: float = 10.0, radius: float = 5.0, color: Color = Color(1, 0, 0, 1)) -> Node3D:
+	var new_anomaly = BaseAnomaly.new()
+	new_anomaly.position = position
+	new_anomaly.anomaly_name = name
+	new_anomaly.damage_per_second = damage
+	new_anomaly.radius = radius
+	new_anomaly.color = color
+	new_anomaly.is_active = true
+	add_child(new_anomaly)
+	anomalies.append(new_anomaly)
+	anomaly_created.emit(new_anomaly)
+	return new_anomaly
+
+
+# Метод для создания гравитационной воронки
+func create_gravity_vortex(position: Vector3) -> Node3D:
+return spawn_anomaly("gravity_vortex", position)
+
+
+# Метод для создания гравитационного лифта
+func create_gravity_lift(position: Vector3) -> Node3D:
+return spawn_anomaly("gravity_lift", position)
+
+
+# Метод для создания гравитационной карусели
+func create_gravity_whirlwind(position: Vector3) -> Node3D:
+return spawn_anomaly("gravity_whirlwind", position)
+
+
+# Метод для удаления аномалии
+func remove_anomaly(anomaly: Node3D):
+	if anomaly in anomalies:
+		anomaly.queue_free()
+		anomalies.erase(anomaly)
+
+
+# Метод для управления активностью аномалий
+func toggle_anomaly(anomaly: Node3D, active: bool):
+	if anomaly in anomalies:
+		anomaly.is_active = active
+
+
+# Метод для получения всех аномалий
+func get_all_anomalies() -> Array[Node3D]:
+	return anomalies
+
+
+# Метод для получения аномалий в определенной зоне
+func get_anomalies_in_zone(radius: float) -> Array[Node3D]:
+	var anomalies_in_zone = []
+	for anomaly in anomalies:
+		if anomaly.position.distance_to(get_global_transform().origin) <= radius:
+			anomalies_in_zone.append(anomaly)
+	return anomalies_in_zone
+
+
 func spawn_mutant(mutant_type: String, position: Vector3) -> Node3D:
 	var cost = get_mutant_cost(mutant_type)
 	if not spend_biomass(cost):
 		print("Недостаточно биомассы для призыва мутанта ", mutant_type)
 		return null
 	
-	var scene_path = "res://scenes/zone/mutants/" + mutant_type + "_mutant.tscn"
+	# Маппинг типов к именам файлов
+	var type_map = {
+		"dog": "dog",
+		"snork": "snork",
+		"controller": "controller",
+		"bloodsucker": "bloodsucker",
+		"pseudodog": "pseudodog",
+		"flesh": "flesh",
+		"zombie": "zombie",
+		"chimera": "chimera",
+		"pseudogiant": "pseudogiant",
+		"poltergeist": "poltergeist"
+	}
+	
+	var file_type = type_map.get(mutant_type, mutant_type)
+	var scene_path = "res://scenes/zone/mutants/" + file_type + ".tscn"
 	
 	if not ResourceLoader.exists(scene_path):
 		push_error("Сцена мутанта не найдена: ", scene_path)
@@ -187,7 +284,7 @@ func start_emission(duration: float = 10.0):
 		return
 	is_emission_active = true
 	emission_started.emit()
-	
+		
 	# Создаем таймер для автоматического окончания выброса
 	var timer = Timer.new()
 	timer.wait_time = duration
@@ -279,26 +376,75 @@ func get_biomass() -> float:
 
 func get_anomaly_cost(type: String) -> float:
 	match type:
+		# Базовые
 		"fire", "heat":
 			return 50.0
 		"electric":
 			return 75.0
 		"acid":
 			return 100.0
-		"gravitational":
+		# Гравитационные
+		"gravity_vortex":
 			return 150.0
+		"gravity_lift":
+			return 80.0
+		"gravity_whirlwind":
+			return 120.0
+		# Термические
+		"thermal_steam":
+			return 70.0
+		"thermal_comet":
+			return 100.0
+		# Электрические
+		"electric_tesla":
+			return 90.0
+		# Химические
+		"chemical_jelly":
+			return 60.0
+		"chemical_gas":
+			return 85.0
+		"chemical_acid_cloud":
+			return 110.0
+		# Временные
+		"time_dilation":
+			return 200.0
+		# Радиационные
+		"radiation_hotspot":
+			return 95.0
+		# Биологические
+		"bio_burning_fluff":
+			return 75.0
+		# Телепортационные
+		"teleport":
+			return 180.0
 		_:
 			return 50.0
 
 
 func get_mutant_cost(type: String) -> float:
 	match type:
+		# Базовые
 		"dog":
-			return 50.0
+			return 30.0
 		"snork":
+			return 60.0
+		"controller":  # Бюрер
 			return 100.0
-		"controller":
+		# Новые мутанты
+		"bloodsucker":
+			return 80.0
+		"pseudodog":
+			return 70.0
+		"flesh":
+			return 60.0
+		"zombie":
+			return 30.0
+		"chimera":
 			return 200.0
+		"pseudogiant":
+			return 250.0
+		"poltergeist":
+			return 120.0
 		_:
 			return 50.0
 

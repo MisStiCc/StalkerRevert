@@ -57,6 +57,7 @@ func _ready():
 	
 	# Добавляем себя в группу сталкеров
 	add_to_group("stalkers")
+	add_to_group("player")  # Для камеры
 	
 	# Поиск и подключение к ZoneController
 	_connect_to_zone_controller()
