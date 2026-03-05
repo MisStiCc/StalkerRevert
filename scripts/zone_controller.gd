@@ -28,10 +28,10 @@ signal energy_depleted
 var energy: float
 var biomass: float
 var is_emission_active: bool = false
-var anomalies: Array[Node3D] = []
-var mutants: Array[Node3D] = []
-var artifacts: Array[Node3D] = []  # Изменено с Dictionary на Node3D
-var stalkers: Array[Node3D] = []
+var anomalies: Array[Node] = []
+var mutants: Array[Node] = []
+var artifacts: Array[Node] = []  # Изменено с Dictionary на Node
+var stalkers: Array[Node] = []
 var territory_radius: float = 100.0
 
 @export var stalker_spawner: Node = null
