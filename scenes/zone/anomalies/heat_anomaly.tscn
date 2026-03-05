@@ -1,4 +1,4 @@
-[gd_scene load_steps=5 format=3 uid="uid://heat_anomaly"]
+[gd_scene load_steps=3 format=3 uid="uid://heat_anomaly"]
 
 [ext_resource type="Script" path="res://scripts/heat_anomaly.gd" id="1"]
 
@@ -10,9 +10,9 @@ radius = 5.0
 height = 10.0
 
 [sub_resource type="StandardMaterial3D" id="Material_heat"]
-albedo_color = Color(1, 0.3, 0, 1)
+albedo_color = Color(1, 0.5, 0, 1)
 emission_enabled = true
-emission = Color(1, 0.3, 0, 1)
+emission = Color(1, 0.5, 0, 1)
 
 [node name="HeatAnomaly" type="Area3D"]
 script = ExtResource("1")

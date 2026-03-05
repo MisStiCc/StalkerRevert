@@ -1,4 +1,4 @@
-[gd_scene load_steps=5 format=3 uid="uid://electric_anomaly"]
+[gd_scene load_steps=3 format=3 uid="uid://electric_anomaly"]
 
 [ext_resource type="Script" path="res://scripts/electric_anomaly.gd" id="1"]
 

@@ -1,52 +1,39 @@
-[gd_scene load_steps=6 format=3 uid="uid://electric_tesla"]
+[gd_scene load_steps=9 format=3 uid="uid://electric_tesla"]
 
 [ext_resource type="Script" path="res://scripts/electric_tesla.gd" id="1"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_tesla"]
-radius = 5.0
+radius = 6.0
 
 [sub_resource type="SphereMesh" id="SphereMesh_tesla"]
-radius = 5.0
-height = 10.0
+radius = 6.0
+height = 12.0
 
 [sub_resource type="StandardMaterial3D" id="Material_tesla"]
-albedo_color = Color(0.0, 0.9, 1.0, 0.8)
+albedo_color = Color(0.3, 0.8, 1, 1)
 emission_enabled = true
-emission = Color(0.0, 0.9, 1.0, 1.0)
-emission_energy = 2.0
-transmission_enabled = true
-transmission = Color(0.0, 0.9, 1.0, 0.5)
-transmission_energy = 0.8
-roughness = 0.2
+emission = Color(0.3, 0.8, 1, 1)
+emission_energy_multiplier = 3.0
 
-[sub_resource type="Curve" id="Curve_tesla"]
-_point_count = 2
-_points = Array[float]([0, 0, 1, 0, 1, 0])
-
-[sub_resource type="GPUParticles3DMaterial" id="GPUParticles3DMaterial_tesla"]
-emission_shape = 0
-emission_sphere_radius = 2.5
-color = Color(0.0, 0.9, 1.0, 0.7)
-color_initial = Color(0.0, 0.9, 1.0, 0.9)
-color_scale = 1.0
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcess_tesla"]
+emission_shape = 1
+emission_sphere_radius = 6.0
+direction = Vector3(0, 1, 0)
+spread = 60.0
 gravity = Vector3(0, 0, 0)
-lifetime = 0.5
-amount = 100
-amount_curve = SubResource("Curve_tesla")
-speed = 2.0
-scale_min = 0.5
-scale_max = 1.5
-scale_curve = SubResource("Curve_tesla")
-tangential_accel = 1.0
-radial_accel = 1.0
-initial_angle = 3.14159
-spread = 0.3
-emission_rate = 200.0
-linear_velocity = 1.0
-angular_velocity = 2.0
-tangential_velocity = 1.0
-damping = 0.5
-size = 0.5
+initial_velocity_min = 3.0
+initial_velocity_max = 5.0
+scale_min = 0.1
+scale_max = 0.3
+
+[sub_resource type="SphereMesh" id="Particle_mesh_tesla"]
+radius = 0.1
+height = 0.2
+
+[sub_resource type="StandardMaterial3D" id="Particle_mat_tesla"]
+albedo_color = Color(0.5, 0.9, 1, 0.9)
+emission_enabled = true
+emission = Color(0.3, 0.8, 1, 1)
 
 [node name="ElectricTesla" type="Area3D"]
 script = ExtResource("1")
@@ -58,10 +45,7 @@ shape = SubResource("SphereShape3D_tesla")
 mesh = SubResource("SphereMesh_tesla")
 material_override = SubResource("Material_tesla")
 
-[node name="GPUParticles3D" type="GPUParticles3D" parent="."]
-emitting = true
-amount = 100
-process_material = SubResource("GPUParticles3DMaterial_tesla")
-local_coords = true
-paused = false
-trail_enabled = false
+[node name="TeslaParticles" type="GPUParticles3D" parent="."]
+process_material = SubResource("ParticleProcess_tesla")
+draw_pass_1 = SubResource("Particle_mesh_tesla")
+draw_pass_1.material_override = SubResource("Particle_mat_tesla")

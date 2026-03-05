@@ -1,94 +1,47 @@
 extends BaseAnomaly
+class_name ChemicalJelly
 
-## Холодец - светящееся зелёное желе
-## Замедляет сталкеров при нахождении в зоне
+@export var jelly_radius: float = 4.0
+@export var jelly_color: Color = Color(0.2, 1, 0.4, 0.8)
+@export var slow_factor: float = 0.5
 
-@export var slow_factor: float = 0.3  # Коэффициент замедления (0.3 = 30% скорости)
-@export var slow_duration: float = 3.0  # Длительность замедления в секундах
-
-var slow_timers: Dictionary = {}  # Хранит время замедления для каждого сталкера
 
 func _ready():
-	anomaly_name = "Холодец"
-	damage_per_second = 0.0  # Холодец не наносит урон напрямую
-	color = Color(0, 1, 0, 1)  # Ярко-зелёный
-	radius = 5.0  # Радиус 5 метров
-	
 	super._ready()
-	_update_visuals()
+	anomaly_name = "Химическое желе"
+	damage_per_second = 8.0
+	
+	_update_size()
+	_update_color()
 
-func _on_body_entered(body: Node3D):
-	"""Когда сталкер входит в зону"""
-	if body.has_method("take_damage") and body.has_method("slow_down") and not body in stalkers_in_zone:
-		stalkers_in_zone.append(body)
-		stalker_entered.emit(body)
-		
-		# Применяем замедление
-		if body.has_method("slow_down"):
-			body.slow_down(slow_factor, slow_duration)
-			slow_timers[body] = slow_duration
 
-func _on_body_exited(body: Node3D):
-	"""Когда сталкер выходит из зоны"""
-	if body in stalkers_in_zone:
-		stalkers_in_zone.erase(body)
-		stalker_exited.emit(body)
-		
-		# Снимаем замедление
-		if body.has_method("slow_down"):
-			body.slow_down(1.0, 0.0)  # 1.0 = нормальная скорость, 0.0 = немедленно
-			slow_timers.erase(body)
+func _update_size():
+	var collision = $CollisionShape3D
+	if collision and collision.shape:
+		collision.shape.radius = jelly_radius
+	
+	var mesh = $MeshInstance3D
+	if mesh and mesh.mesh:
+		mesh.mesh.radius = jelly_radius
+		mesh.mesh.height = jelly_radius * 2
+
+
+func _update_color():
+	var mesh = $MeshInstance3D
+	if mesh and mesh.material_override:
+		mesh.material_override.albedo_color = jelly_color
+		mesh.material_override.emission = jelly_color
+
 
 func _apply_damage():
-	"""Холодец не наносит урон напрямую"""
-	pass
-
-func _update_visuals():
-	"""Обновление визуального представления - светящееся желе"""
-	# Создаём визуальный эффект для желе
-	_create_jelly_visuals()
-
-func _create_jelly_visuals():
-	"""Создаёт визуальный эффект светящегося желе"""
-	# Создаём коллайдер
-	var collision_shape = CollisionShape3D.new()
-	var shape = SphereShape3D.new()
-	shape.radius = radius
-	collision_shape.shape = shape
-	add_child(collision_shape)
+	if not is_active:
+		return
 	
-	# Создаём визуальный эффект - светящаяся сфера
-	var visual = MeshInstance3D.new()
-	var sphere = SphereMesh.new()
-	sphere.radius = radius
-	sphere.height = radius * 2
-	visual.mesh = sphere
-	
-	# Настраиваем материал для светящегося эффекта
-	var material = StandardMaterial3D.new()
-	material.emission = color
-	material.emission_energy = 2.0
-	material.transparency = 0.5  # Полупрозрачный
-	visual.material_override = material
-	
-	# Добавляем эффект пульсации
-	var tween = create_tween()
-	tween.set_parallel(true)
-	tween.tween_property(visual, "scale", Vector3(1.1, 1.1, 1.1), 1.0)
-	tween.tween_property(visual, "scale", Vector3(1.0, 1.0, 1.0), 1.0)
-	tween.tween_property(visual, "scale", Vector3(1.05, 1.05, 1.05), 0.5)
-	tween.tween_property(visual, "scale", Vector3(1.0, 1.0, 1.0), 0.5)
-	
-	# Добавляем вращение
-	tween.tween_property(visual, "rotation_y", PI, 2.0)
-	tween.tween_property(visual, "rotation_y", 0.0, 2.0)
-	
-	add_child(visual)
-	
-	# Добавляем свет
-	var light = OmniLight3D.new()
-	light.light_color = color
-	light.light_energy = 1.0
-	light.distance = radius * 2
-	light.shadow_enabled = true
-	add_child(light)
+	for stalker in stalkers_in_zone:
+		if is_instance_valid(stalker):
+			if stalker.has_method("take_damage"):
+				stalker.take_damage(damage_per_second)
+				# Замедление (если есть метод)
+				if stalker.has_method("apply_slow"):
+					stalker.apply_slow(slow_factor)
+				energy_consumed.emit(damage_per_second)

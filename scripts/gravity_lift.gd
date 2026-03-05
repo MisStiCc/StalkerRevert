@@ -1,47 +1,44 @@
 extends BaseAnomaly
+class_name GravityLift
 
-## Гравитационная аномалия "Лифт"
-## Безвредная аномалия, которая подбрасывает сталкеров вверх
-## Можно использовать для прыжков на большую высоту
+@export var lift_radius: float = 4.0
+@export var lift_color: Color = Color(0.5, 0, 1, 1)
+@export var lift_force: float = 8.0
+@export var lift_height: float = 20.0
 
-@export var lift_force: float = 30.0  # Сила подъёма
-@export var lift_radius: float = 4.0  # Радиус действия
-@export var lift_duration: float = 3.0  # Длительность подъёма
-
-var lift_timer: float = 0.0
 
 func _ready():
-	anomaly_name = "Гравитационный Лифт"
-	damage_per_second = 0.0  # Безвредная аномалия
-	radius = lift_radius
-	color = Color(0.5, 0.8, 1.0, 0.4)  # Полупрозрачный голубой
-	
 	super._ready()
-
-func _process(delta):
-	if not is_active:
-		return
+	anomaly_name = "Гравитационный лифт"
+	damage_per_second = 8.0
 	
-	# Подъём сталкеров
+	_update_size()
+	_update_color()
+
+
+func _update_size():
+	var collision = $CollisionShape3D
+	if collision and collision.shape:
+		collision.shape.radius = lift_radius
+	
+	var mesh = $MeshInstance3D
+	if mesh and mesh.mesh:
+		mesh.mesh.radius = lift_radius
+		mesh.mesh.height = lift_radius * 2
+
+
+func _update_color():
+	var mesh = $MeshInstance3D
+	if mesh and mesh.material_override:
+		mesh.material_override.albedo_color = lift_color
+		mesh.material_override.emission = lift_color
+
+
+func _physics_process(delta):
+	# Поднимаем сталкеров вверх
 	for stalker in stalkers_in_zone:
 		if is_instance_valid(stalker):
-			var direction = Vector3.UP
-			var distance = stalker.get_global_position().distance_to(get_global_position())
-			
-			if distance < radius:
-				# Применяем подъёмную силу
-				stalker.apply_gravity_force(direction * lift_force * delta)
-				
-				# Ограничиваем высоту подъёма
-				if stalker.get_global_position().y > get_global_position().y + lift_duration:
-					# Замедляем подъём перед верхней границей
-					var height_diff = stalker.get_global_position().y - (get_global_position().y + lift_duration)
-					stalker.apply_gravity_force(direction * -lift_force * 0.5 * delta)
-
-func _apply_damage():
-	# GravityLift безвредная - не наносит урон
-	pass
-
-func _update_visuals():
-	# Визуальное обновление будет реализовано в дочерних сценах
-	pass
+			stalker.global_position.y += lift_force * delta
+			# Ограничиваем высоту
+			if stalker.global_position.y > lift_height:
+				stalker.global_position.y = lift_height

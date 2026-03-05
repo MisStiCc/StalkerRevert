@@ -1,107 +1,74 @@
 extends Camera3D
 class_name GameCamera
 
-## Камера с поддержкой вида сверху (top-down) и от третьего лица (third-person)
+## Камера с ручным управлением (WASD + мышь)
 
-signal view_mode_changed(mode: String)
-
-@export_enum("TopDown", "ThirdPerson") var current_mode: String = "ThirdPerson"
-
-# Параметры камеры
-@export var follow_target: Node3D = null
-@export var top_down_height: float = 30.0  # Высота для вида сверху
-@export var top_down_angle: float = -70.0  # Угол наклона для вида сверху (в градусах)
-@export var third_person_distance: float = 8.0  # Расстояние от игрока
-@export var third_person_height: float = 3.0  # Высота камеры
-@export var rotation_speed: float = 2.0  # Скорость вращения
-@export var smooth_speed: float = 5.0  # Плавность движения
+# Скорости
+@export var move_speed: float = 20.0
+@export var look_speed: float = 0.002
 
 # Внутренние переменные
-var current_rotation: float = 0.0
-var target_position: Vector3 = Vector3.ZERO
+var mouse_captured: bool = false
+var rotation_x: float = 0.0
+var rotation_y: float = 0.0
+
 
 func _ready():
-	# Ищем цель для слежения
-	if not follow_target:
-		follow_target = get_tree().get_first_node_in_group("player")
-	if not follow_target:
-		follow_target = get_tree().get_first_node_in_group("stalkers")
+	# Захватываем мышь
+	_capture_mouse()
 	
-	# Установка начальной позиции
-	_update_camera_position()
+	# Ставим камеру на хорошую позицию для обзора
+	global_position = Vector3(20, 30, 20)
+	rotation_degrees = Vector3(-45, 45, 0)
 	
-	print("GameCamera: инициализирована в режиме ", current_mode)
+	print("GameCamera: готова к работе")
+
+
+func _input(event):
+	# Вращение от мыши
+	if event is InputEventMouseMotion and mouse_captured:
+		rotation_y -= event.relative.x * look_speed
+		rotation_x -= event.relative.y * look_speed
+		rotation_x = clamp(rotation_x, -1.4, 1.4)  # Не даём перевернуться
+		
+		rotation.y = rotation_y
+		rotation.x = rotation_x
+	
+	# Escape — отпустить/захватить мышь
+	if event.is_action_pressed("ui_cancel"):
+		if mouse_captured:
+			_release_mouse()
+		else:
+			_capture_mouse()
+
 
 func _process(delta):
-	if not follow_target or not is_instance_valid(follow_target):
-		return
+	# Движение WASD
+	var input_dir = Vector3.ZERO
 	
-	# Обработка ввода
-	_handle_input(delta)
+	if Input.is_key_pressed(KEY_W):
+		input_dir -= transform.basis.z
+	if Input.is_key_pressed(KEY_S):
+		input_dir += transform.basis.z
+	if Input.is_key_pressed(KEY_A):
+		input_dir -= transform.basis.x
+	if Input.is_key_pressed(KEY_D):
+		input_dir += transform.basis.x
+	if Input.is_key_pressed(KEY_SPACE):
+		input_dir += Vector3.UP
+	if Input.is_key_pressed(KEY_SHIFT):
+		input_dir -= Vector3.UP
 	
-	# Обновление позиции камеры
-	_update_camera_position(delta)
+	if input_dir.length() > 0:
+		input_dir = input_dir.normalized()
+		global_position += input_dir * move_speed * delta
 
-func _handle_input(delta):
-	# Переключение режимов
-	if Input.is_action_just_pressed("camera_switch"):
-		switch_view_mode()
-	
-	# Вращение камеры (только в третьем лице)
-	if current_mode == "ThirdPerson":
-		if Input.is_action_pressed("camera_left"):
-			current_rotation -= rotation_speed * delta
-		if Input.is_action_pressed("camera_right"):
-			current_rotation += rotation_speed * delta
 
-func _update_camera_position(delta: float = 0.0):
-	if not follow_target:
-		return
-	
-	var target_pos = follow_target.global_position
-	
-	match current_mode:
-		"TopDown":
-			# Вид сверху - камера над игроком
-			target_position = Vector3(
-				target_pos.x,
-				target_pos.y + top_down_height,
-				target_pos.z
-			)
-			look_at(target_pos)
-			
-		"ThirdPerson":
-			# Третье лицо - камера сзади и выше игрока
-			var offset = Vector3(
-				sin(current_rotation) * third_person_distance,
-				third_person_height,
-				cos(current_rotation) * third_person_distance
-			)
-			target_position = target_pos + offset
-			look_at(target_pos + Vector3(0, 1.5, 0))  # Смотрим на игрока
-	
-	# Плавное движение камеры
-	global_position = global_position.lerp(target_position, smooth_speed * delta if delta > 0 else 1.0)
+func _capture_mouse():
+	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	mouse_captured = true
 
-func switch_view_mode():
-	"""Переключение между режимами камеры"""
-	if current_mode == "TopDown":
-		current_mode = "ThirdPerson"
-	else:
-		current_mode = "TopDown"
-	
-	view_mode_changed.emit(current_mode)
-	print("GameCamera: переключено на режим ", current_mode)
 
-func set_follow_target(target: Node3D):
-	"""Установка цели для слежения"""
-	follow_target = target
-
-func get_current_mode() -> String:
-	return current_mode
-
-func set_top_down_height(height: float):
-	top_down_height = height
-
-func set_third_person_distance(distance: float):
-	third_person_distance = distance
+func _release_mouse():
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+	mouse_captured = false

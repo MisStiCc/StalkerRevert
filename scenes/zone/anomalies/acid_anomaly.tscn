@@ -3,16 +3,17 @@
 [ext_resource type="Script" path="res://scripts/acid_anomaly.gd" id="1"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_acid"]
-radius = 4.0
+radius = 5.0
 
 [sub_resource type="SphereMesh" id="SphereMesh_acid"]
-radius = 4.0
-height = 8.0
+radius = 5.0
+height = 10.0
 
 [sub_resource type="StandardMaterial3D" id="Material_acid"]
-albedo_color = Color(0.2, 0.8, 0.2, 1)
+albedo_color = Color(0.8, 1, 0, 1)
 emission_enabled = true
-emission = Color(0.2, 0.8, 0.2, 1)
+emission = Color(0.8, 1, 0, 1)
+emission_energy_multiplier = 2.0
 
 [node name="AcidAnomaly" type="Area3D"]
 script = ExtResource("1")
