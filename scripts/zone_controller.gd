@@ -28,10 +28,10 @@ signal energy_depleted
 var energy: float
 var biomass: float
 var is_emission_active: bool = false
-var anomalies: Array[Node] = []
-var mutants: Array[Node] = []
-var artifacts: Array[Node] = []  # Изменено с Dictionary на Node
-var stalkers: Array[Node] = []
+var anomalies: Array[Node3D] = []      # ← ИСПРАВЛЕНО
+var mutants: Array[Node3D] = []        # ← ИСПРАВЛЕНО
+var artifacts: Array[Node3D] = []      # ← ИСПРАВЛЕНО
+var stalkers: Array[Node3D] = []       # ← ИСПРАВЛЕНО
 var territory_radius: float = 100.0
 
 @export var stalker_spawner: Node = null
@@ -224,7 +224,7 @@ func get_all_anomalies() -> Array[Node3D]:
 
 # Метод для получения аномалий в определенной зоне
 func get_anomalies_in_zone(radius: float) -> Array[Node3D]:
-	var anomalies_in_zone = []
+	var anomalies_in_zone: Array[Node3D] = []
 	for anomaly in anomalies:
 		if anomaly.position.distance_to(Vector3.ZERO) <= radius:
 			anomalies_in_zone.append(anomaly)
@@ -315,7 +315,7 @@ func expand_territory(radius_increase: float):
 
 
 func generate_artifact(position: Vector3, type: String = "common", value: int = 10) -> Node3D:
-	"""Создание артефакта как Node3D, а не Dictionary"""
+	"""Создание артефакта как Node3D"""
 	var scene_path = "res://scenes/zone/artifacts/" + type + "_artifact.tscn"
 	
 	if not ResourceLoader.exists(scene_path):
@@ -332,15 +332,6 @@ func generate_artifact(position: Vector3, type: String = "common", value: int = 
 		print("Артефакт ", type, " создан на позиции ", position)
 		return artifact
 	
-	# Fallback на Dictionary для совместимости
-	var dict_artifact = {
-		"position": position,
-		"type": type,
-		"value": value
-	}
-	artifacts.append(dict_artifact)  # Но это вызовет ошибку типов!
-	artifact_generated.emit(position)
-	print("Артефакт (словарь) создан на позиции ", position)
 	return null
 
 

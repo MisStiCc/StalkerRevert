@@ -1,14 +1,37 @@
 extends BaseAnomaly
 class_name ElectricAnomaly
 
+@export var electric_radius: float = 4.0
+@export var electric_color: Color = Color(0.2, 0.6, 1, 1)
 @export var stun_chance: float = 0.3
 @export var stun_duration: float = 1.5
+
 
 func _ready():
 	super._ready()
 	anomaly_name = "Электра"
 	damage_per_second = 15.0
-	color = Color(0.2, 0.6, 1.0)
+	
+	_update_size()
+	_update_color()
+
+
+func _update_size():
+	var collision = $CollisionShape3D
+	if collision and collision.shape:
+		collision.shape.radius = electric_radius
+	
+	var mesh = $MeshInstance3D
+	if mesh and mesh.mesh:
+		mesh.mesh.radius = electric_radius
+		mesh.mesh.height = electric_radius * 2
+
+
+func _update_color():
+	var mesh = $MeshInstance3D
+	if mesh and mesh.material_override:
+		mesh.material_override.albedo_color = electric_color
+		mesh.material_override.emission = electric_color
 
 
 func _apply_damage():

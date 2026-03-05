@@ -1,26 +1,33 @@
 extends BaseAnomaly
 class_name AcidAnomaly
 
-@export var armor_damage: float = 2.0  # дополнительный урон по броне
+@export var acid_radius: float = 5.0
+@export var acid_color: Color = Color(0.8, 1, 0, 1)
+@export var corrosion_damage: float = 15.0
+
 
 func _ready():
 	super._ready()
 	anomaly_name = "Кислота"
-	damage_per_second = 8.0
-	color = Color(0.2, 0.8, 0.2)
-
-
-func _apply_damage():
-	if not active:
-		return
+	damage_per_second = corrosion_damage
 	
-	for stalker in stalkers_in_zone:
-		if is_instance_valid(stalker):
-			if stalker.has_method("take_damage"):
-				stalker.take_damage(damage_per_second)
-				
-				# Дополнительный урон по броне
-				if stalker.has_method("damage_armor"):
-					stalker.damage_armor(armor_damage)
-				
-				energy_consumed.emit(damage_per_second)
+	_update_size()
+	_update_color()
+
+
+func _update_size():
+	var collision = $CollisionShape3D
+	if collision and collision.shape:
+		collision.shape.radius = acid_radius
+	
+	var mesh = $MeshInstance3D
+	if mesh and mesh.mesh:
+		mesh.mesh.radius = acid_radius
+		mesh.mesh.height = acid_radius * 2
+
+
+func _update_color():
+	var mesh = $MeshInstance3D
+	if mesh and mesh.material_override:
+		mesh.material_override.albedo_color = acid_color
+		mesh.material_override.emission = acid_color

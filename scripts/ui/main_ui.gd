@@ -3,14 +3,42 @@ class_name MainUI
 
 var zone_controller: Node
 
-@onready var energy_label: Label = $EnergyValue
-@onready var biomass_label: Label = $BiomassValue
-@onready var energy_bar: ProgressBar = $EnergyBar
-@onready var biomass_bar: ProgressBar = $BiomassBar
+# Кнопки базовых аномалий
 @onready var fire_button: Button = $FireButton
 @onready var electric_button: Button = $ElectricButton
 @onready var acid_button: Button = $AcidButton
+
+# Кнопки гравитационных аномалий
+@onready var vortex_button: Button = $VortexButton
+@onready var lift_button: Button = $LiftButton
+@onready var whirlwind_button: Button = $WhirlwindButton
+
+# Кнопки термических аномалий
+@onready var steam_button: Button = $SteamButton
+@onready var comet_button: Button = $CometButton
+
+# Кнопки химических аномалий
+@onready var jelly_button: Button = $JellyButton
+@onready var gas_button: Button = $GasButton
+@onready var acid_cloud_button: Button = $AcidCloudButton
+
+# Кнопки специальных аномалий
+@onready var radiation_button: Button = $RadiationButton
+@onready var time_button: Button = $TimeButton
+@onready var teleport_button: Button = $TeleportButton
+@onready var tesla_button: Button = $TeslaButton
+@onready var fluff_button: Button = $FluffButton
+
+# Кнопка выброса
 @onready var emission_button: Button = $EmissionButton
+
+# Метка статуса выброса
+@onready var emission_label: Label = $EmissionLabel
+
+# Таймер выброса
+var emission_timer: Timer
+var emission_active: bool = false
+var emission_cooldown: float = 60.0  # 60 секунд перезарядки
 
 
 func _ready():
@@ -18,8 +46,8 @@ func _ready():
 	zone_controller = get_tree().get_first_node_in_group("zone_controller")
 	
 	if not zone_controller:
-		push_error("ZoneController not found! UI будет неактивен")
-		_disable_buttons()
+		push_error("ZoneController not found!")
+		_disable_all_buttons()
 		return
 	
 	# Подключаемся к сигналам
@@ -32,11 +60,14 @@ func _ready():
 	if zone_controller.has_signal("emission_ended"):
 		zone_controller.emission_ended.connect(_on_emission_ended)
 	
-	# Подключаем кнопки
-	fire_button.pressed.connect(_on_fire_button_pressed)
-	electric_button.pressed.connect(_on_electric_button_pressed)
-	acid_button.pressed.connect(_on_acid_button_pressed)
-	emission_button.pressed.connect(_on_emission_button_pressed)
+	# Подключаем все кнопки
+	_connect_all_buttons()
+	
+	# Создаём таймер для выброса
+	emission_timer = Timer.new()
+	emission_timer.one_shot = true
+	emission_timer.timeout.connect(_on_emission_cooldown_end)
+	add_child(emission_timer)
 	
 	# Обновляем UI с начальными значениями
 	if zone_controller.has_method("get_energy"):
@@ -45,86 +76,195 @@ func _ready():
 		_on_biomass_changed(zone_controller.get_biomass())
 
 
-func _disable_buttons():
+func _connect_all_buttons():
+	# Базовые
+	fire_button.pressed.connect(_on_fire_button_pressed)
+	electric_button.pressed.connect(_on_electric_button_pressed)
+	acid_button.pressed.connect(_on_acid_button_pressed)
+	
+	# Гравитационные
+	vortex_button.pressed.connect(_on_vortex_button_pressed)
+	lift_button.pressed.connect(_on_lift_button_pressed)
+	whirlwind_button.pressed.connect(_on_whirlwind_button_pressed)
+	
+	# Термические
+	steam_button.pressed.connect(_on_steam_button_pressed)
+	comet_button.pressed.connect(_on_comet_button_pressed)
+	
+	# Химические
+	jelly_button.pressed.connect(_on_jelly_button_pressed)
+	gas_button.pressed.connect(_on_gas_button_pressed)
+	acid_cloud_button.pressed.connect(_on_acid_cloud_button_pressed)
+	
+	# Специальные
+	radiation_button.pressed.connect(_on_radiation_button_pressed)
+	time_button.pressed.connect(_on_time_button_pressed)
+	teleport_button.pressed.connect(_on_teleport_button_pressed)
+	tesla_button.pressed.connect(_on_tesla_button_pressed)
+	fluff_button.pressed.connect(_on_fluff_button_pressed)
+	
+	# Выброс
+	emission_button.pressed.connect(_on_emission_button_pressed)
+
+
+func _disable_all_buttons():
 	fire_button.disabled = true
 	electric_button.disabled = true
 	acid_button.disabled = true
+	vortex_button.disabled = true
+	lift_button.disabled = true
+	whirlwind_button.disabled = true
+	steam_button.disabled = true
+	comet_button.disabled = true
+	jelly_button.disabled = true
+	gas_button.disabled = true
+	acid_cloud_button.disabled = true
+	radiation_button.disabled = true
+	time_button.disabled = true
+	teleport_button.disabled = true
+	tesla_button.disabled = true
+	fluff_button.disabled = true
 	emission_button.disabled = true
 
 
 func _on_energy_changed(energy: float):
-	energy_label.text = str(int(energy))
-	energy_bar.max_value = zone_controller.max_energy if zone_controller else 1000
-	energy_bar.value = energy
-	
-	# Обновляем состояние кнопок в зависимости от энергии
 	_update_buttons_state()
 
 
-func _on_biomass_changed(biomass: float):
-	biomass_label.text = str(int(biomass))
-	biomass_bar.value = biomass
-
-
-func _on_emission_started():
-	emission_button.disabled = true
-	emission_button.text = "ВЫБРОС ИДЁТ"
-
-
-func _on_emission_ended():
-	emission_button.disabled = false
-	emission_button.text = "ВЫБРОС"
-	_update_buttons_state()
+func _on_biomass_changed(_biomass: float):  # ← ИСПРАВЛЕНО: добавлен подчёркивание
+	pass  # Пока не используем
 
 
 func _update_buttons_state():
 	if not zone_controller or not zone_controller.has_method("can_afford"):
 		return
 	
-	# Проверяем, хватает ли энергии на каждую аномалию (цены из ZoneController)
+	# Проверяем все аномалии
 	fire_button.disabled = not zone_controller.can_afford(50, 0)
-	electric_button.disabled = not zone_controller.can_afford(75, 0)  # исправлено с 60 на 75
-	acid_button.disabled = not zone_controller.can_afford(100, 0)    # исправлено с 70 на 100
+	electric_button.disabled = not zone_controller.can_afford(75, 0)
+	acid_button.disabled = not zone_controller.can_afford(100, 0)
 	
-	# Выброс может быть недоступен во время другого выброса
-	if emission_button.text != "ВЫБРОС ИДЁТ":
+	vortex_button.disabled = not zone_controller.can_afford(150, 0)
+	lift_button.disabled = not zone_controller.can_afford(80, 0)
+	whirlwind_button.disabled = not zone_controller.can_afford(120, 0)
+	
+	steam_button.disabled = not zone_controller.can_afford(70, 0)
+	comet_button.disabled = not zone_controller.can_afford(100, 0)
+	
+	jelly_button.disabled = not zone_controller.can_afford(60, 0)
+	gas_button.disabled = not zone_controller.can_afford(85, 0)
+	acid_cloud_button.disabled = not zone_controller.can_afford(110, 0)
+	
+	radiation_button.disabled = not zone_controller.can_afford(95, 0)
+	time_button.disabled = not zone_controller.can_afford(200, 0)
+	teleport_button.disabled = not zone_controller.can_afford(180, 0)
+	tesla_button.disabled = not zone_controller.can_afford(90, 0)
+	fluff_button.disabled = not zone_controller.can_afford(75, 0)
+	
+	# Кнопка выброса
+	if not emission_active and not emission_timer.time_left > 0:
 		emission_button.disabled = not zone_controller.can_afford(200, 0)
+	else:
+		emission_button.disabled = true
 
+
+# === ОБРАБОТЧИКИ КНОПОК АНОМАЛИЙ ===
 
 func _on_fire_button_pressed():
-	if zone_controller and zone_controller.has_method("spawn_anomaly"):
-		if zone_controller.spawn_anomaly("fire", _get_spawn_position()):
-			print("Аномалия Жарка создана")
-		else:
-			print("Недостаточно энергии для создания аномалии")
-
+	_spawn_anomaly("fire")
 
 func _on_electric_button_pressed():
-	if zone_controller and zone_controller.has_method("spawn_anomaly"):
-		if zone_controller.spawn_anomaly("electric", _get_spawn_position()):
-			print("Аномалия Электра создана")
-		else:
-			print("Недостаточно энергии для создания аномалии")
-
+	_spawn_anomaly("electric")
 
 func _on_acid_button_pressed():
+	_spawn_anomaly("acid")
+
+func _on_vortex_button_pressed():
+	_spawn_anomaly("gravity_vortex")
+
+func _on_lift_button_pressed():
+	_spawn_anomaly("gravity_lift")
+
+func _on_whirlwind_button_pressed():
+	_spawn_anomaly("gravity_whirlwind")
+
+func _on_steam_button_pressed():
+	_spawn_anomaly("thermal_steam")
+
+func _on_comet_button_pressed():
+	_spawn_anomaly("thermal_comet")
+
+func _on_jelly_button_pressed():
+	_spawn_anomaly("chemical_jelly")
+
+func _on_gas_button_pressed():
+	_spawn_anomaly("chemical_gas")
+
+func _on_acid_cloud_button_pressed():
+	_spawn_anomaly("chemical_acid_cloud")
+
+func _on_radiation_button_pressed():
+	_spawn_anomaly("radiation_hotspot")
+
+func _on_time_button_pressed():
+	_spawn_anomaly("time_dilation")
+
+func _on_teleport_button_pressed():
+	_spawn_anomaly("teleport")
+
+func _on_tesla_button_pressed():
+	_spawn_anomaly("electric_tesla")
+
+func _on_fluff_button_pressed():
+	_spawn_anomaly("bio_burning_fluff")
+
+
+func _spawn_anomaly(type: String):
 	if zone_controller and zone_controller.has_method("spawn_anomaly"):
-		if zone_controller.spawn_anomaly("acid", _get_spawn_position()):
-			print("Аномалия Кислота создана")
+		var pos = _get_spawn_position()
+		var anomaly = zone_controller.spawn_anomaly(type, pos)
+		if anomaly:
+			print("Аномалия ", type, " создана")
 		else:
-			print("Недостаточно энергии для создания аномалии")
+			print("Не удалось создать аномалию ", type)
 
 
 func _on_emission_button_pressed():
 	if zone_controller and zone_controller.has_method("start_emission"):
 		if zone_controller.can_afford(200, 0):
+			zone_controller.spend_energy(200)
 			zone_controller.start_emission(10.0)
+			emission_button.disabled = true
+			emission_label.text = "ВЫБРОС! 10с"
+			emission_active = true
 		else:
 			print("Недостаточно энергии для выброса")
 
 
+func _on_emission_started():
+	emission_button.disabled = true
+	emission_label.text = "ВЫБРОС! 10с"
+	emission_active = true
+
+
+func _on_emission_ended():
+	emission_active = false
+	emission_label.text = "Перезарядка 60с"
+	emission_timer.start(emission_cooldown)
+	
+	# Обновим кнопки через 60 секунд
+	await get_tree().create_timer(emission_cooldown).timeout
+	emission_label.text = ""
+	_update_buttons_state()
+
+
+func _on_emission_cooldown_end():
+	emission_label.text = ""
+	_update_buttons_state()
+
+
 func _get_spawn_position() -> Vector3:
-	# Простая логика: спавним перед камерой
+	# Спавним перед камерой
 	var camera = get_viewport().get_camera_3d()
 	if camera:
 		return camera.global_position + camera.global_transform.basis.z * -10 + Vector3.UP * 2

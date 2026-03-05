@@ -5,7 +5,7 @@ class_name TerrainGenerator
 ## Поддерживает бесконечный мир через систему чанков
 
 signal chunk_generated(chunk_pos: Vector2i, mesh: ArrayMesh)
-signal terrain_ready
+# signal terrain_ready  # ← УДАЛЕНО: не используется
 
 # Настройки генерации
 @export var chunk_size: int = 32  # Размер чанка
@@ -14,8 +14,8 @@ signal terrain_ready
 @export var terrain_scale: float = 0.02  # Масштаб шума (меньше = более плавно)
 @export var water_level: float = 2.0  # Уровень воды
 
-# Ссылка на игрока для загрузки чанков
-var player: Node3D = null
+# Ссылка на камеру для загрузки чанков
+var camera: Camera3D = null
 
 # Загруженные чанки
 var loaded_chunks: Dictionary = {}
@@ -24,6 +24,7 @@ var noise: FastNoiseLite
 # Материалы ландшафта
 var terrain_material: StandardMaterial3D
 var water_material: StandardMaterial3D
+
 
 func _ready():
 	# Инициализация шума
@@ -38,16 +39,23 @@ func _ready():
 	# Создание материалов
 	_create_materials()
 	
-	# Поиск игрока
-	player = get_tree().get_first_node_in_group("player")
-	if not player:
-		player = get_tree().get_first_node_in_group("stalkers")
+	# Ждём один кадр, чтобы камера точно была готова
+	await get_tree().process_frame
+	
+	# Получаем камеру
+	camera = get_viewport().get_camera_3d()
+	if camera:
+		print("TerrainGenerator: найдена камера, начинаем генерацию")
+	else:
+		print("TerrainGenerator: камера не найдена, использую центр мира")
 	
 	print("TerrainGenerator: инициализирован")
 
+
 func _process(_delta):
-	if player:
-		_update_chunks()
+	if camera:
+		_update_chunks_for_camera()
+
 
 func _create_materials():
 	# Материал земли
@@ -65,13 +73,17 @@ func _create_materials():
 	water_material.emission = Color(0.05, 0.15, 0.3)
 	water_material.emission_energy = 0.5
 
-func _update_chunks():
-	"""Обновление загруженных чанков вокруг игрока"""
-	var player_chunk = get_chunk_position(player.global_position)
+
+func _update_chunks_for_camera():
+	"""Обновление загруженных чанков вокруг камеры"""
+	if not camera:
+		return
 	
-	# Загружаем чанки вокруг
-	for x in range(player_chunk.x - chunk_load_distance, player_chunk.x + chunk_load_distance + 1):
-		for z in range(player_chunk.y - chunk_load_distance, player_chunk.y + chunk_load_distance + 1):
+	var camera_chunk = get_chunk_position(camera.global_position)
+	
+	# Загружаем чанки вокруг камеры
+	for x in range(camera_chunk.x - chunk_load_distance, camera_chunk.x + chunk_load_distance + 1):
+		for z in range(camera_chunk.y - chunk_load_distance, camera_chunk.y + chunk_load_distance + 1):
 			var chunk_pos = Vector2i(x, z)
 			if not loaded_chunks.has(chunk_pos):
 				_generate_chunk(chunk_pos)
@@ -79,12 +91,13 @@ func _update_chunks():
 	# Выгружаем дальние чанки
 	var chunks_to_remove = []
 	for chunk_pos in loaded_chunks.keys():
-		if abs(chunk_pos.x - player_chunk.x) > chunk_load_distance + 1 or \
-		   abs(chunk_pos.y - player_chunk.y) > chunk_load_distance + 1:
+		if abs(chunk_pos.x - camera_chunk.x) > chunk_load_distance + 1 or \
+		   abs(chunk_pos.y - camera_chunk.y) > chunk_load_distance + 1:
 			chunks_to_remove.append(chunk_pos)
 	
 	for chunk_pos in chunks_to_remove:
 		_unload_chunk(chunk_pos)
+
 
 func get_chunk_position(world_pos: Vector3) -> Vector2i:
 	"""Получение позиции чанка по мировой позиции"""
@@ -92,6 +105,7 @@ func get_chunk_position(world_pos: Vector3) -> Vector2i:
 		int(floor(world_pos.x / chunk_size)),
 		int(floor(world_pos.z / chunk_size))
 	)
+
 
 func _generate_chunk(chunk_pos: Vector2i):
 	"""Генерация одного чанка"""
@@ -117,6 +131,7 @@ func _generate_chunk(chunk_pos: Vector2i):
 	
 	chunk_generated.emit(chunk_pos, mesh)
 
+
 func _create_chunk_mesh(chunk_pos: Vector2i) -> ArrayMesh:
 	"""Создание меша чанка"""
 	var mesh = ArrayMesh.new()
@@ -137,10 +152,9 @@ func _create_chunk_mesh(chunk_pos: Vector2i) -> ArrayMesh:
 			var height = _get_height(world_x, world_z)
 			
 			vertices.append(Vector3(x, height, z))
-			normals.append(Vector3.UP)  # Пока заглушка
 			uvs.append(Vector2(float(x) / chunk_size, float(z) / chunk_size))
 	
-	# Генерация индексов (две треугольника на квадрат)
+	# Генерация индексов (два треугольника на квадрат)
 	for z in range(chunk_size):
 		for x in range(chunk_size):
 			var top_left = z * resolution + x
@@ -173,6 +187,7 @@ func _create_chunk_mesh(chunk_pos: Vector2i) -> ArrayMesh:
 	
 	return mesh
 
+
 func _get_height(x: float, z: float) -> float:
 	"""Получение высоты ландшафта через шум"""
 	var height = noise.get_noise_2d(x, z) * terrain_height
@@ -186,13 +201,13 @@ func _get_height(x: float, z: float) -> float:
 	
 	return height
 
+
 func _calculate_normals(vertices: PackedVector3Array, indices: PackedInt32Array) -> PackedVector3Array:
 	"""Вычисление нормалей для меша"""
 	var normals = PackedVector3Array()
 	normals.resize(vertices.size())
 	normals.fill(Vector3.UP)
 	
-	# Простое вычисление нормалей (можно улучшить)
 	for i in range(0, indices.size(), 3):
 		var i1 = indices[i]
 		var i2 = indices[i + 1]
@@ -209,6 +224,7 @@ func _calculate_normals(vertices: PackedVector3Array, indices: PackedInt32Array)
 		normals[i3] = (normals[i3] + normal).normalized()
 	
 	return normals
+
 
 func _generate_water_chunk(chunk_pos: Vector2i, world_x: float, world_z: float):
 	"""Генерация воды для чанка"""
@@ -241,6 +257,7 @@ func _generate_water_chunk(chunk_pos: Vector2i, world_x: float, world_z: float):
 	
 	add_child(water_node)
 
+
 func _generate_vegetation(chunk_pos: Vector2i, world_x: float, world_z: float):
 	"""Генерация растительности (деревья, камни)"""
 	var rng = RandomNumberGenerator.new()
@@ -266,11 +283,12 @@ func _generate_vegetation(chunk_pos: Vector2i, world_x: float, world_z: float):
 		else:
 			_create_rock(wx, height, wz)
 
-func _create_tree(x: float, y: float, z: float):
+
+func _create_tree(pos_x: float, pos_y: float, pos_z: float):  # ← ИСПРАВЛЕНО: переименованы параметры
 	"""Создание дерева"""
 	var tree = Node3D.new()
 	tree.name = "Tree"
-	tree.position = Vector3(x, y, z)
+	tree.position = Vector3(pos_x, pos_y, pos_z)
 	
 	# Ствол
 	var trunk = MeshInstance3D.new()
@@ -301,7 +319,8 @@ func _create_tree(x: float, y: float, z: float):
 	
 	add_child(tree)
 
-func _create_rock(x: float, y: float, z: float):
+
+func _create_rock(pos_x: float, pos_y: float, pos_z: float):  # ← ИСПРАВЛЕНО: переименованы параметры
 	"""Создание камня"""
 	var rock = MeshInstance3D.new()
 	var rock_mesh = SphereMesh.new()
@@ -313,10 +332,11 @@ func _create_rock(x: float, y: float, z: float):
 	rock.material_override = rock_mat
 	
 	rock.mesh = rock_mesh
-	rock.position = Vector3(x, y + 0.3, z)
+	rock.position = Vector3(pos_x, pos_y + 0.3, pos_z)
 	rock.scale = Vector3(1.0, 0.6, 1.0)
 	
 	add_child(rock)
+
 
 func _unload_chunk(chunk_pos: Vector2i):
 	"""Выгрузка чанка"""
@@ -325,9 +345,11 @@ func _unload_chunk(chunk_pos: Vector2i):
 		chunk.queue_free()
 		loaded_chunks.erase(chunk_pos)
 
-func get_height_at(position: Vector3) -> float:
+
+func get_height_at(world_pos: Vector3) -> float:  # ← ИСПРАВЛЕНО: переименован параметр
 	"""Получение высоты ландшафта в указанной позиции"""
-	return _get_height(position.x, position.z)
+	return _get_height(world_pos.x, world_pos.z)
+
 
 func regenerate_seed():
 	"""Перегенерация с новым сидом"""
@@ -339,6 +361,7 @@ func regenerate_seed():
 		_generate_chunk(chunk_pos)
 	
 	print("TerrainGenerator: перегенерация завершена")
+
 
 func set_seed(new_seed: int):
 	"""Установка конкретного сида"""
