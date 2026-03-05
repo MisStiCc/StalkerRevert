@@ -1,4 +1,4 @@
-extends BaseAnomaly
+PS> Remove-Item -Force "scripts/zone_controller.gd"extends BaseAnomaly
 class_name RadiationHotspot
 
 ## Радиоактивный очаг - повышенная радиация
@@ -76,10 +76,11 @@ func _update_visuals():
 	# Создаём внешние слои радиации
 	for i in range(3):
 		var visual = MeshInstance3D.new()
-		var sphere = SphereMesh.new()
-		sphere.radius = hotspot_radius * (0.5 + i * 0.25)
-		sphere.height = sphere.radius * 2
-		visual.mesh = sphere
+		var layer_mesh = SphereMesh.new()
+		var layer_radius = hotspot_radius * (0.5 + i * 0.25)
+		layer_mesh.radius = layer_radius
+		layer_mesh.height = layer_radius * 2
+		visual.mesh = layer_mesh
 		
 		# Настраиваем материал для слоя радиации
 		var material = StandardMaterial3D.new()

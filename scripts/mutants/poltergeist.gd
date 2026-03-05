@@ -179,7 +179,7 @@ func _throw_object(target_pos: Vector3):
 	# Удаляем после попадания
 	await tween.finished
 	if is_instance_valid(projectile):
-		projecticle.queue_free()
+		projectile.queue_free()
 
 
 func _on_telekinesis_cooldown_ended():

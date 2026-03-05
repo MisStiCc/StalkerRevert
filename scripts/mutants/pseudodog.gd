@@ -86,7 +86,7 @@ func _psy_attempt():
 	
 	if target_stalker and is_instance_valid(target_stalker):
 		var dist = global_position.distance_to(target_stalker.global_position)
-		if dist < detection_range and randf() < 0.1:  # 10% шанс
+		if dist < detection_radius and randf() < 0.1:  # 10% шанс
 			_psy_howl()
 
 

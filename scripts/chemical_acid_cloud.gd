@@ -76,10 +76,11 @@ func _create_acid_cloud_visuals():
 	# Создаём внешние слои кислоты
 	for i in range(4):
 		var visual = MeshInstance3D.new()
-		var sphere = SphereMesh.new()
-		sphere.radius = acid_radius * (0.7 + i * 0.15)
-		sphere.height = sphere.radius * 2
-		visual.mesh = sphere
+		var layer_mesh = SphereMesh.new()
+		var layer_radius = acid_radius * (0.7 + i * 0.15)
+		layer_mesh.radius = layer_radius
+		layer_mesh.height = layer_radius * 2
+		visual.mesh = layer_mesh
 		
 		# Настраиваем материал для кислотного слоя
 		var material = StandardMaterial3D.new()

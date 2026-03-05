@@ -1,60 +1,19 @@
-extends Area3D
+[gd_scene load_steps=3 format=3]
 
-class_name BaseAnomalyScene
+[sub_resource type="SphereShape3D" id="SphereShape3D_1"]
+radius = 5.0
 
-# Базовая сцена для аномалии
-func _ready():
-    # Создаем базовую аномалию
-    var base_anomaly = BaseAnomaly.new()
-    base_anomaly.name = "BaseAnomaly"
-    base_anomaly.anomaly_name = "Базовая Аномалия"
-    base_anomaly.damage_per_second = 10.0
-    base_anomaly.radius = 5.0
-    base_anomaly.color = Color(1, 0, 0, 1)
-    base_anomaly.is_active = true
-    
-    # Добавляем к сцена
-    add_child(base_anomaly)
-    
-    # Настройка визуального представления
-    base_anomaly.set_as_toplevel(true)
-    base_anomaly.scale = Vector3(base_anomaly.radius, 1, base_anomaly.radius)
-    
-    # Создаем визуальный индикатор
-    var visual_indicator = MeshInstance3D.new()
-    visual_indicator.name = "VisualIndicator"
-    visual_indicator.mesh = CylinderMesh.new()
-    visual_indicator.mesh.height = 2.0
-    visual_indicator.mesh.radius_top = 0.5
-    visual_indicator.mesh.radius_bottom = 0.5
-    visual_indicator.mesh.height_top = 0.5
-    visual_indicator.mesh.height_bottom = 0.5
-    visual_indicator.mesh.height = 1.0
-    visual_indicator.mesh.material_override = StandardMaterial3D.new()
-    visual_indicator.mesh.material_override.albedo_color = base_anomaly.color
-    
-    base_anomaly.add_child(visual_indicator)
-    visual_indicator.position = Vector3(0, 1, 0)
-    
-    # Настройка радиуса аномалии
-    base_anomaly.shape = CylinderShape3D.new()
-    base_anomaly.shape.radius = base_anomaly.radius
-    base_anomaly.shape.height = 2.0
-    
-    # Настройка сигналов
-    base_anomaly.stalker_entered.connect(_on_stalker_entered)
-    base_anomaly.stalker_exited.connect(_on_stalker_exited)
-    base_anomaly.energy_consumed.connect(_on_energy_consumed)
-    base_anomaly.collision_detected.connect(_on_collision_detected)
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1"]
+albedo_color = Color(1, 0, 0, 1)
+emission_enabled = true
+emission = Color(1, 0, 0, 1)
+emission_energy = 1.0
 
-func _on_stalker_entered(stalker: Node3D):
-    print("%s вошел в зону аномалии" % stalker.name)
+[node name="BaseAnomaly" type="Area3D"]
 
-func _on_stalker_exited(stalker: Node3D):
-    print("%s вышел из зоны аномалии" % stalker.name)
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("SphereShape3D_1")
 
-func _on_energy_consumed(amount: float):
-    print("Аномалия потребила %f единиц энергии" % amount)
-
-func _on_collision_detected(body: Node3D):
-    print("Столкновение с %s" % body.name)
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("SphereShape3D_1")
+material_override = SubResource("StandardMaterial3D_1")

@@ -62,14 +62,3 @@ func _check_collision(body: Node3D):
 func _update_visuals():
 	# Визуальное обновление будет реализовано в дочерних классах
 	pass
-
-# Метод для нанесения урона
-func _apply_damage():
-	if not is_active:
-		return
-	
-	for stalker in stalkers_in_zone:
-		if is_instance_valid(stalker):
-			if stalker.has_method("take_damage"):
-				stalker.take_damage(damage_per_second)
-				energy_consumed.emit(damage_per_second)

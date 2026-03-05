@@ -44,8 +44,9 @@ func _create_gas_cloud_visuals():
 	for i in range(3):
 		var visual = MeshInstance3D.new()
 		var sphere = SphereMesh.new()
-		sphere.radius = cloud_radius * (1.0 - i * 0.2)
-		sphere.height = sphere.radius * 2
+		var layer_radius = cloud_radius * (1.0 - i * 0.2)
+		sphere.radius = layer_radius
+		sphere.height = layer_radius * 2
 		visual.mesh = sphere
 		
 		# Настраиваем материал для туманного эффекта

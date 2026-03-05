@@ -12,7 +12,7 @@ func _ready():
 
 
 func _apply_damage():
-	if not active:
+	if not is_active:
 		return
 	
 	for stalker in stalkers_in_zone:
