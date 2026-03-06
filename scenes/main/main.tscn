@@ -7,6 +7,7 @@
 [ext_resource type="PackedScene" path="res://scenes/zone/anomalies/heat_anomaly.tscn" id="5"]
 [ext_resource type="PackedScene" path="res://scenes/stalkers/veteran_stalker.tscn" id="5_a8run"]
 [ext_resource type="PackedScene" path="res://scenes/zone/anomalies/electric_anomaly.tscn" id="6"]
+[ext_resource type="PackedScene" path="res://scenes/stalkers/master_stalker.tscn" id="6_ouso4"]
 [ext_resource type="Script" uid="uid://b2u8v7ogy57fv" path="res://scripts/terrain_generator.gd" id="7"]
 [ext_resource type="Script" uid="uid://io27vkg86kau" path="res://scripts/game_camera.gd" id="7_hujxm"]
 [ext_resource type="Script" uid="uid://b78foht256wl2" path="res://scenes/main/test_particles_visible.gd" id="10_a8run"]
@@ -26,7 +27,9 @@ script = ExtResource("1")
 script = ExtResource("7")
 
 [node name="StalkerSpawner" parent="." unique_id=551424790 instance=ExtResource("2")]
-stalker_types = Array[PackedScene]([ExtResource("4_b1x3f"), ExtResource("5_a8run")])
+novice_stalker_scene = ExtResource("4_b1x3f")
+veteran_stalker_scene = ExtResource("5_a8run")
+master_stalker_scene = ExtResource("6_ouso4")
 
 [node name="MainUI" parent="." unique_id=2014093725 instance=ExtResource("3")]
 

@@ -1,462 +1,441 @@
 extends Node
 class_name ZoneController
 
-## Контроллер Зоны - главный элемент управления защитой территории
-## Управляет ресурсами, создает аномалии и мутантов, контролирует выбросы
+## Контроллер зоны - управляет ресурсами, сложностью и взаимодействиями
 
 # Сигналы
-signal energy_changed(energy: float)
-signal biomass_changed(biomass: float)
-signal anomaly_created(anomaly: Node3D)
-signal mutant_spawned(mutant: Node3D)
-signal emission_started
-signal emission_ended
-signal territory_expanded(new_radius: float)
-signal artifact_generated(artifact_position: Vector3)
-signal stalker_entered_zone(stalker: Node3D)
-signal stalker_left_zone(stalker: Node3D)
-signal stalker_died(stalker: Node3D)
-signal energy_depleted
+signal energy_changed(current: float, max: float)
+signal biomass_changed(current: float, max: float)
+signal difficulty_changed(new_difficulty: float)
+signal stalker_entered(stalker: Node)
+signal stalker_left(stalker: Node)
+signal anomaly_destroyed(anomaly_type: String, position: Vector3, difficulty: int)
+signal artifact_created(artifact_type: String, position: Vector3)
+signal artifact_collected(artifact: Node, stalker: Node)
+signal artifact_stolen(artifact: Node, stalker: Node)
+signal stalker_died(stalker_type: String, biomass_returned: float)
 
-# Параметры (можно менять в инспекторе)
+# Ресурсы
 @export var max_energy: float = 1000.0
-@export var energy_regen_rate: float = 5.0  # в секунду
-@export var starting_energy: float = 500.0
-@export var starting_biomass: float = 0.0
+@export var max_biomass: float = 500.0
+@export var energy_regen_rate: float = 1.0
+@export var biomass_decay_rate: float = 0.1
+
+# Сложность
+@export var base_difficulty: float = 1.0
+@export var difficulty_increase_per_stalker: float = 0.05
+@export var max_difficulty: float = 3.0
+@export var min_difficulty: float = 0.5
+
+# Аномалии - ВСЕ 16 аномалий проекта
+@export var anomaly_scenes: Dictionary = {
+	"thermal_steam": preload("res://scenes/zone/anomalies/thermal_steam.tscn"),
+	"thermal_comet": preload("res://scenes/zone/anomalies/thermal_comet.tscn"),
+	"heat_anomaly": preload("res://scenes/zone/anomalies/heat_anomaly.tscn"),
+	"gravity_vortex": preload("res://scenes/zone/anomalies/gravity_vortex.tscn"),
+	"gravity_lift": preload("res://scenes/zone/anomalies/gravity_lift.tscn"),
+	"gravity_whirlwind": preload("res://scenes/zone/anomalies/gravity_whirlwind.tscn"),
+	"electric_anomaly": preload("res://scenes/zone/anomalies/electric_anomaly.tscn"),
+	"electric_tesla": preload("res://scenes/zone/anomalies/electric_tesla.tscn"),
+	"chemical_gas": preload("res://scenes/zone/anomalies/chemical_gas.tscn"),
+	"chemical_acid_cloud": preload("res://scenes/zone/anomalies/chemical_acid_cloud.tscn"),
+	"chemical_jelly": preload("res://scenes/zone/anomalies/chemical_jelly.tscn"),
+	"radiation_hotspot": preload("res://scenes/zone/anomalies/radiation_hotspot.tscn"),
+	"bio_burning_fluff": preload("res://scenes/zone/anomalies/bio_burning_fluff.tscn"),
+	"time_dilation": preload("res://scenes/zone/anomalies/time_dilation.tscn"),
+	"teleport": preload("res://scenes/zone/anomalies/teleport.tscn"),
+	"acid_anomaly": preload("res://scenes/zone/anomalies/acid_anomaly.tscn")
+}
+
+# Карта соответствия аномалий и артефактов
+var anomaly_artifact_map: Dictionary = {
+	"thermal_steam": "fireball_artifact",
+	"thermal_comet": "fireball_artifact",
+	"heat_anomaly": "fireball_artifact",
+	"gravity_vortex": "graviton_artifact",
+	"gravity_lift": "graviton_artifact",
+	"gravity_whirlwind": "void_artifact",
+	"electric_anomaly": "spark_artifact",
+	"electric_tesla": "battery_artifact",
+	"chemical_acid_cloud": "acid_drop_artifact",
+	"chemical_gas": "gas_bottle_artifact",
+	"chemical_jelly": "slime_artifact",
+	"radiation_hotspot": "uranium_artifact",
+	"bio_burning_fluff": "heart_artifact",
+	"time_dilation": "clock_artifact",
+	"teleport": "anchor_artifact",
+	"acid_anomaly": "acid_drop_artifact"
+}
+
+# Ценности артефактов по редкости
+var artifact_values: Dictionary = {
+	"common": [5, 6, 7, 8, 9, 10],
+	"rare": [15, 18, 20, 22, 25],
+	"legendary": [30, 35, 40, 45, 50]
+}
+
+# Редкость по сложности аномалии
+var difficulty_to_rarity: Dictionary = {
+	1: "common",
+	2: "rare",
+	3: "legendary"
+}
+
+# Стоимость мутантов
+var mutant_costs: Dictionary = {
+	"dog_mutant": 15.0,
+	"flesh": 15.0,
+	"snork_mutant": 25.0,
+	"pseudodog": 25.0,
+	"controller_mutant": 40.0,
+	"poltergeist": 40.0,
+	"bloodsucker": 50.0,
+	"chimera": 75.0,
+	"pseudogiant": 75.0
+}
+
+# Возврат биомассы за убитых сталкеров
+var stalker_biomass_returns: Dictionary = {
+	"novice": 8.0,
+	"veteran": 15.0,
+	"master": 30.0
+}
 
 # Текущие значения
-var energy: float
-var biomass: float
-var is_emission_active: bool = false
-var anomalies: Array[Node3D] = []      # ← ИСПРАВЛЕНО
-var mutants: Array[Node3D] = []        # ← ИСПРАВЛЕНО
-var artifacts: Array[Node3D] = []      # ← ИСПРАВЛЕНО
-var stalkers: Array[Node3D] = []       # ← ИСПРАВЛЕНО
-var territory_radius: float = 100.0
+var current_energy: float
+var current_biomass: float
+var current_difficulty: float
 
-@export var stalker_spawner: Node = null
+# Активные сущности
+var active_stalkers: Array[Node] = []
+var active_anomalies: Array[Node] = []
+var active_artifacts: Array[Node] = []
+var active_mutants: Array[Node] = []
 
-# Внутренние переменные
+# Таймеры
 var _regen_timer: Timer
+var _difficulty_timer: Timer
 
 
 func _ready():
-	energy = starting_energy
-	biomass = starting_biomass
+	current_energy = max_energy * 0.5
+	current_biomass = max_biomass * 0.3
+	current_difficulty = base_difficulty
 	
-	# Добавляем себя в группу для поиска
 	add_to_group("zone_controller")
 	
-	# Создаем и настраиваем таймер регенерации энергии
+	_setup_timers()
+	
+	print("ZoneController инициализирован с ", anomaly_scenes.size(), " аномалиями")
+
+
+func _setup_timers():
 	_regen_timer = Timer.new()
 	_regen_timer.wait_time = 1.0
 	_regen_timer.timeout.connect(_on_regen_timer)
 	add_child(_regen_timer)
 	_regen_timer.start()
 	
-	# Ищем спавнер, если не назначен
-	if not stalker_spawner:
-		stalker_spawner = get_node_or_null("../StalkerSpawner")
-		if not stalker_spawner:
-			stalker_spawner = find_child("StalkerSpawner", true, false)
-	
-	if stalker_spawner:
-		start_stalker_spawning()
-	
-	# Испускаем начальные сигналы
-	energy_changed.emit(energy)
-	biomass_changed.emit(biomass)
+	_difficulty_timer = Timer.new()
+	_difficulty_timer.wait_time = 5.0
+	_difficulty_timer.timeout.connect(_update_difficulty)
+	add_child(_difficulty_timer)
+	_difficulty_timer.start()
 
+
+# ==================== УПРАВЛЕНИЕ РЕСУРСАМИ ====================
 
 func _on_regen_timer():
-	# Регенерируем энергию
-	var old_energy = energy
-	energy = min(energy + energy_regen_rate, max_energy)
+	var energy_gain = energy_regen_rate
+	current_energy = min(current_energy + energy_gain, max_energy)
+	energy_changed.emit(current_energy, max_energy)
 	
-	if old_energy != energy:
-		energy_changed.emit(energy)
+	var biomass_loss = biomass_decay_rate
+	current_biomass = max(current_biomass - biomass_loss, 0)
+	biomass_changed.emit(current_biomass, max_biomass)
 
 
-func add_biomass(amount: float):
-	biomass += amount
-	biomass_changed.emit(biomass)
+func add_energy(amount: float):
+	current_energy = min(current_energy + amount, max_energy)
+	energy_changed.emit(current_energy, max_energy)
 
 
 func spend_energy(amount: float) -> bool:
-	if energy >= amount:
-		energy -= amount
-		energy_changed.emit(energy)
-		if energy <= 0:
-			energy_depleted.emit()
+	if current_energy >= amount:
+		current_energy -= amount
+		energy_changed.emit(current_energy, max_energy)
 		return true
 	return false
+
+
+func add_biomass(amount: float):
+	current_biomass = min(current_biomass + amount, max_biomass)
+	biomass_changed.emit(current_biomass, max_biomass)
 
 
 func spend_biomass(amount: float) -> bool:
-	if biomass >= amount:
-		biomass -= amount
-		biomass_changed.emit(biomass)
+	if current_biomass >= amount:
+		current_biomass -= amount
+		biomass_changed.emit(current_biomass, max_biomass)
 		return true
 	return false
 
 
-func can_afford(energy_cost: float, biomass_cost: float) -> bool:
-	return energy >= energy_cost and biomass >= biomass_cost
+# ==================== УПРАВЛЕНИЕ СЛОЖНОСТЬЮ ====================
+
+func get_difficulty() -> float:
+	return current_difficulty
 
 
-# Для обратной совместимости
-func is_afford(energy_cost: float, biomass_cost: float) -> bool:
-	return can_afford(energy_cost, biomass_cost)
+func set_difficulty(value: float):
+	current_difficulty = clamp(value, min_difficulty, max_difficulty)
+	difficulty_changed.emit(current_difficulty)
 
 
-func spawn_anomaly(anomaly_type: String, position: Vector3) -> Node3D:
-	"""Создание аномалии - возвращает объект аномалии или null"""
-	var cost = get_anomaly_cost(anomaly_type)
-	if not spend_energy(cost):
-		print("Недостаточно энергии для создания аномалии ", anomaly_type)
+func _update_difficulty():
+	var stalker_count = active_stalkers.size()
+	var difficulty_mod = 1.0 + (stalker_count * difficulty_increase_per_stalker)
+	var new_difficulty = base_difficulty * difficulty_mod
+	current_difficulty = clamp(new_difficulty, min_difficulty, max_difficulty)
+	difficulty_changed.emit(current_difficulty)
+
+
+# ==================== УПРАВЛЕНИЕ СТАЛКЕРАМИ ====================
+
+func register_stalker(stalker: Node):
+	if stalker not in active_stalkers:
+		active_stalkers.append(stalker)
+		stalker_entered.emit(stalker)
+
+
+func unregister_stalker(stalker: Node):
+	if stalker in active_stalkers:
+		active_stalkers.erase(stalker)
+		stalker_left.emit(stalker)
+
+
+func get_stalker_count() -> int:
+	return active_stalkers.size()
+
+
+# ==================== УПРАВЛЕНИЕ АНОМАЛИЯМИ ====================
+
+func create_anomaly(anomaly_type: String, position: Vector3, difficulty: int = 1) -> Node:
+	if not anomaly_scenes.has(anomaly_type):
+		push_error("Неизвестный тип аномалии: ", anomaly_type)
 		return null
 	
-	# Маппинг типов к именам файлов
-	var type_map = {
-		# Базовые
-		"fire": "heat",
-		"heat": "heat",
-		"electric": "electric",
-		"acid": "acid",
-		# Гравитационные
-		"gravity_vortex": "gravity_vortex",
-		"gravity_lift": "gravity_lift",
-		"gravity_whirlwind": "gravity_whirlwind",
-		# Термические
-		"thermal_steam": "thermal_steam",
-		"thermal_comet": "thermal_comet",
-		# Электрические
-		"electric_tesla": "electric_tesla",
-		# Химические
-		"chemical_jelly": "chemical_jelly",
-		"chemical_gas": "chemical_gas",
-		"chemical_acid_cloud": "chemical_acid_cloud",
-		# Временные
-		"time_dilation": "time_dilation",
-		# Радиационные
-		"radiation_hotspot": "radiation_hotspot",
-		# Биологические
-		"bio_burning_fluff": "bio_burning_fluff",
-		# Телепортационные
-		"teleport": "teleport"
-	}
-	
-	var file_type = type_map.get(anomaly_type, anomaly_type)
-	# Проверяем разные варианты путей к сценам
-	var scene_path = "res://scenes/zone/anomalies/" + file_type + ".tscn"
-	if not ResourceLoader.exists(scene_path):
-		scene_path = "res://scenes/zone/anomalies/" + file_type + "_anomaly.tscn"
-	
-	if not ResourceLoader.exists(scene_path):
-		push_error("Сцена аномалии не найдена: ", scene_path)
+	if not spend_energy(_get_anomaly_cost(anomaly_type)):
+		print("Недостаточно энергии")
 		return null
 	
-	var scene = load(scene_path)
-	if scene:
-		var anomaly = scene.instantiate()
-		anomaly.position = position
-		get_parent().add_child(anomaly)  # Добавляем на уровень выше (в Main)
-		anomalies.append(anomaly)
-		
-		print("Аномалия ", anomaly_type, " создана на позиции ", position)
-		anomaly_created.emit(anomaly)
-		return anomaly
-	return null
-
-
-# Для обратной совместимости
-func create_anomaly(type: String, position: Vector3) -> Node3D:
-	return spawn_anomaly(type, position)
-
-
-# Метод для создания аномалии на основе базового класса
-func create_base_anomaly(position: Vector3, name: String = "Базовая Аномалия", damage: float = 10.0, radius: float = 5.0, color: Color = Color(1, 0, 0, 1)) -> Node3D:
-	var new_anomaly = BaseAnomaly.new()
-	new_anomaly.position = position
-	new_anomaly.anomaly_name = name
-	new_anomaly.damage_per_second = damage
-	new_anomaly.radius = radius
-	new_anomaly.color = color
-	new_anomaly.is_active = true
-	add_child(new_anomaly)
-	anomalies.append(new_anomaly)
-	anomaly_created.emit(new_anomaly)
-	return new_anomaly
-
-
-# Метод для создания гравитационной воронки
-func create_gravity_vortex(position: Vector3) -> Node3D:
-	return spawn_anomaly("gravity_vortex", position)
-
-
-# Метод для создания гравитационного лифта
-func create_gravity_lift(position: Vector3) -> Node3D:
-	return spawn_anomaly("gravity_lift", position)
-
-
-# Метод для создания гравитационной карусели
-func create_gravity_whirlwind(position: Vector3) -> Node3D:
-	return spawn_anomaly("gravity_whirlwind", position)
-
-
-# Метод для удаления аномалии
-func remove_anomaly(anomaly: Node3D):
-	if anomaly in anomalies:
-		anomaly.queue_free()
-		anomalies.erase(anomaly)
-
-
-# Метод для управления активностью аномалий
-func toggle_anomaly(anomaly: Node3D, active: bool):
-	if anomaly in anomalies:
-		anomaly.is_active = active
-
-
-# Метод для получения всех аномалий
-func get_all_anomalies() -> Array[Node3D]:
-	return anomalies
-
-
-# Метод для получения аномалий в определенной зоне
-func get_anomalies_in_zone(radius: float) -> Array[Node3D]:
-	var anomalies_in_zone: Array[Node3D] = []
-	for anomaly in anomalies:
-		if anomaly.position.distance_to(Vector3.ZERO) <= radius:
-			anomalies_in_zone.append(anomaly)
-	return anomalies_in_zone
-
-
-func spawn_mutant(mutant_type: String, position: Vector3) -> Node3D:
-	var cost = get_mutant_cost(mutant_type)
-	if not spend_biomass(cost):
-		print("Недостаточно биомассы для призыва мутанта ", mutant_type)
-		return null
+	var scene = anomaly_scenes[anomaly_type]
+	var anomaly = scene.instantiate()
+	anomaly.position = position
 	
-	# Маппинг типов к именам файлов
-	var type_map = {
-		"dog": "dog",
-		"snork": "snork",
-		"controller": "controller",
-		"bloodsucker": "bloodsucker",
-		"pseudodog": "pseudodog",
-		"flesh": "flesh",
-		"zombie": "zombie",
-		"chimera": "chimera",
-		"pseudogiant": "pseudogiant",
-		"poltergeist": "poltergeist"
-	}
+	# Устанавливаем сложность
+	if anomaly.has_method("set_difficulty"):
+		anomaly.set_difficulty(difficulty)
 	
-	var file_type = type_map.get(mutant_type, mutant_type)
-	var scene_path = "res://scenes/zone/mutants/" + file_type + ".tscn"
+	# Подключаем сигнал уничтожения
+	if anomaly.has_signal("destroyed"):
+		anomaly.destroyed.connect(_on_anomaly_destroyed.bind(anomaly))
 	
-	if not ResourceLoader.exists(scene_path):
-		push_error("Сцена мутанта не найдена: ", scene_path)
-		return null
+	get_tree().current_scene.add_child(anomaly)
+	active_anomalies.append(anomaly)
 	
-	var scene = load(scene_path)
-	if scene:
-		var mutant = scene.instantiate()
-		mutant.position = position
-		get_parent().add_child(mutant)
-		mutants.append(mutant)
-		
-		if mutant.has_signal("died"):
-			mutant.died.connect(_on_mutant_died.bind(mutant))
-		
-		print("Мутант ", mutant_type, " призван на позиции ", position)
-		mutant_spawned.emit(mutant)
-		return mutant
-	return null
+	print("Аномалия ", anomaly_type, " (ур.", difficulty, ") создана")
+	return anomaly
 
 
-func _on_mutant_died(mutant: Node3D):
-	if mutant in mutants:
-		mutants.erase(mutant)
-
-
-func start_emission(duration: float = 10.0):
-	if is_emission_active:
-		return
-	is_emission_active = true
-	emission_started.emit()
-		
-	# Создаем таймер для автоматического окончания выброса
-	var timer = Timer.new()
-	timer.wait_time = duration
-	timer.one_shot = true
-	timer.timeout.connect(_on_emission_end)
-	add_child(timer)
-	timer.start()
+# НОВЫЙ МЕТОД: Обработка уничтожения аномалии
+func _on_anomaly_destroyed(anomaly_type: String, position: Vector3, difficulty: int):
+	# Удаляем из списка
+	if active_anomalies.has(position):
+		active_anomalies.erase(position)
 	
-	# Наносим урон всем сталкерам в зоне
-	_apply_emission_damage()
-
-
-func _apply_emission_damage():
-	for stalker in stalkers:
-		if is_instance_valid(stalker) and stalker.has_method("take_damage"):
-			stalker.take_damage(50.0)
-
-
-func _on_emission_end():
-	is_emission_active = false
-	emission_ended.emit()
-
-
-func expand_territory(radius_increase: float):
-	territory_radius += radius_increase
-	territory_expanded.emit(territory_radius)
-	print("Территория расширена. Новый радиус: ", territory_radius)
-
-
-func generate_artifact(position: Vector3, type: String = "common", value: int = 10) -> Node3D:
-	"""Создание артефакта как Node3D"""
-	var scene_path = "res://scenes/zone/artifacts/" + type + "_artifact.tscn"
+	# Создаём артефакт
+	_spawn_artifact_from_anomaly(anomaly_type, position, difficulty)
 	
+	anomaly_destroyed.emit(anomaly_type, position, difficulty)
+	print("💥 Аномалия ", anomaly_type, " уничтожена! Сложность: ", difficulty)
+
+
+# НОВЫЙ МЕТОД: Создание артефакта из аномалии
+func _spawn_artifact_from_anomaly(anomaly_type: String, position: Vector3, difficulty: int):
+	var artifact_type = anomaly_artifact_map.get(anomaly_type, "common_artifact")
+	var rarity = difficulty_to_rarity.get(difficulty, "common")
+	var values = artifact_values.get(rarity, [10])
+	var value = values[randi() % values.size()]
+	
+	var artifact = create_artifact(artifact_type, position, rarity, value)
+	
+	if artifact:
+		print("📦 Создан ", rarity, " артефакт ", artifact_type, " ценой ", value)
+
+
+func _get_anomaly_cost(anomaly_type: String) -> float:
+	match anomaly_type:
+		"heat_anomaly": return 50.0
+		"electric_anomaly": return 75.0
+		"acid_anomaly": return 100.0
+		"gravity_vortex": return 150.0
+		"gravity_lift": return 80.0
+		"gravity_whirlwind": return 120.0
+		"thermal_steam": return 70.0
+		"thermal_comet": return 100.0
+		"chemical_jelly": return 60.0
+		"chemical_gas": return 85.0
+		"chemical_acid_cloud": return 110.0
+		"radiation_hotspot": return 95.0
+		"time_dilation": return 200.0
+		"teleport": return 180.0
+		"electric_tesla": return 90.0
+		"bio_burning_fluff": return 75.0
+		_: return 50.0
+
+
+# ==================== УПРАВЛЕНИЕ АРТЕФАКТАМИ ====================
+
+func create_artifact(artifact_type: String, position: Vector3, rarity: String = "common", value: float = 10.0) -> Node:
+	var scene_path = "res://scenes/artifacts/" + artifact_type + ".tscn"
 	if not ResourceLoader.exists(scene_path):
 		push_error("Сцена артефакта не найдена: ", scene_path)
 		return null
 	
 	var scene = load(scene_path)
-	if scene:
-		var artifact = scene.instantiate()
-		artifact.position = position
-		get_parent().add_child(artifact)
-		artifacts.append(artifact)
-		artifact_generated.emit(position)
-		print("Артефакт ", type, " создан на позиции ", position)
-		return artifact
+	var artifact = scene.instantiate()
+	artifact.position = position
 	
-	return null
+	# Устанавливаем редкость и ценность
+	if artifact.has_method("set_rarity_and_value"):
+		artifact.set_rarity_and_value(rarity, value)
+	
+	# Подключаем сигналы
+	if artifact.has_signal("stolen"):
+		artifact.stolen.connect(_on_artifact_stolen.bind(artifact))
+	if artifact.has_signal("collected"):
+		artifact.collected.connect(_on_artifact_collected.bind(artifact))
+	
+	get_tree().current_scene.add_child(artifact)
+	active_artifacts.append(artifact)
+	
+	artifact_created.emit(artifact_type, position)
+	
+	return artifact
 
 
-func update_stalker_status(stalker: Node3D):
-	if not is_instance_valid(stalker):
-		return
+# НОВЫЙ МЕТОД: Обработка кражи артефакта сталкером
+func _on_artifact_stolen(artifact: Node, stalker: Node):
+	# Потеря биомассы = ценность артефакта
+	var loss = 10.0
+	if artifact.has_method("get_value"):
+		loss = artifact.get_value()
+	
+	current_biomass = max(current_biomass - loss, 0)
+	biomass_changed.emit(current_biomass, max_biomass)
+	
+	var stalker_type = "неизвестный"
+	if stalker.has_method("get_stalker_type"):
+		stalker_type = stalker.get_stalker_type()
 		
-	var stalker_in_zone = is_stalker_in_zone(stalker)
+		# Сталкер несёт артефакт
+		if stalker.has_method("_on_artifact_stolen"):
+			stalker._on_artifact_stolen(artifact)
 	
-	if stalker_in_zone and not stalkers.has(stalker):
-		stalkers.append(stalker)
-		stalker_entered_zone.emit(stalker)
-	elif not stalker_in_zone and stalkers.has(stalker):
-		stalkers.erase(stalker)
-		stalker_left_zone.emit(stalker)
+	print("👿 ", stalker_type, " украл артефакт! Потеряно ", loss, " биомассы")
+	artifact_stolen.emit(artifact, stalker)
 
 
-func get_resource_efficiency() -> float:
-	var total_resources = energy + biomass
-	var max_possible = max_energy + starting_biomass
-	if max_possible > 0:
-		return total_resources / max_possible
-	return 0.0
+# НОВЫЙ МЕТОД: Обработка сбора артефакта зоной
+func _on_artifact_collected(artifact: Node, stalker: Node):
+	if artifact in active_artifacts:
+		active_artifacts.erase(artifact)
+		artifact_collected.emit(artifact, stalker)
+
+
+# ==================== УПРАВЛЕНИЕ МУТАНТАМИ ====================
+
+func register_mutant(mutant: Node):
+	if mutant not in active_mutants:
+		active_mutants.append(mutant)
+
+
+func unregister_mutant(mutant: Node):
+	if mutant in active_mutants:
+		active_mutants.erase(mutant)
+
+
+func spawn_mutant(mutant_type: String, position: Vector3) -> Node:
+	var cost = mutant_costs.get(mutant_type, 20.0)
+	
+	if not spend_biomass(cost):
+		print("❌ Недостаточно биомассы для создания мутанта ", mutant_type)
+		return null
+	
+	var scene_path = "res://scenes/zone/mutants/" + mutant_type + ".tscn"
+	if not ResourceLoader.exists(scene_path):
+		push_error("Сцена мутанта не найдена: ", scene_path)
+		return null
+	
+	var scene = load(scene_path)
+	var mutant = scene.instantiate()
+	mutant.position = position
+	
+	get_tree().current_scene.add_child(mutant)
+	active_mutants.append(mutant)
+	
+	print("🦎 Мутант ", mutant_type, " создан за ", cost, " биомассы")
+	return mutant
+
+
+# НОВЫЙ МЕТОД: Обработка смерти сталкера
+func on_stalker_died(stalker: Node):
+	var stalker_type = "base"
+	if stalker.has_method("get_stalker_type"):
+		stalker_type = stalker.get_stalker_type()
+	
+	var return_value = stalker_biomass_returns.get(stalker_type, 10.0)
+	add_biomass(return_value)
+	
+	print("💀 Сталкер (", stalker_type, ") убит! Возвращено ", return_value, " биомассы")
+	stalker_died.emit(stalker_type, return_value)
+
+
+# ==================== ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ====================
+
+func get_resource_status() -> Dictionary:
+	return {
+		"energy": current_energy,
+		"max_energy": max_energy,
+		"biomass": current_biomass,
+		"max_biomass": max_biomass,
+		"difficulty": current_difficulty,
+		"stalker_count": active_stalkers.size()
+	}
+
+
+# ==================== АЛИАСЫ ДЛЯ СОВМЕСТИМОСТИ ====================
+
+var button_to_anomaly_map: Dictionary = {
+	"fire": "heat_anomaly",
+	"electric": "electric_anomaly",
+	"acid": "acid_anomaly"
+}
+
+
+func spawn_anomaly(anomaly_type: String, position: Vector3) -> Node:
+	var actual_type = button_to_anomaly_map.get(anomaly_type, anomaly_type)
+	return create_anomaly(actual_type, position)
 
 
 func get_energy() -> float:
-	return energy
+	return current_energy
 
 
 func get_biomass() -> float:
-	return biomass
+	return current_biomass
 
 
-func get_anomaly_cost(type: String) -> float:
-	match type:
-		# Базовые
-		"fire", "heat":
-			return 50.0
-		"electric":
-			return 75.0
-		"acid":
-			return 100.0
-		# Гравитационные
-		"gravity_vortex":
-			return 150.0
-		"gravity_lift":
-			return 80.0
-		"gravity_whirlwind":
-			return 120.0
-		# Термические
-		"thermal_steam":
-			return 70.0
-		"thermal_comet":
-			return 100.0
-		# Электрические
-		"electric_tesla":
-			return 90.0
-		# Химические
-		"chemical_jelly":
-			return 60.0
-		"chemical_gas":
-			return 85.0
-		"chemical_acid_cloud":
-			return 110.0
-		# Временные
-		"time_dilation":
-			return 200.0
-		# Радиационные
-		"radiation_hotspot":
-			return 95.0
-		# Биологические
-		"bio_burning_fluff":
-			return 75.0
-		# Телепортационные
-		"teleport":
-			return 180.0
-		_:
-			return 50.0
-
-
-func get_mutant_cost(type: String) -> float:
-	match type:
-		# Базовые
-		"dog":
-			return 30.0
-		"snork":
-			return 60.0
-		"controller":  # Бюрер
-			return 100.0
-		# Новые мутанты
-		"bloodsucker":
-			return 80.0
-		"pseudodog":
-			return 70.0
-		"flesh":
-			return 60.0
-		"zombie":
-			return 30.0
-		"chimera":
-			return 200.0
-		"pseudogiant":
-			return 250.0
-		"poltergeist":
-			return 120.0
-		_:
-			return 50.0
-
-
-func is_stalker_in_zone(stalker: Node3D) -> bool:
-	if not is_instance_valid(stalker):
-		return false
-	# Проверяем расстояние от центра территории
-	return stalker.global_position.distance_to(Vector3.ZERO) <= territory_radius
-
-
-func start_stalker_spawning():
-	if stalker_spawner and stalker_spawner.has_method("start_spawning"):
-		stalker_spawner.start_spawning()
-
-
-func stop_stalker_spawning():
-	if stalker_spawner and stalker_spawner.has_method("stop_spawning"):
-		stalker_spawner.stop_spawning()
-
-
-func clear_all_stalkers():
-	if stalker_spawner and stalker_spawner.has_method("clear_all_stalkers"):
-		stalker_spawner.clear_all_stalkers()
+func can_afford(energy_cost: float, biomass_cost: float) -> bool:
+	return current_energy >= energy_cost and current_biomass >= biomass_cost

@@ -1,7 +1,7 @@
 extends CharacterBody3D
 class_name BaseMutant
 
-signal died(mutant: BaseMutant)  # ← исправлено
+signal died(mutant: BaseMutant)
 signal attacked_stalker(stalker: Node3D)
 signal spotted_stalker(stalker: Node3D)
 
@@ -32,7 +32,6 @@ var zone_controller: Node = null
 
 
 func _ready():
-	# Проверяем наличие обязательных нод
 	if not detection_area:
 		push_error("Mutant: DetectionArea не найден!")
 		return
@@ -41,22 +40,18 @@ func _ready():
 		push_error("Mutant: AttackTimer не найден!")
 		return
 	
-	# Подключаем сигналы
 	detection_area.body_entered.connect(_on_stalker_detected)
 	detection_area.body_exited.connect(_on_stalker_lost)
 	
 	attack_timer.wait_time = attack_cooldown
 	attack_timer.timeout.connect(_try_attack)
 	
-	# Добавляем в группу
 	add_to_group("mutants")
 	
-	# Ищем ZoneController
 	zone_controller = get_tree().get_first_node_in_group("zone_controller")
 	if zone_controller and zone_controller.has_method("register_mutant"):
 		zone_controller.register_mutant(self)
 	
-	# Инициализация здоровья
 	health = max_health
 
 
@@ -76,24 +71,23 @@ func _physics_process(delta):
 
 
 func _patrol(delta):
-	# Если нет точек патруля, просто стоим
 	if patrol_points.is_empty():
 		return
 	
-	# Движение к текущей точке патруля
 	var target_pos = patrol_points[current_patrol_index]
 	var direction = (target_pos - global_position).normalized()
 	velocity = direction * speed
 	
-	# Если достигли точки, переходим к следующей
 	if global_position.distance_to(target_pos) < 1.0:
 		current_patrol_index = (current_patrol_index + 1) % patrol_points.size()
 
 
 func _chase(delta):
 	if not target_stalker or not is_instance_valid(target_stalker):
-		current_state = State.PATROL
-		target_stalker = null
+		_find_best_target()
+		if not target_stalker:
+			current_state = State.PATROL
+			target_stalker = null
 		return
 	
 	# Движение к сталкеру
@@ -112,22 +106,52 @@ func _attack(delta):
 		target_stalker = null
 		return
 	
-	# Проверка, не убежал ли сталкер
 	if global_position.distance_to(target_stalker.global_position) > 3.0:
 		current_state = State.CHASE
 
 
+# --- НОВЫЙ МЕТОД: Поиск лучшей цели (с артефактом) ---
+func _find_best_target():
+	var stalkers = get_tree().get_nodes_in_group("stalkers")
+	
+	# Сначала ищем сталкеров с артефактами
+	for s in stalkers:
+		if not is_instance_valid(s):
+			continue
+		if s == self:
+			continue
+		if s.has_method("has_artifact") and s.has_artifact():
+			target_stalker = s
+			current_state = State.CHASE
+			return
+	
+	# Иначе ищем любого сталкера
+	for s in stalkers:
+		if not is_instance_valid(s):
+			continue
+		if s == self:
+			continue
+		if s.has_method("take_damage"):
+			target_stalker = s
+			current_state = State.CHASE
+			return
+
+
 func _on_stalker_detected(body: Node3D):
 	if body.has_method("take_damage") and body.is_in_group("stalkers"):
-		target_stalker = body
-		current_state = State.CHASE
-		spotted_stalker.emit(body)
+		# Проверяем, есть ли у него артефакт - если да, сразу атакуем
+		if body.has_method("has_artifact") and body.has_artifact():
+			target_stalker = body
+			current_state = State.CHASE
+			spotted_stalker.emit(body)
+		elif not target_stalker:
+			# Запоминаем, но ищем лучшую цель
+			_find_best_target()
 
 
 func _on_stalker_lost(body: Node3D):
 	if body == target_stalker:
-		target_stalker = null
-		current_state = State.PATROL
+		_find_best_target()
 
 
 func _try_attack():
@@ -151,13 +175,12 @@ func die():
 	
 	current_state = State.DEAD
 	
-	# Добавляем биомассу в ZoneController
+	# Добавляем биомассу в ZoneController (половину стоимости)
 	if zone_controller and zone_controller.has_method("add_biomass"):
-		zone_controller.add_biomass(biomass_cost * 0.5)  # Возвращаем половину стоимости
+		zone_controller.add_biomass(biomass_cost * 0.5)
 	
 	died.emit(self)
 	
-	# Удаляем через небольшой промежуток
 	var timer = Timer.new()
 	timer.wait_time = 1.0
 	timer.one_shot = true

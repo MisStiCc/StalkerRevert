@@ -1,50 +1,46 @@
-[gd_scene load_steps=6 format=3 uid="uid://thermal_steam"]
+[gd_scene format=3 uid="uid://onek5c8vemlw"]
 
-[ext_resource type="Script" path="res://scripts/thermal_steam.gd" id="1"]
+[ext_resource type="Script" uid="uid://vq652fqt0kc0" path="res://scripts/anomalies/thermal_steam.gd" id="1"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_steam"]
 radius = 7.0
+
+[sub_resource type="StandardMaterial3D" id="Material_steam"]
+transparency = 1
+albedo_color = Color(0.9, 0.9, 0.8, 0.3)
+emission_enabled = true
+emission = Color(0.9, 0.9, 0.8, 0.5)
 
 [sub_resource type="SphereMesh" id="SphereMesh_steam"]
 radius = 7.0
 height = 14.0
 
-[sub_resource type="StandardMaterial3D" id="Material_steam"]
-albedo_color = Color(0.9, 0.9, 0.8, 0.3)
-emission_enabled = true
-emission = Color(0.9, 0.9, 0.8, 0.5)
-transparency = true
-
 [sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_steam"]
-emission_shape = 0
-emission_sphere_radius = 7.0
-color = Color(1, 1, 0.8, 0.5)
-gravity = Vector3(0, -2, 0)
+lifetime_randomness = 0.2
+angle_max = 360.0
+spread = 60.0
 initial_velocity_min = 1.0
 initial_velocity_max = 2.0
+gravity = Vector3(0, -2, 0)
 scale_min = 2.0
 scale_max = 5.0
-spread = 60.0
-angle_min = 0.0
-angle_max = 360.0
-lifetime_randomness = 0.2
+color = Color(1, 1, 0.8, 0.5)
 
-[node name="ThermalSteam" type="Area3D"]
+[node name="ThermalSteam" type="Area3D" unique_id=1058190615]
+visible = false
 script = ExtResource("1")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=899414519]
 shape = SubResource("SphereShape3D_steam")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
-mesh = SubResource("SphereMesh_steam")
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1941891572]
 material_override = SubResource("Material_steam")
+mesh = SubResource("SphereMesh_steam")
 
-[node name="SteamCloud" type="GPUParticles3D" parent="."]
-process_material = SubResource("ParticleProcessMaterial_steam")
+[node name="SteamCloud" type="GPUParticles3D" parent="." unique_id=954515719]
 amount = 500
-one_shot = false
 lifetime = 3.0
 explosiveness = 0.1
 randomness = 0.3
-emitting = true
+process_material = SubResource("ParticleProcessMaterial_steam")
 draw_pass_1 = SubResource("SphereMesh_steam")

@@ -8,150 +8,144 @@ signal stalker_spawned(stalker)
 @export var spawn_interval: float = 30.0
 @export var min_stalkers_per_wave: int = 3
 @export var max_stalkers_per_wave: int = 6
-@export var spawn_radius: float = 500.0
-@export var spawn_height: float = 0.0  # Высота появления (обычно 0 - земля)
-@export var stalker_types: Array[PackedScene] = []
+@export var spawn_radius: float = 30.0
+@export var min_spawn_distance: float = 5.0
+
+# Разные типы сталкеров для разных уровней сложности
+@export var novice_stalker_scene: PackedScene
+@export var veteran_stalker_scene: PackedScene
+@export var master_stalker_scene: PackedScene  # Для будущего расширения
 
 var current_wave: int = 0
 var is_spawning: bool = false
-var active_stalkers: Array[Node] = []
+var active_stalkers: Array[BaseStalker] = []
 
 var _wave_timer: Timer
 var _zone_controller: Node = null
 
-
 func _ready():
-	# Ищем ZoneController
 	_zone_controller = get_tree().get_first_node_in_group("zone_controller")
 	
-	# Настройка таймера
 	_wave_timer = Timer.new()
 	_wave_timer.wait_time = spawn_interval
 	_wave_timer.timeout.connect(_start_wave)
-	_wave_timer.one_shot = false
 	add_child(_wave_timer)
 	_wave_timer.start()
 	
-	# Проверка наличия типов сталкеров
-	if stalker_types.is_empty():
-		push_warning("StalkerSpawner: No stalker types assigned! Добавьте сцены сталкеров в инспекторе.")
+	call_deferred("_start_wave")
 
+func _get_current_difficulty() -> float:
+	"""Получаем текущую сложность из ZoneController"""
+	if _zone_controller and _zone_controller.has_method("get_difficulty"):
+		return _zone_controller.get_difficulty()
+	return 1.0  # По умолчанию нормальная сложность
+
+func _get_stalker_scene() -> PackedScene:
+	"""Выбираем тип сталкера в зависимости от сложности"""
+	var difficulty = _get_current_difficulty()
+	var rand = randf()
+	
+	# Чем выше сложность, тем больше шанс спавна сильных сталкеров
+	match difficulty:
+		0.0:  # Очень легко
+			return novice_stalker_scene
+		0.5:  # Легко
+			return novice_stalker_scene if rand < 0.8 else veteran_stalker_scene
+		1.0:  # Нормально
+			return novice_stalker_scene if rand < 0.5 else veteran_stalker_scene
+		1.5:  # Сложно
+			return veteran_stalker_scene if rand < 0.7 else novice_stalker_scene
+		2.0:  # Очень сложно
+			return veteran_stalker_scene
+		_:
+			# Для будущих уровней сложности
+			if difficulty >= 3.0 and master_stalker_scene:
+				if rand < 0.3:
+					return master_stalker_scene
+			return veteran_stalker_scene if rand < 0.5 else novice_stalker_scene
 
 func _start_wave():
-	if is_spawning:
-		return
-	
+	if is_spawning: return
 	is_spawning = true
 	current_wave += 1
 	wave_started.emit(current_wave)
 	
-	var stalkers_to_spawn = randi_range(min_stalkers_per_wave, max_stalkers_per_wave)
-	var spawned_count = 0
+	# Количество сталкеров тоже зависит от сложности
+	var difficulty = _get_current_difficulty()
+	var base_count = randi_range(min_stalkers_per_wave, max_stalkers_per_wave)
+	var actual_count = ceil(base_count * difficulty)  # Больше сталкеров на высокой сложности
 	
-	for i in range(stalkers_to_spawn):
-		_spawn_stalker()
-		spawned_count += 1
-		await get_tree().create_timer(0.5).timeout
+	var spawned = 0
+	
+	for i in range(actual_count):
+		if _spawn_stalker():
+			spawned += 1
+		await get_tree().create_timer(0.3).timeout
 	
 	is_spawning = false
-	wave_ended.emit(current_wave, spawned_count)
+	wave_ended.emit(current_wave, spawned)
 
+func _spawn_stalker() -> bool:
+	var scene = _get_stalker_scene()
+	if not scene:
+		return false
+	
+	for attempt in range(10):
+		var pos = _get_spawn_position()
+		if pos == Vector3.ZERO:
+			continue
+		
+		var stalker = scene.instantiate() as BaseStalker
+		if not stalker:
+			continue
+		
+		stalker.position = pos
+		get_tree().current_scene.add_child(stalker)
+		
+		# Поворот к центру
+		var dir = -pos.normalized()
+		if dir.length_squared() > 0:
+			stalker.look_at(pos + dir, Vector3.UP)
+		
+		if stalker.has_signal("died"):
+			stalker.died.connect(_on_stalker_died)
+		
+		active_stalkers.append(stalker)
+		stalker_spawned.emit(stalker)
+		return true
+	
+	return false
 
-func _spawn_stalker():
-	if stalker_types.is_empty():
-		push_error("StalkerSpawner: No stalker types assigned!")
-		return
+func _get_spawn_position() -> Vector3:
+	var angle = randf() * TAU
+	var dist = min_spawn_distance + randf() * (spawn_radius - min_spawn_distance)
+	var start = Vector3(cos(angle) * dist, 100, sin(angle) * dist)
 	
-	# Выбираем случайный тип сталкера
-	var stalker_scene = stalker_types[randi() % stalker_types.size()]
-	var stalker = stalker_scene.instantiate()
+	var space = get_world_3d().direct_space_state
+	var query = PhysicsRayQueryParameters3D.new()
+	query.from = start
+	query.to = start + Vector3(0, -500, 0)
+	query.collision_mask = 1
 	
-	# Генерируем позицию по кругу
-	var angle = randf() * 2 * PI
-	var pos = Vector3(
-		cos(angle) * spawn_radius + randf_range(-50, 50),
-		spawn_height + randf_range(-2, 2),  # Небольшая вариация высоты
-		sin(angle) * spawn_radius + randf_range(-50, 50)
-	)
-	stalker.position = pos
+	var result = space.intersect_ray(query)
+	if result:
+		return result.position + Vector3(0, 1.2, 0)
 	
-	# Подключаем сигнал смерти
-	if stalker.has_signal("stalker_died"):
-		stalker.stalker_died.connect(_on_stalker_died.bind(stalker))
-	
-	# Добавляем сталкера в сцену (на уровень выше спавнера)
-	get_parent().add_child(stalker)
-	active_stalkers.append(stalker)
-	stalker_spawned.emit(stalker)
+	return Vector3.ZERO
 
-
-func _on_stalker_died(stalker: Node):
+func _on_stalker_died(stalker: BaseStalker):
 	if stalker in active_stalkers:
 		active_stalkers.erase(stalker)
 	
-	# Добавляем биомассу в ZoneController
 	if _zone_controller and _zone_controller.has_method("add_biomass"):
-		var biomass_value = 10
-		
-		# Проверяем, есть ли у сталкера метод получения ценности
-		if stalker and stalker.has_method("get_biomass_value"):
-			biomass_value = stalker.get_biomass_value()
-		else:
-			# Определяем ценность по имени сталкера
-			if stalker and stalker.has_method("get_stalker_name"):
-				match stalker.get_stalker_name():
-					"Novice":
-						biomass_value = 8
-					"Veteran":
-						biomass_value = 15
-					_:
-						biomass_value = 10
-			elif stalker and stalker.has_method("get_type"):
-				match stalker.get_type():
-					"novice":
-						biomass_value = 8
-					"veteran":
-						biomass_value = 15
-					_:
-						biomass_value = 10
-		
-		_zone_controller.add_biomass(biomass_value)
+		_zone_controller.add_biomass(stalker._get_biomass_value())
 
-
+# Методы для управления
 func set_spawn_interval(new_interval: float):
 	spawn_interval = new_interval
 	if _wave_timer:
 		_wave_timer.wait_time = spawn_interval
 
-
-func start_spawning():
-	if _wave_timer and _wave_timer.is_stopped():
-		_wave_timer.start()
-
-
-func stop_spawning():
-	if _wave_timer and not _wave_timer.is_stopped():
-		_wave_timer.stop()
-
-
-func clear_all_stalkers():
-	for stalker in active_stalkers:
-		if is_instance_valid(stalker):
-			stalker.queue_free()
-	active_stalkers.clear()
-
-
-# Получение количества активных сталкеров
-func get_active_stalker_count() -> int:
-	return active_stalkers.size()
-
-
-# Получение текущей волны
-func get_current_wave() -> int:
-	return current_wave
-
-
-# Принудительный запуск волны (для тестов)
 func force_wave():
 	if not is_spawning:
 		_start_wave()

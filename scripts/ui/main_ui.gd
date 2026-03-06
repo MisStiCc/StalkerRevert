@@ -35,6 +35,10 @@ var zone_controller: Node
 # Метка статуса выброса
 @onready var emission_label: Label = $EmissionLabel
 
+# Метки ресурсов
+@onready var energy_value_label: Label = $EnergyValue
+@onready var biomass_value_label: Label = $BiomassValue
+
 # Таймер выброса
 var emission_timer: Timer
 var emission_active: bool = false
@@ -70,10 +74,10 @@ func _ready():
 	add_child(emission_timer)
 	
 	# Обновляем UI с начальными значениями
-	if zone_controller.has_method("get_energy"):
-		_on_energy_changed(zone_controller.get_energy())
-	if zone_controller.has_method("get_biomass"):
-		_on_biomass_changed(zone_controller.get_biomass())
+	if zone_controller.has_method("get_resource_status"):
+		var status = zone_controller.get_resource_status()
+		_on_energy_changed(status.get("energy", 0), status.get("max_energy", 1000))
+		_on_biomass_changed(status.get("biomass", 0), status.get("max_biomass", 500))
 
 
 func _connect_all_buttons():
@@ -127,12 +131,15 @@ func _disable_all_buttons():
 	emission_button.disabled = true
 
 
-func _on_energy_changed(energy: float):
+func _on_energy_changed(current: float, max_energy: float):
+	if energy_value_label:
+		energy_value_label.text = "%d / %d" % [int(current), int(max_energy)]
 	_update_buttons_state()
 
 
-func _on_biomass_changed(_biomass: float):  # ← ИСПРАВЛЕНО: добавлен подчёркивание
-	pass  # Пока не используем
+func _on_biomass_changed(current: float, max_biomass: float):
+	if biomass_value_label:
+		biomass_value_label.text = "%d / %d" % [int(current), int(max_biomass)]
 
 
 func _update_buttons_state():
