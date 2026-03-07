@@ -29,6 +29,7 @@ var event_manager: EventManager
 var progression_manager: ProgressionManager
 var fog_manager: FogManager
 var particle_manager: ParticleManager
+var sound_manager: SoundManager
 
 # ========== КОНФИГУРАЦИЯ ==========
 @export var anomaly_scenes: Dictionary = {}
@@ -95,6 +96,10 @@ func _setup_managers():
 	# 7. ParticleManager (визуальный)
 	particle_manager = ParticleManager.new()
 	add_child(particle_manager)
+
+	# 8. SoundManager (аудио)
+	sound_manager = SoundManager.new()
+	add_child(sound_manager)
 
 
 func _connect_signals():
