@@ -16,6 +16,15 @@ signal stalker_spawned(stalker)
 @export var veteran_stalker_scene: PackedScene
 @export var master_stalker_scene: PackedScene  # Для будущего расширения
 
+# Скрипты поведения
+@export var behavior_scripts: Dictionary = {
+	"greedy": preload("res://scripts/stalkers/greedy_stalker.gd"),
+	"brave": preload("res://scripts/stalkers/brave_stalker.gd"),
+	"cautious": preload("res://scripts/stalkers/cautious_stalker.gd"),
+	"aggressive": preload("res://scripts/stalkers/aggressive_stalker.gd"),
+	"stealthy": preload("res://scripts/stalkers/stealthy_stalker.gd")
+}
+
 var current_wave: int = 0
 var is_spawning: bool = false
 var active_stalkers: Array[BaseStalker] = []
@@ -90,6 +99,9 @@ func _spawn_stalker() -> bool:
 	if not scene:
 		return false
 	
+	# Выбираем случайное поведение
+	var behavior_type = _get_random_behavior()
+	
 	for attempt in range(10):
 		var pos = _get_spawn_position()
 		if pos == Vector3.ZERO:
@@ -100,6 +112,13 @@ func _spawn_stalker() -> bool:
 			continue
 		
 		stalker.position = pos
+		
+		# Применяем поведение
+		if behavior_scripts.has(behavior_type):
+			stalker.set_script(behavior_scripts[behavior_type])
+			# Вызываем _ready для инициализации поведения
+			stalker._ready()
+		
 		get_tree().current_scene.add_child(stalker)
 		
 		# Поворот к центру
@@ -115,6 +134,11 @@ func _spawn_stalker() -> bool:
 		return true
 	
 	return false
+
+
+func _get_random_behavior() -> String:
+	var behaviors = ["greedy", "brave", "cautious", "aggressive", "stealthy"]
+	return behaviors[randi() % behaviors.size()]
 
 func _get_spawn_position() -> Vector3:
 	var angle = randf() * TAU

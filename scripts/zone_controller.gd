@@ -106,6 +106,16 @@ var current_energy: float
 var current_biomass: float
 var current_difficulty: float
 
+# Параметры забега
+var run_number: int = 1
+var is_radiating: bool = false
+var radiation_pulse_count: int = 0
+var pulses_to_win: int = 5
+
+# Пороги биомассы
+var critical_biomass_threshold: float = 0.8
+var safe_biomass_level: float = 0.3
+
 # Активные сущности
 var active_stalkers: Array[Node] = []
 var active_anomalies: Array[Node] = []
@@ -115,6 +125,10 @@ var active_mutants: Array[Node] = []
 # Таймеры
 var _regen_timer: Timer
 var _difficulty_timer: Timer
+var _radiation_timer: Timer
+
+# Референс на monolith
+var monolith: Node
 
 
 func _ready():
@@ -124,9 +138,17 @@ func _ready():
 	
 	add_to_group("zone_controller")
 	
+	# Поиск monolith
+	monolith = get_tree().get_first_node_in_group("monolith")
+	
+	# Подключение сигналов monolith
+	if monolith:
+		monolith.game_over.connect(_on_game_over)
+	
 	_setup_timers()
 	
 	print("ZoneController инициализирован с ", anomaly_scenes.size(), " аномалиями")
+	print("🏃 Забег #", run_number, " | Цель: ", pulses_to_win, " выбросов")
 
 
 func _setup_timers():
@@ -439,3 +461,159 @@ func get_biomass() -> float:
 
 func can_afford(energy_cost: float, biomass_cost: float) -> bool:
 	return current_energy >= energy_cost and current_biomass >= biomass_cost
+
+
+# ==================== ВЫБРОС (RADIATION PULSE) ====================
+
+func _process(delta):
+	# Проверка на выброс
+	if not is_radiating and current_biomass >= max_biomass * critical_biomass_threshold:
+		start_radiation_pulse()
+
+
+func start_radiation_pulse():
+	if is_radiating:
+		return
+	
+	is_radiating = true
+	radiation_pulse_count += 1
+	current_difficulty += 0.2
+	difficulty_changed.emit(current_difficulty)
+	
+	print("⚠️ ВЫБРОС #", radiation_pulse_count, " | Сложность: ", current_difficulty)
+	
+	# 1. Все сталкеры сбрасывают артефакты
+	_drop_all_artifacts()
+	
+	# 2. ПЕРЕМЕШИВАЕМ аномалии по радиусам
+	_shuffle_all_anomalies()
+	
+	# 3. Сбрасываем биомассу
+	current_biomass = max_biomass * safe_biomass_level
+	biomass_changed.emit(current_biomass, max_biomass)
+	
+	# 4. Проверка на победу
+	if radiation_pulse_count >= pulses_to_win:
+		_win_game()
+	
+	# Завершаем выброс через 5 секунд
+	await get_tree().create_timer(5.0).timeout
+	is_radiating = false
+	print("✅ Выброс закончен")
+
+
+func _drop_all_artifacts():
+	var dropped = 0
+	for s in active_stalkers:
+		if is_instance_valid(s) and s.has_method("drop_artifact") and s.has_artifact():
+			s.drop_artifact()
+			droped += 1
+	print("💥 Сброшено артефактов: ", dropped)
+
+
+func _shuffle_all_anomalies():
+	"""Перемешивает аномалии по радиусам согласно их уровню"""
+	if not monolith:
+		return
+	
+	var anomalies_by_level = {1: [], 2: [], 3: []}
+	
+	for a in active_anomalies:
+		if not is_instance_valid(a):
+			continue
+		
+		var level = 1
+		if a.has_method("get_difficulty"):
+			level = a.get_difficulty()
+		anomalies_by_level[level].append(a)
+	
+	# Перемешиваем каждый уровень в своём радиусе
+	for level in [1, 2, 3]:
+		for a in anomalies_by_level[level]:
+			var new_pos = _get_random_position_in_radius_for_level(level)
+			if new_pos != Vector3.ZERO:
+				a.global_position = new_pos
+				print("  ➡️ Аномалия ур.", level, " перемещена")
+
+
+func _get_random_position_in_radius_for_level(level: int) -> Vector3:
+	if not monolith:
+		return Vector3.ZERO
+	
+	var min_r = 0.0
+	var max_r = 0.0
+	
+	match level:
+		1:  # слабые аномалии - дальний радиус
+			min_r = monolith.get_middle_radius()
+			max_r = monolith.get_outer_radius()
+		2:  # средние - средний радиус
+			min_r = monolith.get_inner_radius()
+			max_r = monolith.get_middle_radius()
+		3:  # сильные - ближний радиус
+			min_r = 0.0
+			max_r = monolith.get_inner_radius()
+	
+	return _get_random_position(min_r, max_r)
+
+
+func _get_random_position(min_r: float, max_r: float) -> Vector3:
+	if not monolith:
+		return Vector3.ZERO
+	
+	var attempts = 0
+	while attempts < 30:
+		attempts += 1
+		
+		var angle = randf() * TAU
+		var distance = min_r + randf() * (max_r - min_r)
+		var pos = monolith.global_position + Vector3(cos(angle) * distance, 50, sin(angle) * distance)
+		
+		# Проверка на землю
+		var space = get_world_3d().direct_space_state
+		var query = PhysicsRayQueryParameters3D.new()
+		query.from = pos
+		query.to = pos + Vector3(0, -100, 0)
+		query.collision_mask = 1
+		
+		var result = space.intersect_ray(query)
+		if result:
+			pos.y = result.position.y + 0.5
+			return pos
+	
+	return Vector3.ZERO
+
+
+# ==================== ПОБЕДА И ПОРАЖЕНИЕ ====================
+
+func _on_game_over():
+	"""Поражение - сталкер коснулся Монолита"""
+	print("💀 GAME OVER - Забег #", run_number)
+	get_tree().paused = true
+
+
+func _win_game():
+	"""Победа - пережито достаточно выбросов"""
+	var reward = _calculate_reward()
+	print("🏆 ПОБЕДА! Забег #", run_number, " | Награда: ", reward)
+	get_tree().paused = true
+
+
+func _calculate_reward() -> float:
+	"""Расчёт награды"""
+	var base_reward = 100.0 * run_number
+	return base_reward * current_difficulty
+
+
+# ==================== ГЕТТЕРЫ ====================
+
+func get_run_number() -> int:
+	return run_number
+
+
+func get_radiation_pulse_count() -> int:
+	return radiation_pulse_count
+
+
+func get_pulses_to_win() -> int:
+	return pulses_to_win
