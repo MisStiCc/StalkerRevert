@@ -1,619 +1,278 @@
 extends Node
 class_name ZoneController
 
-## Контроллер зоны - управляет ресурсами, сложностью и взаимодействиями
+## ZoneController - ОРХЕСТРАТОР
+## Управляет менеджерами и координирует игровую логику
+## Каждый менеджер отвечает за свою область ответственности
 
-# Сигналы
-signal energy_changed(current: float, max: float)
-signal biomass_changed(current: float, max: float)
+# ========== СИГНАЛЫ (пробрасываем наружу) ==========
+signal energy_changed(current: float, max_energy: float)
+signal biomass_changed(current: float, max_biomass: float)
 signal difficulty_changed(new_difficulty: float)
-signal stalker_entered(stalker: Node)
-signal stalker_left(stalker: Node)
+signal wave_started(wave_number: int)
+signal wave_ended(wave_number: int, stalkers_spawned: int)
+signal radiation_pulse_started(level: int)
+signal radiation_pulse_ended
+signal anomaly_created(anomaly: Node, anomaly_type: String, difficulty: int)
 signal anomaly_destroyed(anomaly_type: String, position: Vector3, difficulty: int)
-signal artifact_created(artifact_type: String, position: Vector3)
-signal artifact_collected(artifact: Node, stalker: Node)
+signal artifact_created(artifact: Node, artifact_type: String, position: Vector3)
 signal artifact_stolen(artifact: Node, stalker: Node)
 signal stalker_died(stalker_type: String, biomass_returned: float)
+signal game_over
+signal game_won(run_number: int, reward: float)
 
-# Ресурсы
+# ========== МЕНЕДЖЕРЫ ==========
+var resource_manager: ResourceManager
+var anomaly_manager: AnomalyManager
+var spawn_manager: SpawnManager
+var event_manager: EventManager
+var progression_manager: ProgressionManager
+
+# ========== КОНФИГУРАЦИЯ ==========
+@export var anomaly_scenes: Dictionary = {}
+@export var anomaly_artifact_map: Dictionary = {}
+@export var artifact_values: Dictionary = {}
+@export var difficulty_to_rarity: Dictionary = {}
+
+@export var novice_stalker_scene: PackedScene
+@export var veteran_stalker_scene: PackedScene
+@export var master_stalker_scene: PackedScene
+@export var mutant_scenes: Dictionary = {}
+
 @export var max_energy: float = 1000.0
-@export var max_biomass: float = 500.0
-@export var energy_regen_rate: float = 1.0
-@export var biomass_decay_rate: float = 0.1
-
-# Сложность
-@export var base_difficulty: float = 1.0
-@export var difficulty_increase_per_stalker: float = 0.05
-@export var max_difficulty: float = 3.0
-@export var min_difficulty: float = 0.5
-
-# Аномалии - ВСЕ 16 аномалий проекта
-@export var anomaly_scenes: Dictionary = {
-	"thermal_steam": preload("res://scenes/zone/anomalies/thermal_steam.tscn"),
-	"thermal_comet": preload("res://scenes/zone/anomalies/thermal_comet.tscn"),
-	"heat_anomaly": preload("res://scenes/zone/anomalies/heat_anomaly.tscn"),
-	"gravity_vortex": preload("res://scenes/zone/anomalies/gravity_vortex.tscn"),
-	"gravity_lift": preload("res://scenes/zone/anomalies/gravity_lift.tscn"),
-	"gravity_whirlwind": preload("res://scenes/zone/anomalies/gravity_whirlwind.tscn"),
-	"electric_anomaly": preload("res://scenes/zone/anomalies/electric_anomaly.tscn"),
-	"electric_tesla": preload("res://scenes/zone/anomalies/electric_tesla.tscn"),
-	"chemical_gas": preload("res://scenes/zone/anomalies/chemical_gas.tscn"),
-	"chemical_acid_cloud": preload("res://scenes/zone/anomalies/chemical_acid_cloud.tscn"),
-	"chemical_jelly": preload("res://scenes/zone/anomalies/chemical_jelly.tscn"),
-	"radiation_hotspot": preload("res://scenes/zone/anomalies/radiation_hotspot.tscn"),
-	"bio_burning_fluff": preload("res://scenes/zone/anomalies/bio_burning_fluff.tscn"),
-	"time_dilation": preload("res://scenes/zone/anomalies/time_dilation.tscn"),
-	"teleport": preload("res://scenes/zone/anomalies/teleport.tscn"),
-	"acid_anomaly": preload("res://scenes/zone/anomalies/acid_anomaly.tscn")
-}
-
-# Карта соответствия аномалий и артефактов
-var anomaly_artifact_map: Dictionary = {
-	"thermal_steam": "fireball_artifact",
-	"thermal_comet": "fireball_artifact",
-	"heat_anomaly": "fireball_artifact",
-	"gravity_vortex": "graviton_artifact",
-	"gravity_lift": "graviton_artifact",
-	"gravity_whirlwind": "void_artifact",
-	"electric_anomaly": "spark_artifact",
-	"electric_tesla": "battery_artifact",
-	"chemical_acid_cloud": "acid_drop_artifact",
-	"chemical_gas": "gas_bottle_artifact",
-	"chemical_jelly": "slime_artifact",
-	"radiation_hotspot": "uranium_artifact",
-	"bio_burning_fluff": "heart_artifact",
-	"time_dilation": "clock_artifact",
-	"teleport": "anchor_artifact",
-	"acid_anomaly": "acid_drop_artifact"
-}
-
-# Ценности артефактов по редкости
-var artifact_values: Dictionary = {
-	"common": [5, 6, 7, 8, 9, 10],
-	"rare": [15, 18, 20, 22, 25],
-	"legendary": [30, 35, 40, 45, 50]
-}
-
-# Редкость по сложности аномалии
-var difficulty_to_rarity: Dictionary = {
-	1: "common",
-	2: "rare",
-	3: "legendary"
-}
-
-# Стоимость мутантов
-var mutant_costs: Dictionary = {
-	"dog_mutant": 15.0,
-	"flesh": 15.0,
-	"snork_mutant": 25.0,
-	"pseudodog": 25.0,
-	"controller_mutant": 40.0,
-	"poltergeist": 40.0,
-	"bloodsucker": 50.0,
-	"chimera": 75.0,
-	"pseudogiant": 75.0
-}
-
-# Возврат биомассы за убитых сталкеров
-var stalker_biomass_returns: Dictionary = {
-	"novice": 8.0,
-	"veteran": 15.0,
-	"master": 30.0
-}
-
-# Текущие значения
-var current_energy: float
-var current_biomass: float
-var current_difficulty: float
-
-# Параметры забега
-var run_number: int = 1
-var is_radiating: bool = false
-var radiation_pulse_count: int = 0
-var pulses_to_win: int = 5
-
-# Пороги биомассы
-var critical_biomass_threshold: float = 0.8
-var safe_biomass_level: float = 0.3
-
-# Активные сущности
-var active_stalkers: Array[Node] = []
-var active_anomalies: Array[Node] = []
-var active_artifacts: Array[Node] = []
-var active_mutants: Array[Node] = []
-
-# Таймеры
-var _regen_timer: Timer
-var _difficulty_timer: Timer
-var _radiation_timer: Timer
-
-# Референс на monolith
-var monolith: Node
+@export var max_biomass: float = 1000.0
+@export var critical_biomass_threshold: float = 0.8
 
 
 func _ready():
-	current_energy = max_energy * 0.5
-	current_biomass = max_biomass * 0.3
-	current_difficulty = base_difficulty
-	
 	add_to_group("zone_controller")
+	_setup_managers()
+	_connect_signals()
+	_initialize_game()
+	print("🎮 ZoneController: инициализирован как оркестратор")
+
+
+func _setup_managers():
+	# 1. ResourceManager
+	resource_manager = ResourceManager.new()
+	resource_manager.max_energy = max_energy
+	resource_manager.max_biomass = max_biomass
+	add_child(resource_manager)
 	
-	# Поиск monolith
-	monolith = get_tree().get_first_node_in_group("monolith")
+	# 2. AnomalyManager
+	anomaly_manager = AnomalyManager.new()
+	anomaly_manager.anomaly_scenes = anomaly_scenes
+	anomaly_manager.anomaly_artifact_map = anomaly_artifact_map
+	anomaly_manager.artifact_values = artifact_values
+	anomaly_manager.difficulty_to_rarity = difficulty_to_rarity
+	add_child(anomaly_manager)
 	
-	# Подключение сигналов monolith
-	if monolith:
-		monolith.game_over.connect(_on_game_over)
+	# 3. SpawnManager
+	spawn_manager = SpawnManager.new()
+	spawn_manager.stalker_scenes = {
+		"novice": novice_stalker_scene,
+		"veteran": veteran_stalker_scene,
+		"master": master_stalker_scene
+	}
+	spawn_manager.mutant_scenes = mutant_scenes
+	add_child(spawn_manager)
 	
-	_setup_timers()
+	# 4. EventManager
+	event_manager = EventManager.new()
+	add_child(event_manager)
 	
-	print("ZoneController инициализирован с ", anomaly_scenes.size(), " аномалиями")
-	print("🏃 Забег #", run_number, " | Цель: ", pulses_to_win, " выбросов")
+	# 5. ProgressionManager
+	progression_manager = ProgressionManager.new()
+	add_child(progression_manager)
 
 
-func _setup_timers():
-	_regen_timer = Timer.new()
-	_regen_timer.wait_time = 1.0
-	_regen_timer.timeout.connect(_on_regen_timer)
-	add_child(_regen_timer)
-	_regen_timer.start()
+func _connect_signals():
+	resource_manager.energy_changed.connect(_on_energy_changed)
+	resource_manager.biomass_changed.connect(_on_biomass_changed)
+	resource_manager.critical_biomass_reached.connect(_on_critical_biomass)
 	
-	_difficulty_timer = Timer.new()
-	_difficulty_timer.wait_time = 5.0
-	_difficulty_timer.timeout.connect(_update_difficulty)
-	add_child(_difficulty_timer)
-	_difficulty_timer.start()
-
-
-# ==================== УПРАВЛЕНИЕ РЕСУРСАМИ ====================
-
-func _on_regen_timer():
-	var energy_gain = energy_regen_rate
-	current_energy = min(current_energy + energy_gain, max_energy)
-	energy_changed.emit(current_energy, max_energy)
+	anomaly_manager.anomaly_created.connect(_on_anomaly_created)
+	anomaly_manager.anomaly_destroyed.connect(_on_anomaly_destroyed)
+	anomaly_manager.artifact_created.connect(_on_artifact_created)
+	anomaly_manager.artifact_stolen.connect(_on_artifact_stolen)
 	
-	var biomass_loss = biomass_decay_rate
-	current_biomass = max(current_biomass - biomass_loss, 0)
-	biomass_changed.emit(current_biomass, max_biomass)
-
-
-func add_energy(amount: float):
-	current_energy = min(current_energy + amount, max_energy)
-	energy_changed.emit(current_energy, max_energy)
-
-
-func spend_energy(amount: float) -> bool:
-	if current_energy >= amount:
-		current_energy -= amount
-		energy_changed.emit(current_energy, max_energy)
-		return true
-	return false
-
-
-func add_biomass(amount: float):
-	current_biomass = min(current_biomass + amount, max_biomass)
-	biomass_changed.emit(current_biomass, max_biomass)
-
-
-func spend_biomass(amount: float) -> bool:
-	if current_biomass >= amount:
-		current_biomass -= amount
-		biomass_changed.emit(current_biomass, max_biomass)
-		return true
-	return false
-
-
-# ==================== УПРАВЛЕНИЕ СЛОЖНОСТЬЮ ====================
-
-func get_difficulty() -> float:
-	return current_difficulty
-
-
-func set_difficulty(value: float):
-	current_difficulty = clamp(value, min_difficulty, max_difficulty)
-	difficulty_changed.emit(current_difficulty)
-
-
-func _update_difficulty():
-	var stalker_count = active_stalkers.size()
-	var difficulty_mod = 1.0 + (stalker_count * difficulty_increase_per_stalker)
-	var new_difficulty = base_difficulty * difficulty_mod
-	current_difficulty = clamp(new_difficulty, min_difficulty, max_difficulty)
-	difficulty_changed.emit(current_difficulty)
-
-
-# ==================== УПРАВЛЕНИЕ СТАЛКЕРАМИ ====================
-
-func register_stalker(stalker: Node):
-	if stalker not in active_stalkers:
-		active_stalkers.append(stalker)
-		stalker_entered.emit(stalker)
-
-
-func unregister_stalker(stalker: Node):
-	if stalker in active_stalkers:
-		active_stalkers.erase(stalker)
-		stalker_left.emit(stalker)
-
-
-func get_stalker_count() -> int:
-	return active_stalkers.size()
-
-
-# ==================== УПРАВЛЕНИЕ АНОМАЛИЯМИ ====================
-
-func create_anomaly(anomaly_type: String, position: Vector3, difficulty: int = 1) -> Node:
-	if not anomaly_scenes.has(anomaly_type):
-		push_error("Неизвестный тип аномалии: ", anomaly_type)
-		return null
+	spawn_manager.wave_started.connect(_on_wave_started)
+	spawn_manager.wave_ended.connect(_on_wave_ended)
+	spawn_manager.stalker_died.connect(_on_stalker_died)
 	
-	if not spend_energy(_get_anomaly_cost(anomaly_type)):
-		print("Недостаточно энергии")
-		return null
-	
-	var scene = anomaly_scenes[anomaly_type]
-	var anomaly = scene.instantiate()
-	anomaly.position = position
-	
-	# Устанавливаем сложность
-	if anomaly.has_method("set_difficulty"):
-		anomaly.set_difficulty(difficulty)
-	
-	# Подключаем сигнал уничтожения
-	if anomaly.has_signal("destroyed"):
-		anomaly.destroyed.connect(_on_anomaly_destroyed.bind(anomaly))
-	
-	get_tree().current_scene.add_child(anomaly)
-	active_anomalies.append(anomaly)
-	
-	print("Аномалия ", anomaly_type, " (ур.", difficulty, ") создана")
-	return anomaly
+	event_manager.radiation_pulse_started.connect(_on_radiation_pulse_started)
+	event_manager.radiation_pulse_ended.connect(_on_radiation_pulse_ended)
+	event_manager.game_over.connect(_on_game_over)
+	event_manager.game_won.connect(_on_game_won)
 
 
-# НОВЫЙ МЕТОД: Обработка уничтожения аномалии
+func _initialize_game():
+	var run_data = progression_manager.start_new_run()
+	event_manager.set_pulses_to_win(run_data.pulses_to_win)
+	event_manager.set_run_number(run_data.run_number)
+	event_manager.set_difficulty(run_data.difficulty)
+	spawn_manager.start_spawning()
+
+
+# ========== ОБРАБОТЧИКИ СИГНАЛОВ ==========
+
+func _on_energy_changed(current: float, max_energy: float):
+	energy_changed.emit(current, max_energy)
+
+
+func _on_biomass_changed(current: float, max_biomass: float):
+	biomass_changed.emit(current, max_biomass)
+
+
+func _on_critical_biomass():
+	event_manager.start_radiation_pulse()
+
+
+func _on_anomaly_created(anomaly: Node, anomaly_type: String, difficulty: int):
+	anomaly_created.emit(anomaly, anomaly_type, difficulty)
+
+
 func _on_anomaly_destroyed(anomaly_type: String, position: Vector3, difficulty: int):
-	# Удаляем из списка
-	if active_anomalies.has(position):
-		active_anomalies.erase(position)
-	
-	# Создаём артефакт
-	_spawn_artifact_from_anomaly(anomaly_type, position, difficulty)
-	
 	anomaly_destroyed.emit(anomaly_type, position, difficulty)
-	print("💥 Аномалия ", anomaly_type, " уничтожена! Сложность: ", difficulty)
 
 
-# НОВЫЙ МЕТОД: Создание артефакта из аномалии
-func _spawn_artifact_from_anomaly(anomaly_type: String, position: Vector3, difficulty: int):
-	var artifact_type = anomaly_artifact_map.get(anomaly_type, "common_artifact")
-	var rarity = difficulty_to_rarity.get(difficulty, "common")
-	var values = artifact_values.get(rarity, [10])
-	var value = values[randi() % values.size()]
-	
-	var artifact = create_artifact(artifact_type, position, rarity, value)
-	
-	if artifact:
-		print("📦 Создан ", rarity, " артефакт ", artifact_type, " ценой ", value)
+func _on_artifact_created(artifact: Node, artifact_type: String, position: Vector3):
+	artifact_created.emit(artifact, artifact_type, position)
 
 
-func _get_anomaly_cost(anomaly_type: String) -> float:
-	match anomaly_type:
-		"heat_anomaly": return 50.0
-		"electric_anomaly": return 75.0
-		"acid_anomaly": return 100.0
-		"gravity_vortex": return 150.0
-		"gravity_lift": return 80.0
-		"gravity_whirlwind": return 120.0
-		"thermal_steam": return 70.0
-		"thermal_comet": return 100.0
-		"chemical_jelly": return 60.0
-		"chemical_gas": return 85.0
-		"chemical_acid_cloud": return 110.0
-		"radiation_hotspot": return 95.0
-		"time_dilation": return 200.0
-		"teleport": return 180.0
-		"electric_tesla": return 90.0
-		"bio_burning_fluff": return 75.0
-		_: return 50.0
-
-
-# ==================== УПРАВЛЕНИЕ АРТЕФАКТАМИ ====================
-
-func create_artifact(artifact_type: String, position: Vector3, rarity: String = "common", value: float = 10.0) -> Node:
-	var scene_path = "res://scenes/artifacts/" + artifact_type + ".tscn"
-	if not ResourceLoader.exists(scene_path):
-		push_error("Сцена артефакта не найдена: ", scene_path)
-		return null
-	
-	var scene = load(scene_path)
-	var artifact = scene.instantiate()
-	artifact.position = position
-	
-	# Устанавливаем редкость и ценность
-	if artifact.has_method("set_rarity_and_value"):
-		artifact.set_rarity_and_value(rarity, value)
-	
-	# Подключаем сигналы
-	if artifact.has_signal("stolen"):
-		artifact.stolen.connect(_on_artifact_stolen.bind(artifact))
-	if artifact.has_signal("collected"):
-		artifact.collected.connect(_on_artifact_collected.bind(artifact))
-	
-	get_tree().current_scene.add_child(artifact)
-	active_artifacts.append(artifact)
-	
-	artifact_created.emit(artifact_type, position)
-	
-	return artifact
-
-
-# НОВЫЙ МЕТОД: Обработка кражи артефакта сталкером
 func _on_artifact_stolen(artifact: Node, stalker: Node):
-	# Потеря биомассы = ценность артефакта
 	var loss = 10.0
 	if artifact.has_method("get_value"):
 		loss = artifact.get_value()
-	
-	current_biomass = max(current_biomass - loss, 0)
-	biomass_changed.emit(current_biomass, max_biomass)
-	
-	var stalker_type = "неизвестный"
-	if stalker.has_method("get_stalker_type"):
-		stalker_type = stalker.get_stalker_type()
-		
-		# Сталкер несёт артефакт
-		if stalker.has_method("_on_artifact_stolen"):
-			stalker._on_artifact_stolen(artifact)
-	
-	print("👿 ", stalker_type, " украл артефакт! Потеряно ", loss, " биомассы")
+	resource_manager.spend_biomass(loss)
 	artifact_stolen.emit(artifact, stalker)
 
 
-# НОВЫЙ МЕТОД: Обработка сбора артефакта зоной
-func _on_artifact_collected(artifact: Node, stalker: Node):
-	if artifact in active_artifacts:
-		active_artifacts.erase(artifact)
-		artifact_collected.emit(artifact, stalker)
+func _on_wave_started(wave_number: int):
+	wave_started.emit(wave_number)
+	spawn_manager.set_difficulty(progression_manager.get_current_difficulty())
 
 
-# ==================== УПРАВЛЕНИЕ МУТАНТАМИ ====================
-
-func register_mutant(mutant: Node):
-	if mutant not in active_mutants:
-		active_mutants.append(mutant)
+func _on_wave_ended(wave_number: int, stalkers_spawned: int):
+	wave_ended.emit(wave_number, stalkers_spawned)
 
 
-func unregister_mutant(mutant: Node):
-	if mutant in active_mutants:
-		active_mutants.erase(mutant)
-
-
-func spawn_mutant(mutant_type: String, position: Vector3) -> Node:
-	var cost = mutant_costs.get(mutant_type, 20.0)
-	
-	if not spend_biomass(cost):
-		print("❌ Недостаточно биомассы для создания мутанта ", mutant_type)
-		return null
-	
-	var scene_path = "res://scenes/zone/mutants/" + mutant_type + ".tscn"
-	if not ResourceLoader.exists(scene_path):
-		push_error("Сцена мутанта не найдена: ", scene_path)
-		return null
-	
-	var scene = load(scene_path)
-	var mutant = scene.instantiate()
-	mutant.position = position
-	
-	get_tree().current_scene.add_child(mutant)
-	active_mutants.append(mutant)
-	
-	print("🦎 Мутант ", mutant_type, " создан за ", cost, " биомассы")
-	return mutant
-
-
-# НОВЫЙ МЕТОД: Обработка смерти сталкера
-func on_stalker_died(stalker: Node):
-	var stalker_type = "base"
+func _on_stalker_died(stalker: Node, biomass_returned: float):
+	resource_manager.add_biomass(biomass_returned)
+	var stalker_type = "unknown"
 	if stalker.has_method("get_stalker_type"):
 		stalker_type = stalker.get_stalker_type()
-	
-	var return_value = stalker_biomass_returns.get(stalker_type, 10.0)
-	add_biomass(return_value)
-	
-	print("💀 Сталкер (", stalker_type, ") убит! Возвращено ", return_value, " биомассы")
-	stalker_died.emit(stalker_type, return_value)
+	stalker_died.emit(stalker_type, biomass_returned)
+	progression_manager.record_stalker_killed()
 
 
-# ==================== ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ====================
-
-func get_resource_status() -> Dictionary:
-	return {
-		"energy": current_energy,
-		"max_energy": max_energy,
-		"biomass": current_biomass,
-		"max_biomass": max_biomass,
-		"difficulty": current_difficulty,
-		"stalker_count": active_stalkers.size()
-	}
+func _on_radiation_pulse_started(level: int):
+	var safe_level = max_biomass * 0.3
+	resource_manager.current_biomass = safe_level
+	resource_manager.biomass_changed.emit(safe_level, max_biomass)
+	progression_manager.increase_difficulty()
+	event_manager.set_difficulty(progression_manager.get_current_difficulty())
+	radiation_pulse_started.emit(level)
 
 
-# ==================== АЛИАСЫ ДЛЯ СОВМЕСТИМОСТИ ====================
-
-var button_to_anomaly_map: Dictionary = {
-	"fire": "heat_anomaly",
-	"electric": "electric_anomaly",
-	"acid": "acid_anomaly"
-}
+func _on_radiation_pulse_ended():
+	radiation_pulse_ended.emit()
 
 
-func spawn_anomaly(anomaly_type: String, position: Vector3) -> Node:
-	var actual_type = button_to_anomaly_map.get(anomaly_type, anomaly_type)
-	return create_anomaly(actual_type, position)
+func _on_game_over():
+	game_over.emit()
 
+
+func _on_game_won(run_number: int, reward: float):
+	resource_manager.add_biomass(reward)
+	game_won.emit(run_number, reward)
+
+
+# ========== ПУБЛИЧНОЕ API ==========
 
 func get_energy() -> float:
-	return current_energy
+	return resource_manager.get_energy()
 
 
 func get_biomass() -> float:
-	return current_biomass
+	return resource_manager.get_biomass()
 
 
-func can_afford(energy_cost: float, biomass_cost: float) -> bool:
-	return current_energy >= energy_cost and current_biomass >= biomass_cost
+func add_energy(amount: float):
+	resource_manager.add_energy(amount)
 
 
-# ==================== ВЫБРОС (RADIATION PULSE) ====================
-
-func _process(delta):
-	# Проверка на выброс
-	if not is_radiating and current_biomass >= max_biomass * critical_biomass_threshold:
-		start_radiation_pulse()
+func add_biomass(amount: float):
+	resource_manager.add_biomass(amount)
 
 
-func start_radiation_pulse():
-	if is_radiating:
-		return
-	
-	is_radiating = true
-	radiation_pulse_count += 1
-	current_difficulty += 0.2
-	difficulty_changed.emit(current_difficulty)
-	
-	print("⚠️ ВЫБРОС #", radiation_pulse_count, " | Сложность: ", current_difficulty)
-	
-	# 1. Все сталкеры сбрасывают артефакты
-	_drop_all_artifacts()
-	
-	# 2. ПЕРЕМЕШИВАЕМ аномалии по радиусам
-	_shuffle_all_anomalies()
-	
-	# 3. Сбрасываем биомассу
-	current_biomass = max_biomass * safe_biomass_level
-	biomass_changed.emit(current_biomass, max_biomass)
-	
-	# 4. Проверка на победу
-	if radiation_pulse_count >= pulses_to_win:
-		_win_game()
-	
-	# Завершаем выброс через 5 секунд
-	await get_tree().create_timer(5.0).timeout
-	is_radiating = false
-	print("✅ Выброс закончен")
+func spend_energy(amount: float) -> bool:
+	return resource_manager.spend_energy(amount)
 
 
-func _drop_all_artifacts():
-	var dropped_count = 0
-	for s in active_stalkers:
-		if is_instance_valid(s) and s.has_method("drop_artifact") and s.has_artifact():
-			s.drop_artifact()
-			dropped_count += 1
-	print("💥 Сброшено артефактов: ", dropped_count)
+func spend_biomass(amount: float) -> bool:
+	return resource_manager.spend_biomass(amount)
 
 
-func _shuffle_all_anomalies():
-	"""Перемешивает аномалии по радиусам согласно их уровню"""
-	if not monolith:
-		return
-	
-	var anomalies_by_level = {1: [], 2: [], 3: []}
-	
-	for a in active_anomalies:
-		if not is_instance_valid(a):
-			continue
-		
-		var level = 1
-		if a.has_method("get_difficulty"):
-			level = a.get_difficulty()
-		anomalies_by_level[level].append(a)
-	
-	# Перемешиваем каждый уровень в своём радиусе
-	for level in [1, 2, 3]:
-		for a in anomalies_by_level[level]:
-			var new_pos = _get_random_position_in_radius_for_level(level)
-			if new_pos != Vector3.ZERO:
-				a.global_position = new_pos
-				print("  ➡️ Аномалия ур.", level, " перемещена")
+func create_anomaly(anomaly_type: String, position: Vector3, difficulty: int = 1) -> Node:
+	var cost = anomaly_manager.get_anomaly_cost(anomaly_type)
+	if not resource_manager.spend_energy(cost):
+		print("ZoneController: недостаточно энергии для аномалии ", anomaly_type)
+		return null
+	return anomaly_manager.create_anomaly(anomaly_type, position, difficulty, cost)
 
 
-func _get_random_position_in_radius_for_level(level: int) -> Vector3:
-	if not monolith:
-		return Vector3.ZERO
-	
-	var min_r = 0.0
-	var max_r = 0.0
-	
-	match level:
-		1:  # слабые аномалии - дальний радиус
-			min_r = monolith.get_middle_radius()
-			max_r = monolith.get_outer_radius()
-		2:  # средние - средний радиус
-			min_r = monolith.get_inner_radius()
-			max_r = monolith.get_middle_radius()
-		3:  # сильные - ближний радиус
-			min_r = 0.0
-			max_r = monolith.get_inner_radius()
-	
-	return _get_random_position(min_r, max_r)
+func create_artifact(artifact_type: String, position: Vector3, rarity: String = "common", value: float = 10.0) -> Node:
+	return anomaly_manager.create_artifact(artifact_type, position, rarity, value)
 
 
-func _get_random_position(min_r: float, max_r: float) -> Vector3:
-	if not monolith:
-		return Vector3.ZERO
-	
-	var attempts = 0
-	while attempts < 30:
-		attempts += 1
-		
-		var angle = randf() * TAU
-		var distance = min_r + randf() * (max_r - min_r)
-		var pos = monolith.global_position + Vector3(cos(angle) * distance, 50, sin(angle) * distance)
-		
-		# Проверка на землю
-		var space = get_viewport().get_world_3d().direct_space_state
-		var query = PhysicsRayQueryParameters3D.new()
-		query.from = pos
-		query.to = pos + Vector3(0, -100, 0)
-		query.collision_mask = 1
-		
-		var result = space.intersect_ray(query)
-		if result:
-			pos.y = result.position.y + 0.5
-			return pos
-	
-	return Vector3.ZERO
+func spawn_mutant(mutant_type: String, position: Vector3) -> Node:
+	var cost = spawn_manager.get_mutant_cost(mutant_type)
+	if not resource_manager.spend_biomass(cost):
+		print("ZoneController: недостаточно биомассы для мутанта ", mutant_type)
+		return null
+	return spawn_manager.spawn_mutant(mutant_type, position, cost)
 
 
-# ==================== ПОБЕДА И ПОРАЖЕНИЕ ====================
-
-func _on_game_over():
-	"""Поражение - сталкер коснулся Монолита"""
-	print("💀 GAME OVER - Забег #", run_number)
-	get_tree().paused = true
+func register_stalker(stalker: Node):
+	spawn_manager.active_stalkers.append(stalker)
 
 
-func _win_game():
-	"""Победа - пережито достаточно выбросов"""
-	var reward = _calculate_reward()
-	print("🏆 ПОБЕДА! Забег #", run_number, " | Награда: ", reward)
-	get_tree().paused = true
+func get_difficulty() -> float:
+	return progression_manager.get_current_difficulty()
 
 
-func _calculate_reward() -> float:
-	"""Расчёт награды"""
-	var base_reward = 100.0 * run_number
-	return base_reward * current_difficulty
+func set_difficulty(value: float):
+	progression_manager.current_difficulty = value
+	difficulty_changed.emit(value)
 
-
-# ==================== ГЕТТЕРЫ ====================
 
 func get_run_number() -> int:
-	return run_number
-
-
-func get_radiation_pulse_count() -> int:
-	return radiation_pulse_count
+	return progression_manager.get_current_run()
 
 
 func get_pulses_to_win() -> int:
-	return pulses_to_win
+	return progression_manager.get_pulses_to_win()
+
+
+func get_pulse_count() -> int:
+	return event_manager.get_pulse_count()
+
+
+func is_radiating() -> bool:
+	return event_manager.is_pulse_active()
+
+
+func get_resource_status() -> Dictionary:
+	return {
+		"energy": resource_manager.get_energy(),
+		"max_energy": resource_manager.max_energy,
+		"biomass": resource_manager.get_biomass(),
+		"max_biomass": resource_manager.max_biomass,
+		"difficulty": progression_manager.get_current_difficulty(),
+		"stalker_count": spawn_manager.get_stalker_count()
+	}
+
+
+func can_afford(energy_cost: float, biomass_cost: float) -> bool:
+	return resource_manager.get_energy() >= energy_cost and resource_manager.get_biomass() >= biomass_cost
