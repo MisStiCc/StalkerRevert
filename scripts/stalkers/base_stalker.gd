@@ -47,13 +47,26 @@ var danger_zones: Array = []
 var known_mutants: Array = []
 var memory_timer: float = 0.0
 
+# Ландшафт
+var terrain_manager: Node = null
+var current_terrain_type: int = 0
+var terrain_speed_multiplier: float = 1.0
+var terrain_danger: float = 1.0
+var terrain_cover: float = 0.0
+var terrain_update_timer: float = 0.0
+
+# Базовые множители
+var base_speed: float = 4.0
+
 
 func _ready():
 	health = max_health
+	base_speed = speed
 	add_to_group("stalkers")
 	
 	zone_controller = get_tree().get_first_node_in_group("zone_controller")
 	monolith = get_tree().get_first_node_in_group("monolith")
+	terrain_manager = get_tree().get_first_node_in_group("terrain_generator")
 	
 	if zone_controller:
 		zone_controller.register_stalker(self)
@@ -66,6 +79,9 @@ func _ready():
 	if zone_controller and zone_controller.has_method("get_run_number"):
 		var run = zone_controller.get_run_number()
 		_apply_run_scaling(run)
+	
+	# Начальное обновление местности
+	_update_terrain_info()
 	
 	health_changed.emit(health, max_health)
 	_ready_hook()
@@ -89,6 +105,9 @@ func _physics_process(delta):
 	if not is_alive or not zone_controller or zone_controller.is_radiating:
 		return
 	
+	# Обновляем информацию о местности
+	_update_terrain_info(delta)
+	
 	# Обновляем память
 	memory_timer += delta
 	if memory_timer >= 5.0:
@@ -101,11 +120,12 @@ func _physics_process(delta):
 	# Выполняем действие
 	_execute_state()
 	
-	# Движение
+	# Движение с учётом местности
 	if navigation_agent and not navigation_agent.is_navigation_finished():
 		var next_pos = navigation_agent.get_next_path_position()
 		var direction = (next_pos - global_position).normalized()
-		velocity = direction * speed
+		var current_speed = speed * terrain_speed_multiplier
+		velocity = direction * current_speed
 		navigation_agent.velocity = velocity
 	
 
@@ -315,3 +335,57 @@ func get_stalker_type() -> String:
 
 func get_behavior() -> String:
 	return behavior
+
+
+# ==================== ЛАНДШАФТ ====================
+
+func _update_terrain_info(delta: float = 0.0):
+	"""Обновляет информацию о типе местности"""
+	terrain_update_timer += delta
+	if terrain_update_timer >= 0.5:  # Обновляем каждые 0.5 сек
+		terrain_update_timer = 0.0
+		
+		if terrain_manager:
+			current_terrain_type = terrain_manager.get_terrain_type_at(global_position)
+			terrain_speed_multiplier = terrain_manager.get_terrain_speed_multiplier(global_position)
+			terrain_danger = terrain_manager.get_terrain_danger(global_position)
+			terrain_cover = terrain_manager.get_terrain_cover(global_position)
+			
+			# Обновляем скорость с учётом местности
+			speed = base_speed * terrain_speed_multiplier
+			if navigation_agent:
+				navigation_agent.max_speed = speed
+
+
+func get_current_speed() -> float:
+	"""Возвращает текущую скорость с учётом местности"""
+	return speed
+
+
+func get_terrain_danger() -> float:
+	"""Возвращает опасность текущей местности"""
+	return terrain_danger
+
+
+func get_terrain_cover() -> float:
+	"""Возвращает уровень укрытия на текущей местности"""
+	return terrain_cover
+
+
+func get_visibility_to(observer_pos: Vector3) -> float:
+	"""Рассчитывает видимость сталкера для наблюдателя"""
+	var distance = global_position.distance_to(observer_pos)
+	var base_visibility = 1.0 / (1.0 + distance * 0.1)
+	# Укрытие уменьшает видимость
+	base_visibility *= (1.0 - terrain_cover * 0.7)
+	return clamp(base_visibility, 0.1, 1.0)
+
+
+func is_terrain_safe() -> bool:
+	"""Проверяет, безопасна ли текущая местность"""
+	return terrain_danger < 1.5
+
+
+func has_artifact() -> bool:
+	"""Проверяет, несёт ли сталкер артефакт"""
+	return carried_artifact != null

@@ -1,22 +1,93 @@
 extends Node3D
 class_name TerrainGenerator
 
+## Генератор ландшафта с типами местности
+## Поддерживает разные типы Terrain с разными бонусами/штрафами
+
 signal chunk_generated(chunk_pos: Vector2i, mesh: ArrayMesh)
 
+# ========== ПАРАМЕТРЫ ==========
 @export var chunk_size: int = 32
 @export var chunk_load_distance: int = 3
 @export var terrain_height: float = 10.0
 @export var terrain_scale: float = 0.02
 @export var water_level: float = 2.0
 
+# ========== ТИПЫ МЕСТНОСТИ ==========
+enum TerrainType {
+	PLAIN,      # Равнина - 100% скорости, базовая опасность
+	FOREST,     # Лес - 70% скорости, выше укрытие
+	SWAMP,      # Болото - 40% скорости, высокая опасность
+	HILL,       # Холм - 80% скорости
+	WATER,      # Вода - 10% скорости, очень опасно
+	ROAD,       # Дорога - 130% скорости, быстро но рискованно
+	VILLAGE,    # Деревня - 90% скорости
+	RUINS       # Руины - 60% скорости, опасно
+}
+
+# Карта высот для типов местности (высота -> тип)
+var terrain_height_map: Dictionary = {}
+
+# Параметры типов местности
+var terrain_speed: Dictionary = {
+	TerrainType.PLAIN: 1.0,
+	TerrainType.FOREST: 0.7,
+	TerrainType.SWAMP: 0.4,
+	TerrainType.HILL: 0.8,
+	TerrainType.WATER: 0.1,
+	TerrainType.ROAD: 1.3,
+	TerrainType.VILLAGE: 0.9,
+	TerrainType.RUINS: 0.6
+}
+
+var terrain_danger: Dictionary = {
+	TerrainType.PLAIN: 1.0,
+	TerrainType.FOREST: 0.7,
+	TerrainType.SWAMP: 2.0,
+	TerrainType.HILL: 1.2,
+	TerrainType.WATER: 2.5,
+	TerrainType.ROAD: 1.5,
+	TerrainType.VILLAGE: 1.3,
+	TerrainType.RUINS: 1.8
+}
+
+var terrain_cover: Dictionary = {
+	TerrainType.PLAIN: 0.0,
+	TerrainType.FOREST: 0.8,
+	TerrainType.SWAMP: 0.3,
+	TerrainType.HILL: 0.2,
+	TerrainType.WATER: 0.0,
+	TerrainType.ROAD: 0.0,
+	TerrainType.VILLAGE: 0.5,
+	TerrainType.RUINS: 0.6
+}
+
+var terrain_color: Dictionary = {
+	TerrainType.PLAIN: Color(0.4, 0.6, 0.3),
+	TerrainType.FOREST: Color(0.2, 0.4, 0.2),
+	TerrainType.SWAMP: Color(0.3, 0.35, 0.25),
+	TerrainType.HILL: Color(0.5, 0.45, 0.35),
+	TerrainType.WATER: Color(0.2, 0.4, 0.6),
+	TerrainType.ROAD: Color(0.5, 0.45, 0.4),
+	TerrainType.VILLAGE: Color(0.45, 0.4, 0.35),
+	TerrainType.RUINS: Color(0.4, 0.35, 0.3)
+}
+
+# ========== КЭШ ТИПОВ МЕСТНОСТИ ==========
+var _terrain_cache: Dictionary = {}  # Vector2 -> TerrainType
+var _noise_terrain: FastNoiseLite
+
+# ========== ПЕРЕМЕННЫЕ ==========
 var camera: Camera3D = null
 var loaded_chunks: Dictionary = {}
 var noise: FastNoiseLite
 var terrain_material: StandardMaterial3D
 var water_material: StandardMaterial3D
-var ground_plane: StaticBody3D  # Простая плоскость для коллизии
+var ground_plane: StaticBody3D
+
 
 func _ready():
+	# Основной шум для высоты
 	noise = FastNoiseLite.new()
 	noise.seed = randi()
 	noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
@@ -25,19 +96,20 @@ func _ready():
 	noise.fractal_octaves = 6
 	noise.fractal_gain = 0.5
 	
-	_create_materials()
+	# Шум для типов местности
+	_noise_terrain = FastNoiseLite.new()
+	_noise_terrain.seed = noise.seed + 1000
+	_noise_terrain.noise_type = FastNoiseLite.TYPE_CELLULAR
+	_noise_terrain.frequency = 0.008
 	
-	# СОЗДАЕМ ПРОСТУЮ ПЛОСКОСТЬ ДЛЯ КОЛЛИЗИИ
+	_create_materials()
 	_create_ground_plane()
 	
 	await get_tree().process_frame
 	camera = get_viewport().get_camera_3d()
-	if camera:
-		print("TerrainGenerator: найдена камера, начинаем генерацию")
-	else:
-		print("TerrainGenerator: камера не найдена, использую центр мира")
 	
-	print("TerrainGenerator: инициализирован")
+	add_to_group("terrain_generator")
+	print("TerrainGenerator: инициализирован с типами местности")
 
 func _create_ground_plane():
 	"""Создаем простую плоскость для коллизии на высоте 0"""
@@ -222,3 +294,101 @@ func _unload_chunk(chunk_pos: Vector2i):
 		var chunk = loaded_chunks[chunk_pos]
 		chunk.queue_free()
 		loaded_chunks.erase(chunk_pos)
+
+
+# ==================== ТИПЫ МЕСТНОСТИ ====================
+
+func get_terrain_type_at(world_pos: Vector3) -> TerrainType:
+	# Проверяем кэш
+	var grid_pos = Vector2(floor(world_pos.x / 8.0), floor(world_pos.z / 8.0))
+	if _terrain_cache.has(grid_pos):
+		return _terrain_cache[grid_pos]
+	
+	# Определяем тип по шуму и высоте
+	var height = _get_height(world_pos.x, world_pos.z)
+	var terrain_noise = _noise_terrain.get_noise_2d(world_pos.x, world_pos.z)
+	
+	var terrain_type: TerrainType
+	
+	# Вода имеет приоритет
+	if height < water_level:
+		terrain_type = TerrainType.WATER
+	# Болото - низкие места с высокой влажностью
+	elif terrain_noise < -0.3 and height < terrain_height * 0.3:
+		terrain_type = TerrainType.SWAMP
+	# Холмы - высокие места
+	elif height > terrain_height * 0.6:
+		terrain_type = TerrainType.HILL
+	# Дороги - по шуму
+	elif terrain_noise > 0.5:
+		terrain_type = TerrainType.ROAD
+	# Леса - средние значения
+	elif terrain_noise > 0.1:
+		terrain_type = TerrainType.FOREST
+	# Руины - специфичный шум
+	elif terrain_noise < -0.1 and terrain_noise > -0.3:
+		terrain_type = TerrainType.RUINS
+	# Деревни
+	elif terrain_noise > -0.1 and terrain_noise < 0.1:
+		terrain_type = TerrainType.VILLAGE
+	# Равнина по умолчанию
+	else:
+		terrain_type = TerrainType.PLAIN
+	
+	# Кэшируем
+	_terrain_cache[grid_pos] = terrain_type
+	
+	# Очистка кэша при большом размере
+	if _terrain_cache.size() > 1000:
+		var keys = _terrain_cache.keys()
+		for i in range(500):
+			_terrain_cache.erase(keys[i])
+	
+	return terrain_type
+
+
+func get_terrain_speed_multiplier(world_pos: Vector3) -> float:
+	var terrain_type = get_terrain_type_at(world_pos)
+	return terrain_speed.get(terrain_type, 1.0)
+
+
+func get_terrain_danger(world_pos: Vector3) -> float:
+	var terrain_type = get_terrain_type_at(world_pos)
+	return terrain_danger.get(terrain_type, 1.0)
+
+
+func get_terrain_cover(world_pos: Vector3) -> float:
+	var terrain_type = get_terrain_type_at(world_pos)
+	return terrain_cover.get(terrain_type, 0.0)
+
+
+func get_terrain_color(world_pos: Vector3) -> Color:
+	var terrain_type = get_terrain_type_at(world_pos)
+	return terrain_color.get(terrain_type, Color.GREEN)
+
+
+func get_terrain_name(terrain_type: TerrainType) -> String:
+	match terrain_type:
+		TerrainType.PLAIN: return "Равнина"
+		TerrainType.FOREST: return "Лес"
+		TerrainType.SWAMP: return "Болото"
+		TerrainType.HILL: return "Холм"
+		TerrainType.WATER: return "Вода"
+		TerrainType.ROAD: return "Дорога"
+		TerrainType.VILLAGE: return "Деревня"
+		TerrainType.RUINS: return "Руины"
+		_: return "Неизвестно"
+
+
+# ==================== ВЫСОТА ====================
+
+func get_height_at(world_pos: Vector3) -> float:
+	return _get_height(world_pos.x, world_pos.z)
+
+
+func _get_height(x: float, z: float) -> float:
+	var height = noise.get_noise_2d(x, z) * terrain_height
+	height += noise.get_noise_2d(x * 2, z * 2) * (terrain_height * 0.3)
+	height += noise.get_noise_2d(x * 4, z * 4) * (terrain_height * 0.1)
+	height = clamp(height, -terrain_height * 0.5, terrain_height)
+	return height
