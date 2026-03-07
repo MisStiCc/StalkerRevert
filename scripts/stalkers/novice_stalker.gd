@@ -1,4 +1,6 @@
-extends BaseStalker  # Теперь работает, потому что есть class_name!
+extends BaseStalker
+
+## Novice Stalker - базовый тип сталкера для новичков
 
 # Дополнительные параметры
 @export var detection_range: float = 15.0
@@ -9,14 +11,21 @@ extends BaseStalker  # Теперь работает, потому что ест
 var is_fleeing: bool = false
 var search_timer: float = 0.0
 
+
 func _ready_hook():
 	stalker_type = "novice"
+	behavior = "greedy"
 	max_health = 80.0
 	health = max_health
 	speed = 4.0
+	damage = 8.0
+	vision_range = 20.0
 	
 	_update_visual()
 	_update_label()
+
+	print("🌱 NoviceStalker: инициализирован")
+
 
 func _update_visual():
 	if not visual: return
@@ -30,67 +39,41 @@ func _update_visual():
 	for mesh in visual.find_children("*", "MeshInstance3D"):
 		mesh.material_override = material
 
+
 func _update_label():
 	if label:
-		label.text = "НОВИЧОК"
+		label.text = "NOVICE"
 		label.modulate = novice_color
+
 
 func _physics_hook(delta):
 	if not is_alive: return
 	
+	# Если здоровье низкое - убегаем
+	if health < max_health * flee_threshold and not is_fleeing:
+		is_fleeing = true
+		search_timer = 0.0
+
 	if is_fleeing:
 		_flee_logic(delta)
-	else:
-		_search_logic(delta)
+	elif current_state == StalkerState.SEEK_ARTIFACT:
+		_check_for_danger()
 
-func _search_logic(delta):
-	if not target or not is_instance_valid(target):
-		_find_nearest_artifact()
-	
-	if target and is_instance_valid(target):
-		set_target(target.global_position)
-		
-		var dist = global_position.distance_to(target.global_position)
-		if dist < 2.0 and target.has_method("collect"):
-			target.collect(self)
-			target = null
-	
-	_check_for_danger()
 
 func _flee_logic(delta):
+	# Убегаем от опасности
 	var danger_pos = _get_nearest_danger_position()
 	if danger_pos != Vector3.ZERO:
 		var flee_dir = (global_position - danger_pos).normalized()
-		set_target(global_position + flee_dir * 20)
+		target_position = global_position + flee_dir * 20
+		if navigation_agent:
+			navigation_agent.target_position = target_position
 	
 	search_timer += delta
 	if search_timer > 3.0:
 		is_fleeing = false
 		search_timer = 0.0
 
-func _find_nearest_artifact():
-	var artifacts = get_tree().get_nodes_in_group("artifacts")
-	var nearest = null
-	var min_dist = INF
-	
-	for a in artifacts:
-		if not is_instance_valid(a): continue
-		var dist = global_position.distance_to(a.global_position)
-		if dist < min_dist and dist < detection_range:
-			min_dist = dist
-			nearest = a
-	
-	target = nearest
-
-func _check_for_danger():
-	var anomalies = get_tree().get_nodes_in_group("anomalies")
-	for a in anomalies:
-		if not is_instance_valid(a): continue
-		var dist = global_position.distance_to(a.global_position)
-		if dist < 5.0:
-			is_fleeing = true
-			search_timer = 0.0
-			return
 
 func _get_nearest_danger_position() -> Vector3:
 	var anomalies = get_tree().get_nodes_in_group("anomalies")
@@ -106,10 +89,21 @@ func _get_nearest_danger_position() -> Vector3:
 	
 	return nearest_pos
 
+
+func _check_for_danger():
+	var anomalies = get_tree().get_nodes_in_group("anomalies")
+	for a in anomalies:
+		if not is_instance_valid(a): continue
+		var dist = global_position.distance_to(a.global_position)
+		if dist < 5.0:
+			is_fleeing = true
+			search_timer = 0.0
+			current_state = StalkerState.FLEE
+			return
+
+
 func _damage_hook(amount: float):
 	if health < max_health * flee_threshold:
 		is_fleeing = true
 		search_timer = 0.0
-
-func _get_biomass_value() -> float:
-	return 8.0
+		current_state = StalkerState.FLEE

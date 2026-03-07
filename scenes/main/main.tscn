@@ -1,30 +1,20 @@
-[gd_scene load_steps=10 format=3 uid="uid://main_scene_final"]
+[gd_scene load_steps=8 format=3 uid="uid://main_scene_final"]
 
 [ext_resource type="Script" path="res://scripts/zone_controller.gd" id="1"]
-[ext_resource type="PackedScene" uid="uid://b5w7p1avgvhtw" path="res://scenes/stalkers/stalker_spawner.tscn" id="2"]
-[ext_resource type="PackedScene" uid="uid://b75v5n51k0f6c" path="res://scenes/ui/main_ui.tscn" id="3"]
+[ext_resource type="PackedScene" path="res://scenes/stalkers/stalker_spawner.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://scenes/ui/main_ui.tscn" id="3"]
 [ext_resource type="Script" path="res://scripts/terrain_generator.gd" id="4"]
 [ext_resource type="Script" path="res://scripts/game_camera.gd" id="5"]
-[ext_resource type="PackedScene" uid="uid://monolith_scene" path="res://scenes/zone/monolith/monolith.tscn" id="6"]
+[ext_resource type="PackedScene" path="res://scenes/zone/monolith/monolith.tscn" id="6"]
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 1
-sky_rotation = Vector3(0.171, 0, 0)
 ambient_light_source = 2
 ambient_light_color = Color(0.3, 0.3, 0.35, 1)
 ambient_light_energy = 0.5
 tonemap_mode = 2
 glow_enabled = true
 glow_intensity = 0.5
-
-[sub_resource type="Sky" id="Sky_main"]
-sky_material = SubResource("SkyMaterial_main")
-
-[sub_resource type="SkyMaterial" id="SkyMaterial_main"]
-sky_top_color = Color(0.2, 0.3, 0.5, 1)
-sky_horizon_color = Color(0.4, 0.5, 0.6, 1)
-ground_bottom_color = Color(0.1, 0.15, 0.1, 1)
-ground_horizon_color = Color(0.4, 0.5, 0.6, 1)
 
 [node name="Main" type="Node3D"]
 
@@ -35,9 +25,6 @@ script = ExtResource("1")
 script = ExtResource("4")
 chunk_size = 64
 chunk_load_distance = 4
-terrain_height = 20.0
-terrain_scale = 0.005
-water_level = 5.0
 
 [node name="Monolith" parent="." instance=ExtResource("6")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)

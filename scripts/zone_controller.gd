@@ -503,12 +503,12 @@ func start_radiation_pulse():
 
 
 func _drop_all_artifacts():
-	var dropped = 0
+	var dropped_count = 0
 	for s in active_stalkers:
 		if is_instance_valid(s) and s.has_method("drop_artifact") and s.has_artifact():
 			s.drop_artifact()
-			droped += 1
-	print("💥 Сброшено артефактов: ", dropped)
+			dropped_count += 1
+	print("💥 Сброшено артефактов: ", dropped_count)
 
 
 func _shuffle_all_anomalies():
@@ -570,7 +570,7 @@ func _get_random_position(min_r: float, max_r: float) -> Vector3:
 		var pos = monolith.global_position + Vector3(cos(angle) * distance, 50, sin(angle) * distance)
 		
 		# Проверка на землю
-		var space = get_world_3d().direct_space_state
+		var space = get_viewport().get_world_3d().direct_space_state
 		var query = PhysicsRayQueryParameters3D.new()
 		query.from = pos
 		query.to = pos + Vector3(0, -100, 0)
