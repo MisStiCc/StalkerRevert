@@ -27,6 +27,8 @@ var anomaly_manager: AnomalyManager
 var spawn_manager: SpawnManager
 var event_manager: EventManager
 var progression_manager: ProgressionManager
+var fog_manager: FogManager
+var particle_manager: ParticleManager
 
 # ========== КОНФИГУРАЦИЯ ==========
 @export var anomaly_scenes: Dictionary = {}
@@ -84,6 +86,15 @@ func _setup_managers():
 	# 5. ProgressionManager
 	progression_manager = ProgressionManager.new()
 	add_child(progression_manager)
+
+	# 6. FogManager (визуальный)
+	fog_manager = FogManager.new()
+	fog_manager.enabled = true
+	add_child(fog_manager)
+
+	# 7. ParticleManager (визуальный)
+	particle_manager = ParticleManager.new()
+	add_child(particle_manager)
 
 
 func _connect_signals():
