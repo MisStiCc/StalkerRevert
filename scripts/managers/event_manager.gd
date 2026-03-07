@@ -221,3 +221,15 @@ func is_pulse_active() -> bool:
 
 func get_current_difficulty() -> float:
 	return current_difficulty
+
+
+func has_won() -> bool:
+	return pulse_count >= pulses_to_win
+
+
+func set_game_over(success: bool):
+	"""Устанавливает результат игры вручную"""
+	if success:
+		_win_game()
+	else:
+		trigger_game_over()

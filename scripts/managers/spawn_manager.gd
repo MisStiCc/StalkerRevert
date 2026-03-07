@@ -288,3 +288,40 @@ func get_stalker_count() -> int:
 
 func get_mutant_count() -> int:
 	return active_mutants.size()
+
+
+# ==================== СТАТИСТИКА ====================
+
+var _stalkers_killed_count: int = 0
+var _artifacts_stolen_count: int = 0
+var _mutants_spawned_count: int = 0
+
+
+func record_stalker_killed():
+	_stalkers_killed_count += 1
+
+
+func record_artifact_stolen():
+	_artifacts_stolen_count += 1
+
+
+func record_mutant_spawned():
+	_mutants_spawned_count += 1
+
+
+func get_stalkers_killed() -> int:
+	return _stalkers_killed_count
+
+
+func get_artifacts_stolen() -> int:
+	return _artifacts_stolen_count
+
+
+func get_total_mutants_spawned() -> int:
+	return _mutants_spawned_count
+
+
+func reset_statistics():
+	_stalkers_killed_count = 0
+	_artifacts_stolen_count = 0
+	_mutants_spawned_count = 0
