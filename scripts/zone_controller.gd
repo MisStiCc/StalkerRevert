@@ -292,3 +292,58 @@ func get_resource_status() -> Dictionary:
 
 func can_afford(energy_cost: float, biomass_cost: float) -> bool:
 	return resource_manager.get_energy() >= energy_cost and resource_manager.get_biomass() >= biomass_cost
+
+
+# ==================== РЕЗУЛЬТАТЫ ЗАБЕГА ====================
+
+func get_run_result() -> Dictionary:
+	"""Возвращает результаты забега для передачи в ЛК"""
+	var result = {
+		"success": event_manager.has_won(),
+		"run_number": progression_manager.get_current_run(),
+		"reward": resource_manager.get_biomass(),
+		"statistics": {
+			"stalkers_killed": progression_manager.get_stalkers_killed(),
+			"anomalies_created": anomaly_manager.get_anomaly_count(),
+			"mutants_created": spawn_manager.get_mutant_count(),
+			"artifacts_stolen": spawn_manager.get_artifacts_stolen(),
+			"biomass_earned": resource_manager.get_biomass(),
+			"biomass_spent": 0  # TODO: отслеживать
+		},
+		"artifacts_collected": _collect_artifacts()
+	}
+	return result
+
+
+func _collect_artifacts() -> Array:
+	"""Собирает все артефакты со сцены"""
+	var artifacts = []
+	var artifact_nodes = get_tree().get_nodes_in_group("artifacts")
+	
+	for a in artifact_nodes:
+		if is_instance_valid(a) and a.has_method("get_rarity") and a.has_method("get_value"):
+			artifacts.append({
+				"type": a.get_rarity(),
+				"value": a.get_value()
+			})
+	
+	return artifacts
+
+
+func finish_run(success: bool):
+	"""Завершает забег и передаёт результаты в GameManager"""
+	event_manager.set_game_over(success)
+	
+	# Собираем результаты
+	var result = get_run_result()
+	
+	# Передаём в GameManager
+	if Engine.has_singleton("GameManager"):
+		# Используем группу для поиска GameManager
+		var gm = get_tree().get_first_node_in_group("game_manager")
+		if gm:
+			gm.process_run_result(result)
+	
+	# Переходим в ЛК
+	await get_tree().create_timer(2.0).timeout
+	get_tree().change_scene_to_file("res://scenes/lab/lab.tscn")
