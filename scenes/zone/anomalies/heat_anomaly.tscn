@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3 uid="uid://heat_anomaly"]
 
-[ext_resource type="Script" path="res://scripts/heat_anomaly.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/anomalies/heat_anomaly.gd" id="1"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_heat"]
 radius = 5.0

@@ -1,0 +1,12 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/stalkers/base_stalker.tscn" id="1"]
+[ext_resource type="Script" path="res://scripts/stalkers/master_stalker.gd" id="2"]
+
+[node name="MasterStalker" instance=ExtResource("1")]
+script = ExtResource("2")
+
+[node name="Label3D" parent="." index="4"]
+text = "MASTER"
+font_size = 56
+outline_size = 3

@@ -1,270 +1,255 @@
 extends CharacterBody3D
 class_name BaseStalker
 
-# Базовые параметры сталкера
-@export var health: float = 100.0
-@export var max_health: float = 100.0
-@export var speed: float = 5.0
-@export var damage: float = 10.0
-@export var armor: float = 0.0
-@export var detection_range: float = 20.0
-@export var attack_range: float = 2.0
-@export var carry_capacity: int = 5
-@export var stalker_type: String = "common"
+## Базовый класс для всех сталкеров с разным поведением
+## Использует компонентную архитектуру
 
 # Состояния сталкера
 enum StalkerState {
-	IDLE,
-	PATROL,
-	CHASE,
-	ATTACK,
-	FLEE,
-	DEAD
+	IDLE, PATROL, SEEK_ARTIFACT, SEEK_MONOLITH, FLEE,
+	ATTACK_ANOMALY, ATTACK_MUTANT, CARRY_ARTIFACT
 }
 
-var current_state: StalkerState = StalkerState.IDLE
-var target: Node3D = null
-var navigation_agent: NavigationAgent3D
-
-# Дополнительные состояния
-var carried_artifacts: Array[String] = []
-var current_target: Node3D = null
-var is_in_zone: bool = false
-var is_alive: bool = true
-
-# Интеграция с ZoneController
-var zone_controller: Node = null
-
 # Сигналы
-signal health_changed(current_health: float, max_health: float)
-signal state_changed(new_state: StalkerState)
-signal died(stalker: BaseStalker)
-signal entered_zone(zone_name: String)
-signal exited_zone(zone_name: String)
-signal artifact_collected(artifact_name: String)
+signal died
+signal health_changed(current: float, max: float)
+
+# Параметры
+@export var stalker_type: String = "novice"
+@export var max_health: float = 80.0
+@export var speed: float = 4.0
+@export var damage: float = 8.0
+@export var armor: float = 0.0
+@export var vision_range: float = 30.0
+@export var behavior: String = "greedy"  # greedy, brave, cautious, aggressive, stealthy
+
+# Компоненты
+var state_machine: StalkerStateMachine
+var navigation: StalkerNavigation
+var memory: StalkerMemory
+var health_component: StalkerHealth  # Переименовано для ясности
+var carry: StalkerCarry
+
+# Ссылки для обратной связи
+@onready var visual: Node3D = $Visual if has_node("Visual") else null
+@onready var label: Label3D = $Label3D if has_node("Label3D") else null
+
+# Локальные переменные для совместимости (deprecated - использовать компоненты)
+var current_state: int = 0
+var is_alive: bool = true
+var target_position: Vector3 = Vector3.ZERO
+var zone_controller: Node
+var monolith: Node
+
+# Память (deprecated - использовать memory компонент)
+var danger_zones: Array = []
+var known_mutants: Array = []
+var memory_timer: float = 0.0
+
+# Ландшафт (deprecated - использовать navigation компонент)
+var terrain_manager: Node = null
+var current_terrain_type: int = 0
+var terrain_speed_multiplier: float = 1.0
+var terrain_danger: float = 1.0
+var terrain_cover: float = 0.0
+var terrain_update_timer: float = 0.0
+
+# Базовые множители
+var base_speed: float = 4.0
 
 
 func _ready():
-	# Инициализация навигации
-	_setup_navigation()
-	
-	# Подписка на сигналы
-	health_changed.emit(health, max_health)
-	state_changed.emit(current_state)
-	
-	# Инициализация состояний
+	health_component = null  # Инициализируем
+	base_speed = speed
 	is_alive = true
-	
-	# Добавляем себя в группу сталкеров
 	add_to_group("stalkers")
-	add_to_group("player")  # Для камеры
 	
-	# Поиск и подключение к ZoneController
-	_connect_to_zone_controller()
+	# Инициализируем компоненты
+	_initialize_components()
 	
-	# Подписка на сигнал сбора артефактов
-	artifact_collected.connect(_on_artifact_collected)
+	# ... остальной код ...
+	health_changed.emit(max_health, max_health)
+	_ready_hook()
 
 
-func _setup_navigation():
-	# Получаем или создаём NavigationAgent3D
-	if has_node("NavigationAgent3D"):
-		navigation_agent = $NavigationAgent3D
-	else:
-		navigation_agent = NavigationAgent3D.new()
-		add_child(navigation_agent)
+func _initialize_components():
+	# Создаём компоненты
+	health_component = StalkerHealth.new(self)
+	health_component.max_health = max_health
+	health_component.armor = armor
+	add_child(health_component)
+	health_component.health_changed.connect(_on_health_changed)
+	health_component.died.connect(_on_died)
 	
-	navigation_agent.velocity_computed.connect(_on_velocity_computed)
+	navigation = StalkerNavigation.new(self)
+	add_child(navigation)
+	navigation.set_speed(speed)
 	
-	# Настройка параметров навигации (Godot 4 правильные названия)
-	navigation_agent.target_desired_distance = 2.0
-	navigation_agent.path_desired_distance = 1.0
-	navigation_agent.path_max_distance = 1000.0
-	navigation_agent.avoidance_enabled = true
-	navigation_agent.max_speed = speed
-
-
-func _connect_to_zone_controller():
-	"""Поиск и подключение к ZoneController"""
-	zone_controller = get_tree().get_first_node_in_group("zone_controller")
-	if zone_controller:
-		# Подписка на сигналы ZoneController
-		if zone_controller.has_signal("stalker_entered_zone"):
-			zone_controller.stalker_entered_zone.connect(_on_entered_zone)
-		if zone_controller.has_signal("stalker_left_zone"):
-			zone_controller.stalker_left_zone.connect(_on_exited_zone)
-		
-		# Сообщаем ZoneController о нашем присутствии
-		if zone_controller.has_method("update_stalker_status"):
-			zone_controller.update_stalker_status(self)
-		
-		print("Сталкер подключен к ZoneController: ", zone_controller.name)
-	else:
-		print("ZoneController не найден")
-
-
-func _find_target() -> Node3D:
-	"""Поиск цели в пределах диапазона обнаружения"""
-	var targets = []
-	var space_state = get_world_3d().direct_space_state
-	var query = PhysicsShapeQueryParameters3D.new()
+	memory = StalkerMemory.new(self)
+	add_child(memory)
 	
-	# Создание сферы обнаружения
-	var sphere_shape = SphereShape3D.new()
-	sphere_shape.radius = detection_range
-	query.shape = sphere_shape
-	query.transform = global_transform
-	query.collision_mask = 1  # Сталкеры ищут цели в слое 1
-	query.exclude = [self]  # Исключаем себя
+	carry = StalkerCarry.new(self)
+	add_child(carry)
 	
-	var result = space_state.intersect_shape(query)
-	for item in result:
-		var collider = item.collider
-		# Проверяем, что это не аномалия и не другой сталкер (если нужно)
-		if collider != self and collider.has_method("take_damage"):
-			# Дополнительная проверка, что это не сталкер (если нужно)
-			if not collider.is_in_group("stalkers") or collider != self:
-				targets.append(collider)
-	
-	# Возвращаем ближайшую цель
-	if targets.size() > 0:
-		var closest_target = targets[0]
-		var closest_distance = global_position.distance_to(closest_target.global_position)
-		
-		for target in targets:
-			var distance = global_position.distance_to(target.global_position)
-			if distance < closest_distance:
-				closest_distance = distance
-				closest_target = target
-		
-		return closest_target
-	
-	return null
+	state_machine = StalkerStateMachine.new(self)
+	add_child(state_machine)
+	state_machine.setup({
+		"behavior": null,  # Установим позже
+		"navigation": navigation,
+		"memory": memory,
+		"health": health_component,
+		"carry": carry
+	})
 
 
-func _physics_process(delta):
-	if current_state == StalkerState.DEAD:
-		return
-	
-	# Обновляем цель, если текущая невалидна
-	if target and not is_instance_valid(target):
-		target = null
-	
-	# Поиск новой цели, если нет текущей
-	if not target and current_state != StalkerState.DEAD:
-		var new_target = _find_target()
-		if new_target:
-			set_target(new_target)
-	
-	# Обработка состояний
-	match current_state:
-		StalkerState.IDLE:
-			_handle_idle_state(delta)
-		StalkerState.PATROL:
-			_handle_patrol_state(delta)
-		StalkerState.CHASE:
-			_handle_chase_state(delta)
-		StalkerState.ATTACK:
-			_handle_attack_state(delta)
-		StalkerState.FLEE:
-			_handle_flee_state(delta)
-	
-	# Применяем движение (если не используем NavigationAgent)
-	if not navigation_agent.is_navigation_finished() and current_state == StalkerState.CHASE:
-		move_and_slide()
-
-
-func _process(delta):
-	# Обновление статуса в ZoneController (только в _process)
-	if zone_controller and zone_controller.has_method("update_stalker_status"):
-		zone_controller.update_stalker_status(self)
-
-
-func _handle_idle_state(delta):
-	# Логика состояния ожидания
-	if target:
-		_change_state(StalkerState.CHASE)
-
-
-func _handle_patrol_state(delta):
-	# Логика патрулирования
+func _ready_hook():
+	"""Для переопределения в наследниках"""
 	pass
 
 
-func _handle_chase_state(delta):
-	if target and navigation_agent and is_instance_valid(target):
-		# Устанавливаем цель для навигации
-		if navigation_agent.is_navigation_finished() or navigation_agent.target_position.distance_to(target.global_position) > 0.1:
-			navigation_agent.target_position = target.global_position
-		
-		# Если цель достигнута, переходим к атаке
-		if navigation_agent.is_navigation_finished():
-			var distance_to_target = global_position.distance_to(target.global_position)
-			if distance_to_target < attack_range:
-				_change_state(StalkerState.ATTACK)
-		else:
-			# Движение к цели через навигацию
-			var next_position = navigation_agent.get_next_path_position()
-			var direction = (next_position - global_position).normalized()
-			if direction.length() > 0:
-				velocity = direction * speed
-			else:
-				velocity = Vector3.ZERO
-			
-			# Запрашиваем скорость у NavigationAgent для обхода препятствий
-			navigation_agent.velocity = velocity
-	else:
-		_change_state(StalkerState.IDLE)
+func _apply_run_scaling(run_number: int):
+	"""Масштабирование характеристик в зависимости от номера забега"""
+	var scale = 1.0 + (run_number - 1) * 0.15
+	if health_component:
+		health_component.set_max_health(max_health * scale)
+	max_health *= scale
+	
+	speed *= (1.0 + (run_number - 1) * 0.05)
+	base_speed = speed
+	navigation.set_speed(speed)
+	damage *= scale
 
 
-func _handle_attack_state(delta):
-	if target and is_instance_valid(target):
-		# Нанесение урона цели
-		_attack_target()
-		
-		# Проверка расстояния
-		var distance_to_target = global_position.distance_to(target.global_position)
-		if distance_to_target > attack_range * 2:
-			_change_state(StalkerState.CHASE)
-		elif health < max_health * 0.3:
-			_change_state(StalkerState.FLEE)
-	else:
-		_change_state(StalkerState.IDLE)
-
-
-func _handle_flee_state(delta):
-	# Логика бегства от опасности
-	# Просто бежим от текущей цели
-	if target and is_instance_valid(target):
-		var flee_direction = (global_position - target.global_position).normalized()
-		velocity = flee_direction * speed
-		move_and_slide()
-	else:
-		_change_state(StalkerState.IDLE)
-
-
-func _on_velocity_computed(safe_velocity: Vector3):
-	velocity = safe_velocity
-	move_and_slide()
-
-
-func _change_state(new_state: StalkerState):
-	if current_state != new_state:
-		current_state = new_state
-		state_changed.emit(new_state)
-
-
-func take_damage(amount: float, damage_type: String = "physical"):
+func _physics_process(delta):
 	if not is_alive:
 		return
 	
-	# Применение брони
-	var actual_damage = max(1, amount - armor)  # минимум 1 урон
-	health -= actual_damage
-	health_changed.emit(health, max_health)
+	# Проверяем радиацию
+	var zone_controller = get_tree().get_first_node_in_group("zone_controller")
+	if zone_controller and zone_controller.is_radiating:
+		return
 	
-	if health <= 0:
-		die()
+	# Обновляем компоненты
+	_update_terrain_info(delta)
+	
+	# Обновляем state machine
+	if state_machine:
+		state_machine._physics_process(delta)
+	
+	# Legacy: обновляем память для совместимости
+	memory_timer += delta
+	if memory_timer >= 5.0:
+		_refresh_memory()
+		memory_timer = 0.0
+
+
+func _on_health_changed(current: float, max_h: float):
+	health_changed.emit(current, max_h)
+
+
+func _on_died():
+	die()
+
+
+# ==================== LEGACY МЕТОДЫ (для совместимости) ====================
+
+func _evaluate_situation():
+	"""Legacy - оценка ситуации. Теперь используется state_machine"""
+	# Делегируем в state machine
+	if state_machine:
+		state_machine._evaluate_state_transitions()
+
+
+func _execute_state():
+	"""Legacy - выполнение состояния. Теперь используется state_machine"""
+	pass  # Теперь в state_machine
+
+
+func _can_kill_anomaly(anomaly) -> bool:
+	"""Legacy - проверка может ли сталкер убить аномалию"""
+	var anomaly_level = 1
+	if anomaly.has_method("get_difficulty"):
+		anomaly_level = anomaly.get_difficulty()
+	
+	match stalker_type:
+		"novice": return anomaly_level == 1
+		"veteran": return anomaly_level <= 2
+		"master": return anomaly_level <= 3
+		_: return false
+
+
+func _refresh_memory():
+	"""Legacy - обновление памяти"""
+	if memory:
+		memory._refresh_memory()
+
+
+func _get_nearest_anomaly_in_range(range_val: float):
+	"""Legacy - получение ближайшей аномалии"""
+	if memory:
+		var threat = memory.get_nearest_threat()
+		if threat and global_position.distance_to(threat.global_position) <= range_val:
+			return threat
+	return null
+
+
+func _get_nearest_mutant_in_range(range_val: float):
+	"""Legacy - получение ближайшего мутанта"""
+	if memory:
+		var mutant = memory.get_nearest_mutant()
+		if mutant and global_position.distance_to(mutant.global_position) <= range_val:
+			return mutant
+	return null
+
+
+func _get_nearest_artifact_in_range(range_val: float):
+	"""Legacy - получение ближайшего артефакта"""
+	if memory:
+		var artifact = memory.get_nearest_artifact()
+		if artifact and global_position.distance_to(artifact.global_position) <= range_val:
+			return artifact
+	return null
+
+
+# ==================== АРТЕФАКТЫ ====================
+func get_carried_artifact():
+	"""Legacy - получить переносимый артефакт"""
+	if carry:
+		return carry.get_carried_artifact()
+	return null
+
+
+func set_carried_artifact(artifact: Node):
+	"""Legacy - установить артефакт"""
+	if carry:
+		carry.pick_up_artifact(artifact)
+
+
+func drop_artifact():
+	"""Legacy - выбросить артефакт"""
+	if carry:
+		carry.drop_artifact()
+
+
+func _update_carry_visual(is_carrying: bool):
+	# Переопределить в наследниках
+	pass
+
+
+# ==================== ЗДОРОВЬЕ И СМЕРТЬ ====================
+func take_damage(amount: float, source = null):
+	if not is_alive:
+		return
+	
+	if health_component:
+		health_component.take_damage(amount, source)
+	else:
+		# Legacy - без компонента
+		var actual_damage = max(1, amount - armor)
+		max_health -= actual_damage
+		health_changed.emit(max_health, max_health)
+		if max_health <= 0:
+			die()
 
 
 func die():
@@ -272,102 +257,67 @@ func die():
 		return
 	
 	is_alive = false
-	current_state = StalkerState.DEAD
-	died.emit(self)
+	died.emit()
 	
-	# Добавляем биомассу в ZoneController
-	if zone_controller and zone_controller.has_method("add_biomass"):
-		zone_controller.add_biomass(_get_biomass_value())
+	# Выбрасываем артефакт
+	if carry and carry.has_artifact():
+		carry.drop_artifact()
 	
-	# Удаляем сталкера через небольшой промежуток времени
-	var timer = Timer.new()
-	timer.wait_time = 2.0
-	timer.one_shot = true
-	timer.timeout.connect(queue_free)
-	add_child(timer)
-	timer.start()
+	queue_free()
 
 
-func _get_biomass_value() -> float:
-	"""Получение ценности биомассы за сталкера"""
-	match stalker_type:
-		"novice":
-			return 8.0
-		"veteran":
-			return 15.0
-		_:
-			return 10.0
-
-
-func _attack_target():
-	"""Внутренний метод атаки цели"""
-	if target and target.has_method("take_damage") and is_instance_valid(target):
-		target.take_damage(damage)
-		print("Сталкер ", name, " атакует цель ", target.name, ", нанося ", damage, " урона")
-
-
-func set_target(new_target: Node3D):
-	if not is_alive:
-		return
-	
-	target = new_target
-	current_target = new_target
-	
-	if target:
-		_change_state(StalkerState.CHASE)
-	else:
-		_change_state(StalkerState.IDLE)
-
-
-# Методы для работы с артефактами
-func add_artifact(artifact_type: String):
-	"""Добавление артефакта в инвентарь"""
-	carried_artifacts.append(artifact_type)
-	print("Артефакт ", artifact_type, " добавлен в инвентарь сталкера ", name)
-	
-	# Применяем эффект артефакта
-	_apply_artifact_effect(artifact_type)
-
-
-func _apply_artifact_effect(artifact_type: String):
-	"""Применение эффекта артефакта"""
-	match artifact_type:
-		"energy":
-			# Энергетический артефакт - увеличивает здоровье
-			health = min(health + 20, max_health)
-			health_changed.emit(health, max_health)
-		"rare":
-			# Редкий артефакт - увеличивает броню
-			armor += 5
-		"common":
-			# Обычный артефакт - небольшое восстановление здоровья
-			health = min(health + 10, max_health)
-			health_changed.emit(health, max_health)
-
-
-func _on_artifact_collected(artifact_type: String):
-	"""Обработчик сигнала о сборе артефакта"""
-	print("Сталкер ", name, " собрал артефакт: ", artifact_type)
-	
-	# Добавляем артефакт в инвентарь
-	add_artifact(artifact_type)
-
-
-# Обработчики сигналов ZoneController
-func _on_entered_zone():
-	"""Обработчик входа в зону"""
-	is_in_zone = true
-	entered_zone.emit(name)
-	print("Сталкер ", name, " вошел в зону")
-
-
-func _on_exited_zone():
-	"""Обработчик выхода из зоны"""
-	is_in_zone = false
-	exited_zone.emit(name)
-	print("Сталкер ", name, " вышел из зоны")
-
-
-# Получение имени сталкера (для спавнера)
-func get_stalker_name() -> String:
+# ==================== ГЕТТЕРЫ ====================
+func get_stalker_type() -> String:
 	return stalker_type
+
+
+func get_behavior() -> String:
+	return behavior
+
+
+# ==================== ЛАНДШАФТ ====================
+
+func _update_terrain_info(delta: float = 0.0):
+	"""Обновляет информацию о типе местности"""
+	terrain_update_timer += delta
+	if terrain_update_timer >= 0.5:
+		terrain_update_timer = 0.0
+		
+		if terrain_manager:
+			current_terrain_type = terrain_manager.get_terrain_type_at(global_position)
+			terrain_speed_multiplier = terrain_manager.get_terrain_speed_multiplier(global_position)
+			terrain_danger = terrain_manager.get_terrain_danger(global_position)
+			terrain_cover = terrain_manager.get_terrain_cover(global_position)
+			
+			# Обновляем навигацию
+			if navigation:
+				navigation.set_terrain_multiplier(terrain_speed_multiplier)
+
+
+func get_current_speed() -> float:
+	return speed
+
+
+func get_terrain_danger() -> float:
+	return terrain_danger
+
+
+func get_terrain_cover() -> float:
+	return terrain_cover
+
+
+func get_visibility_to(observer_pos: Vector3) -> float:
+	var distance = global_position.distance_to(observer_pos)
+	var base_visibility = 1.0 / (1.0 + distance * 0.1)
+	base_visibility *= (1.0 - terrain_cover * 0.7)
+	return clamp(base_visibility, 0.1, 1.0)
+
+
+func is_terrain_safe() -> bool:
+	return terrain_danger < 1.5
+
+
+func has_artifact() -> bool:
+	if carry:
+		return carry.has_artifact()
+	return false
