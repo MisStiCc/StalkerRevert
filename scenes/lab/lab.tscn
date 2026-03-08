@@ -1,9 +1,9 @@
 [gd_scene format=3 uid="uid://lab"]
 
-[ext_resource type="Script" uid="uid://buvcp58o303j5" path="res://scripts/ui/lab_controller.gd" id="1_lab_controller"]
-[ext_resource type="Script" uid="uid://cl2paq4kb7py8" path="res://scripts/ui/upgrade_panel.gd" id="2_upgrade_panel"]
-[ext_resource type="Script" uid="uid://cigxguc7j100y" path="res://scripts/ui/storage_panel.gd" id="3_storage_panel"]
-[ext_resource type="Script" uid="uid://dkri1h7i87ts6" path="res://scripts/ui/result_panel.gd" id="4_result_panel"]
+[ext_resource type="Script" uid="uid://buvcp58o303j5" path="res://ui/lab/lab_controller.gd" id="1_lab_controller"]
+[ext_resource type="Script" uid="uid://cl2paq4kb7py8" path="res://ui/panels/upgrade_panel.gd" id="2_upgrade_panel"]
+[ext_resource type="Script" uid="uid://cigxguc7j100y" path="res://ui/panels/storage_panel.gd" id="3_storage_panel"]
+[ext_resource type="Script" uid="uid://dkri1h7i87ts6" path="res://ui/panels/result_panel.gd" id="4_result_panel"]
 
 [node name="Lab" type="Control" unique_id=1687029437]
 layout_mode = 3
