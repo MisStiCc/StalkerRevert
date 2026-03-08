@@ -10,7 +10,6 @@ class_name GravityVortex
 func _ready():
 	anomaly_type = "gravity_vortex"
 	difficulty_level = 2
-	anomaly_name = "Гравитационная воронка"
 	damage_per_second = 12.0
 	
 	super._ready()

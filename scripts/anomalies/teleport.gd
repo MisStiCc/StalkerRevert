@@ -12,12 +12,12 @@ var teleport_timers: Dictionary = {}
 func _ready():
 	anomaly_type = "teleport"
 	difficulty_level = 3
-	anomaly_name = "Телепорт"
 	damage_per_second = 3.0
 	
 	super._ready()
 	_update_size()
 	_update_color()
+	set_difficulty(difficulty_level)
 
 
 func _update_size():

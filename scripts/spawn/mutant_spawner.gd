@@ -5,7 +5,7 @@ class_name MutantSpawner
 
 signal mutant_spawned(mutant: Node, mutant_type: String)
 
-var owner: Node
+var _parent_node: Node
 
 # Сцены мутантов
 @export var mutant_scenes: Dictionary = {
@@ -40,7 +40,7 @@ var active_mutants: Array[Node] = []
 
 
 func _init(node: Node):
-	owner = node
+	_parent_node = node
 
 
 func spawn_mutant(mutant_type: String, position: Vector3, cost: float) -> Node:
@@ -57,7 +57,7 @@ func spawn_mutant(mutant_type: String, position: Vector3, cost: float) -> Node:
 	var mutant = scene.instantiate()
 	mutant.position = position
 	
-	owner.get_tree().current_scene.add_child(mutant)
+	_parent_node.get_tree().current_scene.add_child(mutant)
 	active_mutants.append(mutant)
 	
 	mutant_spawned.emit(mutant, mutant_type)

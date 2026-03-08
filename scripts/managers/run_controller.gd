@@ -1,11 +1,9 @@
 extends Node
-class_name ZoneController
+class_name RunController
 
-## ZoneController - ОРХЕСТРАТОР
-## Управляет менеджерами и координирует игровую логику
-## Каждый менеджер отвечает за свою область ответственности
+## RunController - ОРХЕСТРАТОР ЗАБЕГА
 
-# ========== СИГНАЛЫ (пробрасываем наружу) ==========
+# ========== СИГНАЛЫ ==========
 signal energy_changed(current: float, max_energy: float)
 signal biomass_changed(current: float, max_biomass: float)
 signal difficulty_changed(new_difficulty: float)
@@ -48,11 +46,52 @@ var sound_manager: SoundManager
 
 
 func _ready():
-	add_to_group("zone_controller")
+	print("RunController: _ready started")
+	add_to_group("run_controller")
 	_setup_managers()
 	_connect_signals()
 	_initialize_game()
-	print("🎮 ZoneController: инициализирован как оркестратор")
+	print("RunController: initialized!")
+	
+	# Ждём один кадр, чтобы все узлы создались
+	await get_tree().process_frame
+	
+	# Теперь ищем спавнер
+	var spawner = get_tree().get_first_node_in_group("spawner")
+	if spawner:
+		print("✅ Спавнер НАЙДЕН!")
+		
+		# ЗАГРУЗКА СЦЕН ПРОГРАММНО (инспектор игнорируем)
+		var novice_scene = load("res://scenes/stalkers/novice_stalker.tscn")
+		var veteran_scene = load("res://scenes/stalkers/veteran_stalker.tscn")
+		var master_scene = load("res://scenes/stalkers/master_stalker.tscn")
+		
+		if novice_scene and veteran_scene and master_scene:
+			spawner.stalker_scenes = {
+				"novice": novice_scene,
+				"veteran": veteran_scene,
+				"master": master_scene
+			}
+			print("✅ Сцены сталкеров загружены в спавнер")
+			print("   novice: ", novice_scene)
+			print("   veteran: ", veteran_scene)
+			print("   master: ", master_scene)
+		else:
+			print("❌ Ошибка загрузки сцен сталкеров!")
+			if not novice_scene: print("   novice не загружен")
+			if not veteran_scene: print("   veteran не загружен")
+			if not master_scene: print("   master не загружен")
+		
+		spawner.set_difficulty(progression_manager.get_current_difficulty())
+		print("📊 Сложность установлена: ", progression_manager.get_current_difficulty())
+		
+		# Тестовый спавн через 2 секунды
+		await get_tree().create_timer(2.0).timeout
+		print("🔫 Пытаюсь заспавнить сталкера...")
+		var stalker = spawner.spawn_stalker()
+		print("   Результат: ", stalker)
+	else:
+		print("❌ Спавнер НЕ НАЙДЕН в группе 'spawner'!")
 
 
 func _setup_managers():
@@ -207,108 +246,118 @@ func _on_game_won(run_number: int, reward: float):
 # ========== ПУБЛИЧНОЕ API ==========
 
 func get_energy() -> float:
-	return resource_manager.get_energy()
+	return resource_manager.get_energy() if resource_manager else 0.0
 
 
 func get_biomass() -> float:
-	return resource_manager.get_biomass()
+	return resource_manager.get_biomass() if resource_manager else 0.0
 
 
 func add_energy(amount: float):
-	resource_manager.add_energy(amount)
+	if resource_manager:
+		resource_manager.add_energy(amount)
 
 
 func add_biomass(amount: float):
-	resource_manager.add_biomass(amount)
+	if resource_manager:
+		resource_manager.add_biomass(amount)
 
 
 func spend_energy(amount: float) -> bool:
-	return resource_manager.spend_energy(amount)
+	return resource_manager.spend_energy(amount) if resource_manager else false
 
 
 func spend_biomass(amount: float) -> bool:
-	return resource_manager.spend_biomass(amount)
+	return resource_manager.spend_biomass(amount) if resource_manager else false
 
 
 func create_anomaly(anomaly_type: String, position: Vector3, difficulty: int = 1) -> Node:
+	if not anomaly_manager:
+		return null
 	var cost = anomaly_manager.get_anomaly_cost(anomaly_type)
 	if not resource_manager.spend_energy(cost):
-		print("ZoneController: недостаточно энергии для аномалии ", anomaly_type)
+		print("RunController: недостаточно энергии для аномалии ", anomaly_type)
 		return null
 	return anomaly_manager.create_anomaly(anomaly_type, position, difficulty, cost)
 
 
 func create_artifact(artifact_type: String, position: Vector3, rarity: String = "common", value: float = 10.0) -> Node:
+	if not anomaly_manager:
+		return null
 	return anomaly_manager.create_artifact(artifact_type, position, rarity, value)
 
 
 func spawn_mutant(mutant_type: String, position: Vector3) -> Node:
+	if not spawn_manager:
+		return null
 	var cost = spawn_manager.get_mutant_cost(mutant_type)
 	if not resource_manager.spend_biomass(cost):
-		print("ZoneController: недостаточно биомассы для мутанта ", mutant_type)
+		print("RunController: недостаточно биомассы для мутанта ", mutant_type)
 		return null
 	return spawn_manager.spawn_mutant(mutant_type, position, cost)
 
 
 func register_stalker(stalker: Node):
-	spawn_manager.active_stalkers.append(stalker)
+	if spawn_manager:
+		spawn_manager.active_stalkers.append(stalker)
 
 
 func get_difficulty() -> float:
-	return progression_manager.get_current_difficulty()
+	return progression_manager.get_current_difficulty() if progression_manager else 1.0
 
 
 func set_difficulty(value: float):
-	progression_manager.current_difficulty = value
-	difficulty_changed.emit(value)
+	if progression_manager:
+		progression_manager.current_difficulty = value
+		difficulty_changed.emit(value)
 
 
 func get_run_number() -> int:
-	return progression_manager.get_current_run()
+	return progression_manager.get_current_run() if progression_manager else 1
 
 
 func get_pulses_to_win() -> int:
-	return progression_manager.get_pulses_to_win()
+	return progression_manager.get_pulses_to_win() if progression_manager else 5
 
 
 func get_pulse_count() -> int:
-	return event_manager.get_pulse_count()
+	return event_manager.get_pulse_count() if event_manager else 0
 
 
 func is_radiating() -> bool:
-	return event_manager.is_pulse_active()
+	return event_manager.is_pulse_active() if event_manager else false
 
 
 func get_resource_status() -> Dictionary:
 	return {
-		"energy": resource_manager.get_energy(),
-		"max_energy": resource_manager.max_energy,
-		"biomass": resource_manager.get_biomass(),
-		"max_biomass": resource_manager.max_biomass,
-		"difficulty": progression_manager.get_current_difficulty(),
-		"stalker_count": spawn_manager.get_stalker_count()
+		"energy": get_energy(),
+		"max_energy": max_energy,
+		"biomass": get_biomass(),
+		"max_biomass": max_biomass,
+		"difficulty": get_difficulty(),
+		"stalker_count": spawn_manager.get_stalker_count() if spawn_manager else 0
 	}
 
 
 func can_afford(energy_cost: float, biomass_cost: float) -> bool:
-	return resource_manager.get_energy() >= energy_cost and resource_manager.get_biomass() >= biomass_cost
+	return get_energy() >= energy_cost and get_biomass() >= biomass_cost
 
 
-# ==================== РЕЗУЛЬТАТЫ ЗАБЕГА ====================
+# ========== РЕЗУЛЬТАТЫ ЗАБЕГА ==========
 
 func get_run_result() -> Dictionary:
 	"""Возвращает результаты забега для передачи в ЛК"""
 	var result = {
-		"success": event_manager.has_won(),
-		"run_number": progression_manager.get_current_run(),
-		"reward": resource_manager.get_biomass(),
+		"success": event_manager.has_won() if event_manager else false,
+		"run_number": get_run_number(),
+		"reward": get_biomass(),
 		"statistics": {
-			"stalkers_killed": progression_manager.get_stalkers_killed(),
-			"anomalies_created": anomaly_manager.get_anomaly_count(),
-			"mutants_created": spawn_manager.get_mutant_count(),
-			"artifacts_stolen": spawn_manager.get_artifacts_stolen(),
-			"biomass_earned": resource_manager.get_biomass(),
-			"biomass_spent": 0  # TODO: отслеживать
+			"stalkers_killed": progression_manager.get_stalkers_killed() if progression_manager else 0,
+			"anomalies_created": anomaly_manager.get_anomaly_count() if anomaly_manager else 0,
+			"mutants_created": spawn_manager.get_mutant_count() if spawn_manager else 0,
+			"artifacts_stolen": spawn_manager.get_artifacts_stolen() if spawn_manager else 0,
+			"biomass_earned": get_biomass(),
+			"biomass_spent": 0
 		},
 		"artifacts_collected": _collect_artifacts()
 	}
@@ -332,17 +381,16 @@ func _collect_artifacts() -> Array:
 
 func finish_run(success: bool):
 	"""Завершает забег и передаёт результаты в GameManager"""
-	event_manager.set_game_over(success)
+	if event_manager:
+		event_manager.set_game_over(success)
 	
 	# Собираем результаты
 	var result = get_run_result()
 	
 	# Передаём в GameManager
-	if Engine.has_singleton("GameManager"):
-		# Используем группу для поиска GameManager
-		var gm = get_tree().get_first_node_in_group("game_manager")
-		if gm:
-			gm.process_run_result(result)
+	var gm = get_tree().get_first_node_in_group("game_manager")
+	if gm:
+		gm.process_run_result(result)
 	
 	# Переходим в ЛК
 	await get_tree().create_timer(2.0).timeout

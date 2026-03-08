@@ -3,6 +3,10 @@ class_name StoragePanel
 
 ## Панель хранилища артефактов
 
+# Функция для получения GameManager
+func _get_gm() -> Node:
+	return get_tree().get_first_node_in_group("game_manager")
+
 signal artifact_exchanged()
 
 @onready var title_label: Label = $Panel/Margin/VBox/Title
@@ -129,11 +133,13 @@ func _on_artifact_clicked(rarity: String, value: int, index: int):
 	lab_data.biomass += value
 	
 	# Сохраняем
-	GameManager.save_game(0)
+	var gm = _get_gm()
+	if gm:
+		gm.save_game(0)
 	
 	# Звук
-	if GameManager.sound_manager:
-		GameManager.sound_manager.play_sound("exchange", 0.7)
+	if gm and gm.has_method("play_sound"):
+		gm.play_sound("exchange", 0.7)
 	
 	# Обновляем UI
 	_update_biomass()

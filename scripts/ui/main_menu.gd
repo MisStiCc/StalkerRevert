@@ -3,6 +3,11 @@ class_name MainMenu
 
 ## Главное меню игры
 
+# Функция для получения GameManager (autoload)
+func _get_gm() -> Node:
+	return get_tree().get_first_node_in_group("game_manager")
+
+
 @onready var new_game_button: Button = $VBox/Buttons/NewGameButton
 @onready var load_button: Button = $VBox/Buttons/LoadButton
 @onready var settings_button: Button = $VBox/Buttons/SettingsButton
@@ -42,14 +47,17 @@ func _setup_sounds():
 
 
 func _play_hover_sound():
-	if GameManager and GameManager.sound_manager:
-		GameManager.sound_manager.play_sound("ui_hover", 0.3)
+	var gm = _get_gm()
+	if gm and gm.has_method("play_sound"):
+		gm.play_sound("ui_hover", 0.3)
 
 
 func _on_new_game_pressed():
 	_play_click_sound()
 	await get_tree().create_timer(0.2).timeout
-	GameManager.start_new_game()
+	var gm = _get_gm()
+	if gm:
+		gm.start_new_game()
 
 
 func _on_load_pressed():
@@ -70,8 +78,9 @@ func _on_quit_pressed():
 
 
 func _play_click_sound():
-	if GameManager and GameManager.sound_manager:
-		GameManager.sound_manager.play_sound("ui_click", 0.6)
+	var gm = _get_gm()
+	if gm and gm.has_method("play_sound"):
+		gm.play_sound("ui_click", 0.6)
 
 
 func _refresh_save_slots():
@@ -80,7 +89,8 @@ func _refresh_save_slots():
 		child.queue_free()
 	
 	# Получаем информацию о сохранениях
-	var saves_info = GameManager.get_all_saves_info()
+	var gm = _get_gm()
+	var saves_info = [] if not gm else gm.get_all_saves_info()
 	
 	for i in range(3):
 		var save_info = saves_info[i]
@@ -120,14 +130,17 @@ func _refresh_save_slots():
 
 func _load_slot(slot: int):
 	_play_click_sound()
-	if GameManager.load_game(slot):
+	var gm = _get_gm()
+	if gm and gm.load_game(slot):
 		await get_tree().create_timer(0.2).timeout
-		GameManager.change_scene("lab")
+		gm.change_scene("lab")
 
 
 func _delete_slot(slot: int):
 	_play_click_sound()
-	GameManager.delete_save(slot)
+	var gm = _get_gm()
+	if gm:
+		gm.delete_save(slot)
 	_refresh_save_slots()
 
 

@@ -1,12 +1,11 @@
 extends Node
-class_name AnomalySpawner
 
 ## Создание и управление аномалиями
 
 signal anomaly_created(anomaly: Node, anomaly_type: String, difficulty: int)
 signal anomaly_destroyed(anomaly_type: String, position: Vector3, difficulty: int)
 
-var owner: Node
+var _parent_node: Node
 
 # Сцены аномалий
 @export var anomaly_scenes: Dictionary = {}
@@ -22,7 +21,7 @@ var _difficulty: float = 1.0
 
 
 func _init(node: Node):
-	owner = node
+	_parent_node = node
 
 
 func setup(artifact_map: Dictionary):
@@ -47,7 +46,7 @@ func create_anomaly(anomaly_type: String, position: Vector3, difficulty: int = 1
 	anomaly.position = position
 	anomaly.add_to_group("anomalies")
 	
-	owner.get_tree().current_scene.add_child(anomaly)
+	_parent_node.get_tree().current_scene.add_child(anomaly)
 	active_anomalies.append(anomaly)
 	
 	anomaly_created.emit(anomaly, anomaly_type, difficulty)
@@ -91,7 +90,7 @@ func get_active_anomalies() -> Array[Node]:
 	return active_anomalies.filter(func(a): return is_instance_valid(a))
 
 
-def get_anomaly_count() -> int:
+func get_anomaly_count() -> int:
 	return active_anomalies.size()
 
 

@@ -1,18 +1,14 @@
 extends Area3D
 class_name BaseAnomaly
 
-# Только общая логика, никакого визуала!
-@export var anomaly_name: String = "Аномалия"
 @export var anomaly_type: String = "base"
 @export var damage_per_second: float = 10.0
 @export var is_active: bool = true
 
-# Параметры сложности и здоровья
-@export var difficulty_level: int = 1  # 1=легкая, 2=средняя, 3=сложная
+@export var difficulty_level: int = 1
 @export var health: float = 100.0
 @export var max_health: float = 100.0
 
-# Сигналы
 signal stalker_entered(stalker: Node3D)
 signal stalker_exited(stalker: Node3D)
 signal energy_consumed(amount: float)
@@ -28,14 +24,12 @@ func _ready():
 	max_health = health
 	add_to_group("anomalies")
 	
-	# Таймер урона
 	damage_timer = Timer.new()
 	damage_timer.wait_time = 1.0
 	damage_timer.timeout.connect(_apply_damage)
 	add_child(damage_timer)
 	damage_timer.start()
 
-	# Подключение сигналов входа/выхода
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
 
@@ -63,7 +57,7 @@ func _apply_damage():
 				energy_consumed.emit(damage_per_second)
 
 
-func take_damage(amount: float, attacker = null):
+func take_damage(amount: float, _attacker = null):
 	if _is_dying:
 		return
 	
@@ -85,7 +79,6 @@ func _destroy():
 
 func set_difficulty(difficulty: int):
 	difficulty_level = difficulty
-	# Масштабируем здоровье по сложности
 	health = 100.0 * difficulty
 	max_health = health
 
@@ -103,6 +96,5 @@ func get_anomaly_info() -> Dictionary:
 		"type": anomaly_type,
 		"difficulty": difficulty_level,
 		"health": health,
-		"max_health": max_health,
-		"name": anomaly_name
+		"max_health": max_health
 	}

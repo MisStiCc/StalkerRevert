@@ -1,70 +1,70 @@
-[gd_scene load_steps=8 format=3 uid="uid://main_scene_final"]
+[gd_scene load_steps=18 format=3 uid="uid://main_scene"]
 
-[ext_resource type="Script" path="res://scripts/zone_controller.gd" id="1"]
-[ext_resource type="PackedScene" path="res://scenes/stalkers/stalker_spawner.tscn" id="2"]
-[ext_resource type="PackedScene" path="res://scenes/ui/main_ui.tscn" id="3"]
-[ext_resource type="Script" path="res://scripts/terrain_generator.gd" id="4"]
-[ext_resource type="Script" path="res://scripts/game_camera.gd" id="5"]
-[ext_resource type="PackedScene" path="res://scenes/zone/monolith/monolith.tscn" id="6"]
+[ext_resource type="Script" path="res://scripts/managers/run_controller.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/zone/monolith/monolith.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://scenes/stalkers/stalker_spawner.tscn" id="3"]
+[ext_resource type="PackedScene" path="res://scenes/ui/main_ui.tscn" id="4"]
+[ext_resource type="Script" path="res://scripts/terrain_generator.gd" id="5"]
+[ext_resource type="Script" path="res://scripts/game_camera.gd" id="6"]
+[ext_resource type="PackedScene" path="res://scenes/stalkers/novice_stalker.tscn" id="7"]
+[ext_resource type="PackedScene" path="res://scenes/stalkers/veteran_stalker.tscn" id="8"]
+[ext_resource type="PackedScene" path="res://scenes/stalkers/master_stalker.tscn" id="9"]
 
-[sub_resource type="Environment" id="Environment_main"]
-background_mode = 1
-ambient_light_source = 2
-ambient_light_color = Color(0.3, 0.3, 0.35, 1)
-ambient_light_energy = 0.5
-tonemap_mode = 2
-glow_enabled = true
-glow_intensity = 0.5
+[ext_resource type="PackedScene" path="res://scenes/zone/anomalies/heat_anomaly.tscn" id="10"]
+[ext_resource type="PackedScene" path="res://scenes/zone/anomalies/electric_anomaly.tscn" id="11"]
+[ext_resource type="PackedScene" path="res://scenes/zone/anomalies/acid_anomaly.tscn" id="12"]
+[ext_resource type="PackedScene" path="res://scenes/zone/anomalies/gravity_vortex.tscn" id="13"]
+[ext_resource type="PackedScene" path="res://scenes/zone/anomalies/time_dilation.tscn" id="14"]
+
+[sub_resource type="Environment" id="Environment_1"]
+background_color = Color(0.05, 0.05, 0.1, 1)
+ambient_light_color = Color(0.2, 0.2, 0.3, 1)
+fog_enabled = true
+fog_density = 0.01
+fog_light_color = Color(0.5, 0.5, 0.6, 1)
 
 [node name="Main" type="Node3D"]
 
-[node name="ZoneController" type="Node" parent="."]
+[node name="RunController" type="Node" parent="."]
 script = ExtResource("1")
 
 [node name="TerrainGenerator" type="Node3D" parent="."]
-script = ExtResource("4")
-chunk_size = 64
-chunk_load_distance = 4
-
-[node name="Monolith" parent="." instance=ExtResource("6")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
-inner_radius = 20.0
-middle_radius = 40.0
-outer_radius = 60.0
-spawn_radius = 80.0
-base_energy = 500.0
-energy_regen_rate = 1.0
-
-[node name="StalkerSpawner" parent="." instance=ExtResource("2")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
-
-[node name="MainUI" parent="." instance=ExtResource("3")]
-
-[node name="GameCamera" type="Camera3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 0, 30, 30)
-current = true
 script = ExtResource("5")
-current_mode = 1
-top_down_height = 30.0
-top_down_angle = -70.0
-third_person_distance = 8.0
-third_person_height = 3.0
-rotation_speed = 2.0
-smooth_speed = 5.0
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
-environment = SubResource("Environment_main")
+[node name="Monolith" parent="." instance=ExtResource("2")]
+
+[node name="StalkerSpawner" parent="." instance=ExtResource("3")]
+stalker_types = Array[PackedScene]([ExtResource("7"), ExtResource("8"), ExtResource("9")])
+
+[node name="MainUI" parent="." instance=ExtResource("4")]
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.5, 0.866025, 0, -0.866025, 0.5, 0, 15, 0)
-light_color = Color(1, 0.95, 0.8, 1)
+transform = Transform3D(1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 0, 10, 0)
+light_color = Color(1, 0.95, 0.9, 1)
 light_energy = 1.2
-light_indirect_energy = 1.0
 shadow_enabled = true
 
-[node name="WorldBoundaries" type="StaticBody3D" parent="."]
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_1")
 
-[node name="Ground" type="CollisionShape3D" parent="WorldBoundaries"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)
-shape = BoxShape3D.new()
-size = Vector3(500, 2, 500)
+[node name="GameCamera" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 20, 20, 20)
+current = true
+script = ExtResource("6")
+
+[node name="TestAnomalies" type="Node3D" parent="."]
+
+[node name="HeatAnomaly" parent="TestAnomalies" instance=ExtResource("10")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 2, 10)
+
+[node name="ElectricAnomaly" parent="TestAnomalies" instance=ExtResource("11")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 2, -10)
+
+[node name="AcidAnomaly" parent="TestAnomalies" instance=ExtResource("12")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 2, 0)
+
+[node name="GravityVortex" parent="TestAnomalies" instance=ExtResource("13")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 2, 5)
+
+[node name="TimeDilation" parent="TestAnomalies" instance=ExtResource("14")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 15)

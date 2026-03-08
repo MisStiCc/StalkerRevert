@@ -9,7 +9,6 @@ class_name ChemicalJelly
 func _ready():
 	anomaly_type = "chemical_jelly"
 	difficulty_level = 1
-	anomaly_name = "Химическое желе"
 	damage_per_second = 8.0
 	
 	super._ready()

@@ -14,7 +14,5 @@ func _collect_hook(collector: Node):
 		collector.temporary_speed_boost(1.5, 5.0)
 
 func _spawn_collect_effect():
-	# Золотые частицы
-	var particles = preload("res://scenes/effects/gold_particles.tscn").instantiate()
-	particles.position = global_position
-	get_parent().add_child(particles)
+	# Эффект собран без частиц
+	pass

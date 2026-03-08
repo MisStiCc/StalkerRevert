@@ -3,25 +3,16 @@ class_name ChemicalAcidCloud
 
 @export var cloud_radius: float = 7.0
 @export var cloud_color: Color = Color(0.6, 1, 0, 0.7)
-@export var particle_count: int = 300
 
 
 func _ready():
 	anomaly_type = "chemical_acid_cloud"
 	difficulty_level = 2
-	anomaly_name = "Кислотное облако"
 	damage_per_second = 18.0
 	
 	super._ready()
 	_update_size()
 	_update_color()
-
-
-func _setup_particles():
-	var particles = $AcidParticles
-	if particles:
-		particles.amount = particle_count
-		particles.emitting = true
 
 
 func _update_size():
@@ -40,10 +31,3 @@ func _update_color():
 	if mesh and mesh.material_override:
 		mesh.material_override.albedo_color = cloud_color
 		mesh.material_override.emission = cloud_color
-
-
-func _process(delta):
-	for stalker in stalkers_in_zone:
-		if is_instance_valid(stalker) and stalker.has_method("take_damage"):
-			stalker.take_damage(damage_per_second * delta)
-			energy_consumed.emit(damage_per_second * delta)

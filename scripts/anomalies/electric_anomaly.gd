@@ -10,7 +10,6 @@ class_name ElectricAnomaly
 func _ready():
 	anomaly_type = "electric_anomaly"
 	difficulty_level = 1
-	anomaly_name = "Электра"
 	damage_per_second = 15.0
 	
 	super._ready()

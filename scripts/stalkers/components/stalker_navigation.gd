@@ -13,7 +13,7 @@ var nav_agent: NavigationAgent3D
 # Режимы
 var is_patrol_mode: bool = false
 var current_target: Vector3 = Vector3.ZERO
-var is_moving: bool = false
+var _moving: bool = false
 
 # Параметры
 var base_speed: float = 4.0
@@ -40,7 +40,7 @@ func _ready():
 
 
 func _physics_process(_delta: float):
-	if not nav_agent or not is_moving:
+	if not nav_agent or not _moving:
 		return
 	
 	# Обновляем скорость с учётом местности
@@ -88,7 +88,7 @@ func _on_velocity_computed(safe_velocity: Vector3):
 
 
 func _on_navigation_finished():
-	is_moving = false
+	_moving = false
 	target_reached.emit()
 
 
@@ -104,7 +104,7 @@ func set_target(position: Vector3):
 	
 	# Запускаем навигацию
 	nav_agent.get_path()  # Принудительно обновляем путь
-	is_moving = true
+	_moving = true
 
 
 func set_flee_target(from_position: Vector3):
@@ -118,7 +118,7 @@ func set_flee_target(from_position: Vector3):
 	current_target = owner_stalker.global_position + direction * flee_distance
 	
 	nav_agent.target_position = current_target
-	is_moving = true
+	_moving = true
 
 
 func continue_path():
@@ -128,7 +128,7 @@ func continue_path():
 
 func stop():
 	"""Остановить движение"""
-	is_moving = false
+	_moving = false
 	current_target = Vector3.ZERO
 	if nav_agent:
 		nav_agent.target_position = owner_stalker.global_position
@@ -154,7 +154,7 @@ func set_terrain_multiplier(mult: float):
 
 
 func is_moving() -> bool:
-	return is_moving
+	return _moving
 
 
 func get_current_target() -> Vector3:

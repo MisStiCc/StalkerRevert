@@ -5,7 +5,6 @@ class_name ThermalComet
 @export var orbit_radius: float = 10.0
 @export var comet_radius: float = 1.0
 @export var comet_color: Color = Color(1, 0.3, 0, 1)
-@export var particle_count: int = 800
 
 var angle: float = 0.0
 var spawn_position: Vector3
@@ -13,22 +12,13 @@ var spawn_position: Vector3
 
 func _ready():
 	anomaly_type = "thermal_comet"
-	difficulty_level = 2  # Средняя
-	anomaly_name = "Комета"
+	difficulty_level = 2
 	damage_per_second = 15.0
-	
 	spawn_position = global_position
 	
 	super._ready()
 	_update_size()
 	_update_color()
-
-
-func _setup_particles():
-	var particles = $TailParticles
-	if particles:
-		particles.amount = particle_count
-		particles.emitting = true
 
 
 func _update_size():
@@ -53,21 +43,14 @@ func _physics_process(delta):
 	angle += move_speed * delta
 	position.x = spawn_position.x + cos(angle) * orbit_radius
 	position.z = spawn_position.z + sin(angle) * orbit_radius
-	
-	_apply_damage_nearby()
 
 
-func _apply_damage_nearby():
-	var space_state = get_world_3d().direct_space_state
-	var params = PhysicsShapeQueryParameters3D.new()
-	var sphere = SphereShape3D.new()
-	sphere.radius = comet_radius * 1.5
-	params.shape = sphere
-	params.transform = Transform3D.IDENTITY.translated(global_position)
-	params.collision_mask = 1
+func _apply_damage():
+	if not is_active:
+		return
 	
-	for result in space_state.intersect_shape(params):
-		var obj = result.collider
-		if obj and obj.has_method("take_damage"):
-			obj.take_damage(damage_per_second)
-			energy_consumed.emit(damage_per_second)
+	for stalker in stalkers_in_zone:
+		if is_instance_valid(stalker):
+			if stalker.has_method("take_damage"):
+				stalker.take_damage(damage_per_second)
+				energy_consumed.emit(damage_per_second)

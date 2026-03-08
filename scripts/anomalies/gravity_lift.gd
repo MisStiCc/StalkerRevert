@@ -10,7 +10,6 @@ class_name GravityLift
 func _ready():
 	anomaly_type = "gravity_lift"
 	difficulty_level = 2
-	anomaly_name = "Гравитационный лифт"
 	damage_per_second = 8.0
 	
 	super._ready()

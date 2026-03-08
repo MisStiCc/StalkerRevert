@@ -384,11 +384,3 @@ func get_terrain_name(terrain_type: TerrainType) -> String:
 
 func get_height_at(world_pos: Vector3) -> float:
 	return _get_height(world_pos.x, world_pos.z)
-
-
-func _get_height(x: float, z: float) -> float:
-	var height = noise.get_noise_2d(x, z) * terrain_height
-	height += noise.get_noise_2d(x * 2, z * 2) * (terrain_height * 0.3)
-	height += noise.get_noise_2d(x * 4, z * 4) * (terrain_height * 0.1)
-	height = clamp(height, -terrain_height * 0.5, terrain_height)
-	return height

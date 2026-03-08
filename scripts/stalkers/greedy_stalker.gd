@@ -1,15 +1,14 @@
 extends BaseStalker
-class_name GreedyStalker
 
 ## Greedy - приоритет на сбор артефактов
 
 func _ready_hook():
 	stalker_type = "greedy"
 	behavior = "greedy"
-	priority_artifact = true
 	
-	if has_node("Label3D"):
-		$Label3D.modulate = Color.YELLOW
-		$Label3D.text = "Greedy"
+	var label_node = find_child("*Label3D", true, false)
+	if label_node and label_node is Label3D:
+		label_node.modulate = Color.YELLOW
+		label_node.text = "Greedy"
 	
 	print("🎯 GreedyStalker: инициализирован")

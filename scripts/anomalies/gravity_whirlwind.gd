@@ -9,8 +9,7 @@ class_name GravityWhirlwind
 
 func _ready():
 	anomaly_type = "gravity_whirlwind"
-	difficulty_level = 3  # Сложная
-	anomaly_name = "Гравитационная карусель"
+	difficulty_level = 3
 	damage_per_second = 10.0
 	
 	super._ready()

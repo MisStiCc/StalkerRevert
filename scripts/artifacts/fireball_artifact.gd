@@ -14,10 +14,8 @@ func _collect_hook(collector: Node):
 		collector.apply_burn(3.0)
 
 func _spawn_collect_effect():
-	# Создаём огненные частицы
-	var particles = preload("res://scenes/effects/fire_particles.tscn").instantiate()
-	particles.position = global_position
-	get_parent().add_child(particles)
+	# Эффект собран без частиц
+	pass
 
 func apply_effect(collector: Node):
 	super.apply_effect(collector)

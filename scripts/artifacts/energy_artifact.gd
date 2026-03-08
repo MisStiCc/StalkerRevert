@@ -14,7 +14,5 @@ func _collect_hook(collector: Node):
 		collector.heal(10)
 
 func _spawn_collect_effect():
-	# Электрические частицы
-	var particles = preload("res://scenes/effects/spark_particles.tscn").instantiate()
-	particles.position = global_position
-	get_parent().add_child(particles)
+	# Эффект собран без частиц (папка effects не существует)
+	pass

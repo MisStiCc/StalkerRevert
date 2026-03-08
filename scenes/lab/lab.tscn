@@ -1,11 +1,11 @@
-[gd_scene load_steps=3 format=3 uid="uid://lab"]
+[gd_scene format=3 uid="uid://lab"]
 
-[ext_resource type="Script" path="res://scripts/ui/lab_controller.gd" id="1_lab_controller"]
-[ext_resource type="Script" path="res://scripts/ui/upgrade_panel.gd" id="2_upgrade_panel"]
-[ext_resource type="Script" path="res://scripts/ui/storage_panel.gd" id="3_storage_panel"]
-[ext_resource type="Script" path="res://scripts/ui/result_panel.gd" id="4_result_panel"]
+[ext_resource type="Script" uid="uid://buvcp58o303j5" path="res://scripts/ui/lab_controller.gd" id="1_lab_controller"]
+[ext_resource type="Script" uid="uid://cl2paq4kb7py8" path="res://scripts/ui/upgrade_panel.gd" id="2_upgrade_panel"]
+[ext_resource type="Script" uid="uid://cigxguc7j100y" path="res://scripts/ui/storage_panel.gd" id="3_storage_panel"]
+[ext_resource type="Script" uid="uid://dkri1h7i87ts6" path="res://scripts/ui/result_panel.gd" id="4_result_panel"]
 
-[node name="Lab" type="Control"]
+[node name="Lab" type="Control" unique_id=1687029437]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -14,14 +14,16 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_lab_controller")
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Background" type="ColorRect" parent="." unique_id=729756800]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 color = Color(0.1, 0.12, 0.15, 1)
 
-[node name="VBox" type="VBoxContainer" parent="."]
+[node name="VBox" type="VBoxContainer" parent="." unique_id=1099973283]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -30,54 +32,56 @@ offset_left = 20.0
 offset_top = 20.0
 offset_right = -20.0
 offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 2
 
-[node name="Header" type="HBoxContainer" parent="VBox"]
+[node name="Header" type="HBoxContainer" parent="VBox" unique_id=503281637]
 layout_mode = 2
 
-[node name="Title" type="Label" parent="VBox/Header"]
+[node name="Title" type="Label" parent="VBox/Header" unique_id=2027225234]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "ЛАБОРАТОРНЫЙ КОМПЛЕКС"
 horizontal_alignment = 1
 
-[node name="RunNumber" type="Label" parent="VBox/Header"]
+[node name="RunNumber" type="Label" parent="VBox/Header" unique_id=851449379]
 layout_mode = 2
 text = "День 1"
 
-[node name="InfoPanel" type="PanelContainer" parent="VBox"]
+[node name="InfoPanel" type="PanelContainer" parent="VBox" unique_id=1298940468]
 layout_mode = 2
 
-[node name="HBox" type="HBoxContainer" parent="VBox/InfoPanel"]
+[node name="HBox" type="HBoxContainer" parent="VBox/InfoPanel" unique_id=1646135266]
 layout_mode = 2
 
-[node name="InfoLabel" type="Label" parent="VBox/InfoPanel/HBox"]
+[node name="InfoLabel" type="Label" parent="VBox/InfoPanel/HBox" unique_id=1161697384]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "ИНФОРМАЦИЯ О ЗАБЕГЕ"
 
-[node name="BiomassLabel" type="Label" parent="VBox/InfoPanel/HBox"]
+[node name="BiomassLabel" type="Label" parent="VBox/InfoPanel/HBox" unique_id=1202147418]
 layout_mode = 2
 text = "Биомасса: "
 
-[node name="BiomassValue" type="Label" parent="VBox/InfoPanel/HBox"]
+[node name="BiomassValue" type="Label" parent="VBox/InfoPanel/HBox" unique_id=1655598860]
 layout_mode = 2
 text = "0"
 
-[node name="StartRunButton" type="Button" parent="VBox/InfoPanel"]
+[node name="StartRunButton" type="Button" parent="VBox/InfoPanel" unique_id=1169496646]
 layout_mode = 2
 text = "НАЧАТЬ НОВЫЙ ЗАБЕГ"
 
-[node name="Stations" type="HBoxContainer" parent="VBox"]
+[node name="Stations" type="HBoxContainer" parent="VBox" unique_id=840897145]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="AnomalyStation" type="Button" parent="VBox/Stations"]
+[node name="AnomalyStation" type="Button" parent="VBox/Stations" unique_id=136749369]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_stretch_ratio = 0.33
 text = "АНОМАЛИИ"
 
-[node name="StationName" type="Label" parent="VBox/Stations/AnomalyStation"]
+[node name="StationName" type="Label" parent="VBox/Stations/AnomalyStation" unique_id=769103795]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -93,7 +97,7 @@ grow_vertical = 0
 text = "АНОМАЛИИ"
 horizontal_alignment = 1
 
-[node name="StationLevel" type="Label" parent="VBox/Stations/AnomalyStation"]
+[node name="StationLevel" type="Label" parent="VBox/Stations/AnomalyStation" unique_id=217728421]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -109,13 +113,13 @@ grow_vertical = 0
 text = "Ур.0"
 horizontal_alignment = 1
 
-[node name="MutantStation" type="Button" parent="VBox/Stations"]
+[node name="MutantStation" type="Button" parent="VBox/Stations" unique_id=2100000026]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_stretch_ratio = 0.33
 text = "МУТАНТЫ"
 
-[node name="StationName" type="Label" parent="VBox/Stations/MutantStation"]
+[node name="StationName" type="Label" parent="VBox/Stations/MutantStation" unique_id=1163299845]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -131,7 +135,7 @@ grow_vertical = 0
 text = "МУТАНТЫ"
 horizontal_alignment = 1
 
-[node name="StationLevel" type="Label" parent="VBox/Stations/MutantStation"]
+[node name="StationLevel" type="Label" parent="VBox/Stations/MutantStation" unique_id=737033022]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -147,13 +151,13 @@ grow_vertical = 0
 text = "Ур.0"
 horizontal_alignment = 1
 
-[node name="MonolithStation" type="Button" parent="VBox/Stations"]
+[node name="MonolithStation" type="Button" parent="VBox/Stations" unique_id=1684277104]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_stretch_ratio = 0.33
 text = "МОНОЛИТ"
 
-[node name="StationName" type="Label" parent="VBox/Stations/MonolithStation"]
+[node name="StationName" type="Label" parent="VBox/Stations/MonolithStation" unique_id=1262906922]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -169,7 +173,7 @@ grow_vertical = 0
 text = "МОНОЛИТ"
 horizontal_alignment = 1
 
-[node name="StationLevel" type="Label" parent="VBox/Stations/MonolithStation"]
+[node name="StationLevel" type="Label" parent="VBox/Stations/MonolithStation" unique_id=11301602]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -185,59 +189,61 @@ grow_vertical = 0
 text = "Ур.0"
 horizontal_alignment = 1
 
-[node name="StoragePanel" type="PanelContainer" parent="VBox"]
+[node name="StoragePanel" type="PanelContainer" parent="VBox" unique_id=818533677]
 layout_mode = 2
 
-[node name="HBox" type="HBoxContainer" parent="VBox/StoragePanel"]
+[node name="HBox" type="HBoxContainer" parent="VBox/StoragePanel" unique_id=993100887]
 layout_mode = 2
 
-[node name="StorageLabel" type="Label" parent="VBox/StoragePanel/HBox"]
+[node name="StorageLabel" type="Label" parent="VBox/StoragePanel/HBox" unique_id=202765341]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "ХРАНИЛИЩЕ АРТЕФАКТОВ"
 
-[node name="ArtifactCounts" type="Label" parent="VBox/StoragePanel/HBox"]
+[node name="ArtifactCounts" type="Label" parent="VBox/StoragePanel/HBox" unique_id=1275997144]
 layout_mode = 2
 text = "Common: 0   Rare: 0   Legendary: 0"
 
-[node name="OpenStorageButton" type="Button" parent="VBox/StoragePanel"]
+[node name="OpenStorageButton" type="Button" parent="VBox/StoragePanel" unique_id=1884352419]
 layout_mode = 2
 text = "ОТКРЫТЬ ХРАНИЛИЩЕ"
 
-[node name="StatsPanel" type="PanelContainer" parent="VBox"]
+[node name="StatsPanel" type="PanelContainer" parent="VBox" unique_id=1504504298]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="StatsLabel" type="Label" parent="VBox/StatsPanel"]
+[node name="StatsLabel" type="Label" parent="VBox/StatsPanel" unique_id=170435326]
 layout_mode = 2
 text = "Всего забегов: 0   Побед: 0   Поражений: 0
 Сталкеров убито: 0   Артефактов украдено: 0"
 
-[node name="BottomButtons" type="HBoxContainer" parent="VBox"]
+[node name="BottomButtons" type="HBoxContainer" parent="VBox" unique_id=2032821775]
 layout_mode = 2
 
-[node name="MenuButton" type="Button" parent="VBox/BottomButtons"]
+[node name="MenuButton" type="Button" parent="VBox/BottomButtons" unique_id=1920276815]
 layout_mode = 2
 text = "ГЛАВНОЕ МЕНЮ"
 
-[node name="SettingsButton" type="Button" parent="VBox/BottomButtons"]
+[node name="SettingsButton" type="Button" parent="VBox/BottomButtons" unique_id=414624332]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "НАСТРОЙКИ"
 
-[node name="SaveButton" type="Button" parent="VBox/BottomButtons"]
+[node name="SaveButton" type="Button" parent="VBox/BottomButtons" unique_id=445293368]
 layout_mode = 2
 text = "СОХРАНИТЬ"
 
-[node name="UpgradePanel" type="Control" parent="."]
+[node name="UpgradePanel" type="Control" parent="." unique_id=1648802834]
 visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 script = ExtResource("2_upgrade_panel")
 
-[node name="Panel" type="Panel" parent="UpgradePanel"]
+[node name="Panel" type="Panel" parent="UpgradePanel" unique_id=265332345]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -251,41 +257,45 @@ offset_bottom = 250.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Margin" type="MarginContainer" parent="UpgradePanel/Panel"]
+[node name="Margin" type="MarginContainer" parent="UpgradePanel/Panel" unique_id=1763258381]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 theme_override_constants/margin_left = 20
 theme_override_constants/margin_top = 20
 theme_override_constants/margin_right = 20
 theme_override_constants/margin_bottom = 20
 
-[node name="VBox" type="VBoxContainer" parent="UpgradePanel/Panel/Margin"]
+[node name="VBox" type="VBoxContainer" parent="UpgradePanel/Panel/Margin" unique_id=1004227082]
 layout_mode = 2
 
-[node name="Title" type="Label" parent="UpgradePanel/Panel/Margin/VBox"]
+[node name="Title" type="Label" parent="UpgradePanel/Panel/Margin/VBox" unique_id=1136017030]
 layout_mode = 2
 text = "СТАНЦИЯ"
 horizontal_alignment = 1
 
-[node name="UpgradesContainer" type="VBoxContainer" parent="UpgradePanel/Panel/Margin/VBox"]
+[node name="UpgradesContainer" type="VBoxContainer" parent="UpgradePanel/Panel/Margin/VBox" unique_id=2132965075]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="BackButton" type="Button" parent="UpgradePanel/Panel/Margin/VBox"]
+[node name="BackButton" type="Button" parent="UpgradePanel/Panel/Margin/VBox" unique_id=859428039]
 layout_mode = 2
 text = "НАЗАД"
 
-[node name="StoragePanel" type="Control" parent="."]
+[node name="StoragePanel" type="Control" parent="." unique_id=304282893]
 visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 script = ExtResource("3_storage_panel")
 
-[node name="Panel" type="Panel" parent="StoragePanel"]
+[node name="Panel" type="Panel" parent="StoragePanel" unique_id=1777116015]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -299,56 +309,64 @@ offset_bottom = 300.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Margin" type="MarginContainer" parent="StoragePanel/Panel"]
+[node name="Margin" type="MarginContainer" parent="StoragePanel/Panel" unique_id=789605584]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 theme_override_constants/margin_left = 20
 theme_override_constants/margin_top = 20
 theme_override_constants/margin_right = 20
 theme_override_constants/margin_bottom = 20
 
-[node name="VBox" type="VBoxContainer" parent="StoragePanel/Panel/Margin"]
+[node name="VBox" type="VBoxContainer" parent="StoragePanel/Panel/Margin" unique_id=1904463230]
 layout_mode = 2
 
-[node name="Title" type="Label" parent="StoragePanel/Panel/Margin/VBox"]
+[node name="Title" type="Label" parent="StoragePanel/Panel/Margin/VBox" unique_id=780629131]
 layout_mode = 2
 text = "ХРАНИЛИЩЕ АРТЕФАКТОВ"
 horizontal_alignment = 1
 
-[node name="Tabs" type="TabContainer" parent="StoragePanel/Panel/Margin/VBox"]
+[node name="Tabs" type="TabContainer" parent="StoragePanel/Panel/Margin/VBox" unique_id=1968931071]
 layout_mode = 2
 size_flags_vertical = 3
+current_tab = 0
 
-[node name="Common" type="GridContainer" parent="StoragePanel/Panel/Margin/VBox/Tabs"]
+[node name="Common" type="GridContainer" parent="StoragePanel/Panel/Margin/VBox/Tabs" unique_id=981605213]
 layout_mode = 2
+metadata/_tab_index = 0
 
-[node name="Rare" type="GridContainer" parent="StoragePanel/Panel/Margin/VBox/Tabs"]
+[node name="Rare" type="GridContainer" parent="StoragePanel/Panel/Margin/VBox/Tabs" unique_id=1173809446]
 visible = false
 layout_mode = 2
+metadata/_tab_index = 1
 
-[node name="Legendary" type="GridContainer" parent="StoragePanel/Panel/Margin/VBox/Tabs"]
+[node name="Legendary" type="GridContainer" parent="StoragePanel/Panel/Margin/VBox/Tabs" unique_id=1883795782]
 visible = false
 layout_mode = 2
+metadata/_tab_index = 2
 
-[node name="BiomassLabel" type="Label" parent="StoragePanel/Panel/Margin/VBox"]
+[node name="BiomassLabel" type="Label" parent="StoragePanel/Panel/Margin/VBox" unique_id=1639817532]
 layout_mode = 2
 text = "Биомасса: 0"
 
-[node name="BackButton" type="Button" parent="StoragePanel/Panel/Margin/VBox"]
+[node name="BackButton" type="Button" parent="StoragePanel/Panel/Margin/VBox" unique_id=732528944]
 layout_mode = 2
 text = "НАЗАД"
 
-[node name="ResultPanel" type="Control" parent="."]
+[node name="ResultPanel" type="Control" parent="." unique_id=56600579]
 visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 script = ExtResource("4_result_panel")
 
-[node name="Panel" type="Panel" parent="ResultPanel"]
+[node name="Panel" type="Panel" parent="ResultPanel" unique_id=2844269]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -362,43 +380,45 @@ offset_bottom = 200.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Margin" type="MarginContainer" parent="ResultPanel/Panel"]
+[node name="Margin" type="MarginContainer" parent="ResultPanel/Panel" unique_id=1618649256]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 theme_override_constants/margin_left = 30
 theme_override_constants/margin_top = 30
 theme_override_constants/margin_right = 30
 theme_override_constants/margin_bottom = 30
 
-[node name="VBox" type="VBoxContainer" parent="ResultPanel/Panel/Margin"]
+[node name="VBox" type="VBoxContainer" parent="ResultPanel/Panel/Margin" unique_id=1668864139]
 layout_mode = 2
 
-[node name="Title" type="Label" parent="ResultPanel/Panel/Margin/VBox"]
+[node name="Title" type="Label" parent="ResultPanel/Panel/Margin/VBox" unique_id=1125302991]
 layout_mode = 2
 text = "ИТОГИ ЗАБЕГА"
 horizontal_alignment = 1
 
-[node name="ResultLabel" type="Label" parent="ResultPanel/Panel/Margin/VBox"]
+[node name="ResultLabel" type="Label" parent="ResultPanel/Panel/Margin/VBox" unique_id=283269962]
 layout_mode = 2
 text = "ПОБЕДА"
 horizontal_alignment = 1
 
-[node name="RewardLabel" type="Label" parent="ResultPanel/Panel/Margin/VBox"]
+[node name="RewardLabel" type="Label" parent="ResultPanel/Panel/Margin/VBox" unique_id=6206305]
 layout_mode = 2
 text = "Получено биомассы: 0"
 horizontal_alignment = 1
 
-[node name="StatsLabel" type="Label" parent="ResultPanel/Panel/Margin/VBox"]
+[node name="StatsLabel" type="Label" parent="ResultPanel/Panel/Margin/VBox" unique_id=1316849715]
 layout_mode = 2
 text = "Сталкеров убито: 0"
 
-[node name="ArtifactsLabel" type="Label" parent="ResultPanel/Panel/Margin/VBox"]
+[node name="ArtifactsLabel" type="Label" parent="ResultPanel/Panel/Margin/VBox" unique_id=1266622749]
+visible = false
 layout_mode = 2
 text = "Собрано артефактов:"
-visible = false
 
-[node name="ContinueButton" type="Button" parent="ResultPanel/Panel/Margin/VBox"]
+[node name="ContinueButton" type="Button" parent="ResultPanel/Panel/Margin/VBox" unique_id=1878362002]
 layout_mode = 2
 text = "ПРОДОЛЖИТЬ"

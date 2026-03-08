@@ -8,7 +8,7 @@ signal artifact_created(artifact: Node, artifact_type: String, position: Vector3
 signal artifact_collected(artifact: Node, value: int)
 signal artifact_timer_expired(artifact: Node)
 
-var owner: Node
+var _parent_node: Node
 
 # Сцены артефактов
 @export var artifact_scenes: Dictionary = {}
@@ -27,7 +27,7 @@ var _timers: Dictionary = {}  # artifact_instance_id -> Timer
 
 
 func _init(node: Node):
-	owner = node
+	_parent_node = node
 
 
 func setup(values: Dictionary, rarity: Dictionary):
@@ -56,7 +56,7 @@ func create_artifact(artifact_type: String, position: Vector3, rarity: String = 
 	if artifact.has_method("set_value"):
 		artifact.set_value(int(value))
 	
-	owner.get_tree().current_scene.add_child(artifact)
+	_parent_node.get_tree().current_scene.add_child(artifact)
 	active_artifacts.append(artifact)
 	
 	# Запускаем таймер если есть lifetime

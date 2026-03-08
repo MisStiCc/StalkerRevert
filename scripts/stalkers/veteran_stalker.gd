@@ -18,7 +18,9 @@ func _ready_hook():
 	stalker_type = "veteran"
 	behavior = "brave"
 	max_health = 150.0
-	health = max_health
+	if health_component:
+		health_component.set_max_health(max_health)
+		health_component.heal(max_health)
 	speed = 5.5
 	damage = 15.0
 	vision_range = 25.0
@@ -30,25 +32,24 @@ func _ready_hook():
 
 
 func _update_visual():
-	if not visual: return
-	
-	var material = StandardMaterial3D.new()
-	material.albedo_color = veteran_color
-	material.metallic = 0.7
-	material.roughness = 0.2
-	material.emission_enabled = true
-	material.emission = veteran_color
-	material.emission_energy_multiplier = 0.2
-	
-	for mesh in visual.find_children("*", "MeshInstance3D"):
-		mesh.material_override = material
+	var mesh_instance = find_child("*MeshInstance3D", true, false)
+	if mesh_instance:
+		var material = StandardMaterial3D.new()
+		material.albedo_color = veteran_color
+		material.metallic = 0.7
+		material.roughness = 0.2
+		material.emission_enabled = true
+		material.emission = veteran_color
+		material.emission_energy_multiplier = 0.2
+		mesh_instance.material_override = material
 
 
 func _update_label():
-	if label:
-		label.text = "VETERAN"
-		label.modulate = veteran_color
-		label.font_size = 48
+	var label_node = find_child("*Label3D", true, false)
+	if label_node and label_node is Label3D:
+		label_node.text = "VETERAN"
+		label_node.modulate = veteran_color
+		label_node.font_size = 48
 
 
 func _physics_hook(delta):

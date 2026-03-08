@@ -37,7 +37,6 @@ func _find_camera_and_environment():
 		# Создаём если нет
 		world_environment = WorldEnvironment.new()
 		world_environment.name = "WorldEnvironment"
-		world_environment.add_to_group("world_environment")
 		
 		var env = Environment.new()
 		env.background_mode = Environment.BG_SKY
@@ -48,7 +47,8 @@ func _find_camera_and_environment():
 		env.fog_height_density = 0.5
 		
 		world_environment.environment = env
-		get_tree().current_scene.add_child(world_environment)
+		world_environment.add_to_group("world_environment")
+		add_child.call_deferred(world_environment)
 
 
 func _process(_delta):

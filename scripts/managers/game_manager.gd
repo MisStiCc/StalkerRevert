@@ -1,5 +1,5 @@
 extends Node
-class_name GameManager
+# GameManager - автoload (доступен через GameManager в любом месте)
 
 ## Глобальный менеджер игры
 ## Управляет переходами, сохранениями и глобальным состоянием
@@ -23,6 +23,8 @@ var current_scene_name: String = ""
 
 
 func _ready():
+	add_to_group("game_manager")
+	
 	# Создаём директорию для сохранений
 	DirAccess.make_dir_recursive_absolute(SAVE_DIR)
 	

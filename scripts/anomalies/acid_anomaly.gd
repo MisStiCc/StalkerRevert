@@ -9,12 +9,12 @@ class_name AcidAnomaly
 func _ready():
 	anomaly_type = "acid_anomaly"
 	difficulty_level = 1
-	anomaly_name = "Кислота"
 	damage_per_second = corrosion_damage
 	
 	super._ready()
 	_update_size()
 	_update_color()
+	set_difficulty(difficulty_level)
 
 
 func _update_size():

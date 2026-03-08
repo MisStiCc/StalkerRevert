@@ -1,5 +1,5 @@
 extends Node
-class_name WaveManager
+# WaveManager - управление волнами
 
 ## Управление волнами сталкеров
 ## Таймеры, количество, сложность
@@ -7,7 +7,7 @@ class_name WaveManager
 signal wave_started(wave_number: int)
 signal wave_ended(wave_number: int, spawned_count: int)
 
-var owner: Node
+var _parent_node: Node
 
 # Параметры волн
 @export var spawn_interval: float = 30.0
@@ -26,14 +26,14 @@ var _difficulty: float = 1.0
 
 
 func _init(node: Node):
-	owner = node
+	_parent_node = node
 
 
 func _ready():
 	_wave_timer = Timer.new()
 	_wave_timer.wait_time = spawn_interval
 	_wave_timer.timeout.connect(_start_wave)
-	owner.add_child(_wave_timer)
+	_parent_node.add_child(_wave_timer)
 
 
 func setup(spawner: Node):
@@ -81,7 +81,7 @@ func _start_wave():
 	for i in range(stalkers_to_spawn):
 		if _spawn_stalker():
 			spawned += 1
-		await owner.get_tree().create_timer(0.3).timeout
+		await _parent_node.get_tree().create_timer(0.3).timeout
 	
 	is_spawning = false
 	wave_ended.emit(current_wave, spawned)

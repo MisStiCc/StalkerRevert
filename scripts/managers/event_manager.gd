@@ -90,7 +90,7 @@ func _drop_all_artifacts():
 		if is_instance_valid(s) and s.has_method("has_artifact") and s.has_artifact():
 			if s.has_method("drop_artifact"):
 				s.drop_artifact()
-				droped += 1
+				dropped += 1
 	
 	print("💥 Сброшено артефактов: ", dropped)
 

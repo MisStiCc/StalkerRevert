@@ -1,5 +1,5 @@
 extends Node
-class_name ChunkManager
+# ChunkManager - управление чанками
 
 ## Управление чанками ландшафта
 ## Загрузка/выгрузка, отрисовка
@@ -7,7 +7,7 @@ class_name ChunkManager
 signal chunk_loaded(chunk_pos: Vector2i)
 signal chunk_unloaded(chunk_pos: Vector2i)
 
-var owner: Node
+var _parent_node: Node
 
 # Параметры
 var chunk_size: int = 32
@@ -26,7 +26,7 @@ var biome_manager: Node
 
 
 func _init(owner_node: Node):
-	owner = owner_node
+	_parent_node = owner_node
 
 
 func setup(deps: Dictionary):
@@ -44,7 +44,7 @@ func set_load_distance(distance: int):
 
 func _process(_delta):
 	# Обновляем загрузку чанков вокруг игрока
-	var camera = owner.get_viewport().get_camera_3d()
+	var camera = _parent_node.get_viewport().get_camera_3d()
 	if not camera:
 		return
 	
@@ -83,7 +83,7 @@ func _load_chunk(chunk_pos: Vector2i):
 	var chunk_node = Node3D.new()
 	chunk_node.name = "Chunk_%d_%d" % [chunk_pos.x, chunk_pos.y]
 	chunk_node.position = chunk_to_world(chunk_pos)
-	owner.add_child(chunk_node)
+	_parent_node.add_child(chunk_node)
 	
 	# Создаём меш
 	_create_chunk_mesh(chunk_node, chunk_pos)
@@ -123,7 +123,7 @@ func _create_chunk_mesh(chunk_node: Node, chunk_pos: Vector2i):
 	_apply_heights_to_mesh(mesh_instance, chunk_pos)
 
 
-func _apply_heights_to_mesh(mesh_instance: Mesh3D, chunk_pos: Vector2i):
+func _apply_heights_to_mesh(mesh_instance: MeshInstance3D, chunk_pos: Vector2i):
 	# Это упрощённая версия - в реальности нужно работать с ArrayMesh
 	pass
 

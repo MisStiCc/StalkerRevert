@@ -3,6 +3,10 @@ class_name UpgradePanel
 
 ## Панель улучшений станции
 
+# Функция для получения GameManager
+func _get_gm() -> Node:
+	return get_tree().get_first_node_in_group("game_manager")
+
 signal upgrade_purchased(upgrade_type: String)
 
 @onready var title_label: Label = $Panel/Margin/VBox/Title
@@ -159,7 +163,9 @@ func _on_upgrade_clicked(upgrade_id: String):
 		lab_data.purchase_upgrade(upgrade_id)
 		
 		# Сохраняем
-		GameManager.save_game(0)
+		var gm = _get_gm()
+		if gm:
+			gm.save_game(0)
 		
 		# Обновляем UI
 		for child in upgrades_container.get_children():
@@ -167,8 +173,8 @@ func _on_upgrade_clicked(upgrade_id: String):
 			_update_upgrade_item(child, upgrade_id_child)
 		
 		# Звук
-		if GameManager.sound_manager:
-			GameManager.sound_manager.play_sound("upgrade", 0.8)
+		if gm and gm.has_method("play_sound"):
+			gm.play_sound("upgrade", 0.8)
 		
 		upgrade_callback.call(upgrade_id)
 

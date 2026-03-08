@@ -22,7 +22,9 @@ func _ready_hook():
 	stalker_type = "master"
 	behavior = "aggressive"
 	max_health = 250.0
-	health = max_health
+	if health_component:
+		health_component.set_max_health(max_health)
+		health_component.heal(max_health)
 	speed = 6.0
 	damage = 25.0
 	vision_range = 30.0
@@ -35,27 +37,25 @@ func _ready_hook():
 
 
 func _update_visual():
-	if not visual: return
-	
-	# Фиолетовый цвет с пульсацией
-	var material = StandardMaterial3D.new()
-	material.albedo_color = master_color
-	material.metallic = 0.8
-	material.roughness = 0.1
-	material.emission_enabled = true
-	material.emission = master_color
-	material.emission_energy_multiplier = 0.5
-	
-	for mesh in visual.find_children("*", "MeshInstance3D"):
-		mesh.material_override = material
+	var mesh_instance = find_child("*MeshInstance3D", true, false)
+	if mesh_instance:
+		var material = StandardMaterial3D.new()
+		material.albedo_color = master_color
+		material.metallic = 0.8
+		material.roughness = 0.1
+		material.emission_enabled = true
+		material.emission = master_color
+		material.emission_energy_multiplier = 0.5
+		mesh_instance.material_override = material
 
 
 func _update_label():
-	if label:
-		label.text = "MASTER"
-		label.modulate = master_color
-		label.font_size = 56
-		label.outline_size = 3
+	var label_node = find_child("*Label3D", true, false)
+	if label_node and label_node is Label3D:
+		label_node.text = "MASTER"
+		label_node.modulate = master_color
+		label_node.font_size = 56
+		label_node.outline_size = 3
 
 
 func _physics_hook(delta):
@@ -65,8 +65,9 @@ func _physics_hook(delta):
 	regeneration_timer += delta
 	while regeneration_timer >= 1.0:
 		regeneration_timer -= 1.0
-		health = min(health + regeneration_rate, max_health)
-		health_changed.emit(health, max_health)
+		if health_component:
+			var current = health_component.get_health()
+			health_component.heal(min(current + regeneration_rate, max_health))
 	
 	attack_cooldown = max(0, attack_cooldown - delta)
 	ability_cooldown = max(0, ability_cooldown - delta)

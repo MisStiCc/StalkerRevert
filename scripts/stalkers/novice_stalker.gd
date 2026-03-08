@@ -16,11 +16,14 @@ func _ready_hook():
 	stalker_type = "novice"
 	behavior = "greedy"
 	max_health = 80.0
-	health = max_health
+	if health_component:
+		health_component.set_max_health(max_health)
+		health_component.heal(max_health)
 	speed = 4.0
 	damage = 8.0
 	vision_range = 20.0
 	
+	# Визуал через компонент или напрямую
 	_update_visual()
 	_update_label()
 
@@ -28,29 +31,35 @@ func _ready_hook():
 
 
 func _update_visual():
-	if not visual: return
-	
-	var material = StandardMaterial3D.new()
-	material.albedo_color = novice_color
-	material.emission_enabled = true
-	material.emission = novice_color
-	material.emission_energy_multiplier = 0.3
-	
-	for mesh in visual.find_children("*", "MeshInstance3D"):
-		mesh.material_override = material
+	# Пытаемся найти визуал через компонент или в себе
+	var mesh_instance = find_child("*MeshInstance3D", true, false)
+	if mesh_instance:
+		var material = StandardMaterial3D.new()
+		material.albedo_color = novice_color
+		material.emission_enabled = true
+		material.emission = novice_color
+		material.emission_energy_multiplier = 0.3
+		mesh_instance.material_override = material
 
 
 func _update_label():
-	if label:
-		label.text = "NOVICE"
-		label.modulate = novice_color
+	# Пытаемся найти Label3D
+	var label_node = find_child("*Label3D", true, false)
+	if label_node and label_node is Label3D:
+		label_node.text = "NOVICE"
+		label_node.modulate = novice_color
 
 
 func _physics_hook(delta):
 	if not is_alive: return
 	
+	# Используем компонент health
+	var current_health = max_health
+	if health_component:
+		current_health = health_component.get_health()
+	
 	# Если здоровье низкое - убегаем
-	if health < max_health * flee_threshold and not is_fleeing:
+	if current_health < max_health * flee_threshold and not is_fleeing:
 		is_fleeing = true
 		search_timer = 0.0
 
@@ -66,8 +75,9 @@ func _flee_logic(delta):
 	if danger_pos != Vector3.ZERO:
 		var flee_dir = (global_position - danger_pos).normalized()
 		target_position = global_position + flee_dir * 20
-		if navigation_agent:
-			navigation_agent.target_position = target_position
+		# Используем компонент navigation
+		if navigation:
+			navigation.set_target(target_position)
 	
 	search_timer += delta
 	if search_timer > 3.0:
@@ -103,7 +113,11 @@ func _check_for_danger():
 
 
 func _damage_hook(amount: float):
-	if health < max_health * flee_threshold:
+	var current_health = max_health
+	if health_component:
+		current_health = health_component.get_health()
+	
+	if current_health < max_health * flee_threshold:
 		is_fleeing = true
 		search_timer = 0.0
 		current_state = StalkerState.FLEE

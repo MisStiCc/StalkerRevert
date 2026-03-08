@@ -9,7 +9,6 @@ class_name TimeDilation
 func _ready():
 	anomaly_type = "time_dilation"
 	difficulty_level = 3
-	anomaly_name = "Искажение времени"
 	damage_per_second = 5.0
 	
 	super._ready()

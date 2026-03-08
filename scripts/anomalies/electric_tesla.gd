@@ -9,13 +9,13 @@ class_name ElectricTesla
 
 func _ready():
 	anomaly_type = "electric_tesla"
-	difficulty_level = 2
-	anomaly_name = "Электрическая катушка"
+	difficulty_level = 3
 	damage_per_second = 18.0
 	
 	super._ready()
 	_update_size()
 	_update_color()
+	set_difficulty(difficulty_level)
 
 
 func _update_size():
@@ -40,7 +40,6 @@ func _apply_damage():
 	if not is_active:
 		return
 	
-	# Цепочка молний между сталкерами
 	var targets = stalkers_in_zone.duplicate()
 	for i in range(min(chain_lightnings, targets.size())):
 		if i < targets.size() and is_instance_valid(targets[i]):

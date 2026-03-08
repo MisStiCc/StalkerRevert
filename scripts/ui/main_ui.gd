@@ -1,7 +1,7 @@
 extends CanvasLayer
 class_name MainUI
 
-var zone_controller: Node
+var run_controller: Node
 
 # Кнопки базовых аномалий
 @onready var fire_button: Button = $FireButton
@@ -46,23 +46,23 @@ var emission_cooldown: float = 60.0  # 60 секунд перезарядки
 
 
 func _ready():
-	# Поиск ZoneController
-	zone_controller = get_tree().get_first_node_in_group("zone_controller")
+	# Поиск RunController
+	run_controller = get_tree().get_first_node_in_group("run_controller")
 	
-	if not zone_controller:
+	if not run_controller:
 		push_error("ZoneController not found!")
 		_disable_all_buttons()
 		return
 	
 	# Подключаемся к сигналам
-	if zone_controller.has_signal("energy_changed"):
-		zone_controller.energy_changed.connect(_on_energy_changed)
-	if zone_controller.has_signal("biomass_changed"):
-		zone_controller.biomass_changed.connect(_on_biomass_changed)
-	if zone_controller.has_signal("emission_started"):
-		zone_controller.emission_started.connect(_on_emission_started)
-	if zone_controller.has_signal("emission_ended"):
-		zone_controller.emission_ended.connect(_on_emission_ended)
+	if run_controller.has_signal("energy_changed"):
+		run_controller.energy_changed.connect(_on_energy_changed)
+	if run_controller.has_signal("biomass_changed"):
+		run_controller.biomass_changed.connect(_on_biomass_changed)
+	if run_controller.has_signal("emission_started"):
+		run_controller.emission_started.connect(_on_emission_started)
+	if run_controller.has_signal("emission_ended"):
+		run_controller.emission_ended.connect(_on_emission_ended)
 	
 	# Подключаем все кнопки
 	_connect_all_buttons()
@@ -74,8 +74,8 @@ func _ready():
 	add_child(emission_timer)
 	
 	# Обновляем UI с начальными значениями
-	if zone_controller.has_method("get_resource_status"):
-		var status = zone_controller.get_resource_status()
+	if run_controller.has_method("get_resource_status"):
+		var status = run_controller.get_resource_status()
 		_on_energy_changed(status.get("energy", 0), status.get("max_energy", 1000))
 		_on_biomass_changed(status.get("biomass", 0), status.get("max_biomass", 500))
 
@@ -143,34 +143,34 @@ func _on_biomass_changed(current: float, max_biomass: float):
 
 
 func _update_buttons_state():
-	if not zone_controller or not zone_controller.has_method("can_afford"):
+	if not run_controller or not run_controller.has_method("can_afford"):
 		return
 	
 	# Проверяем все аномалии
-	fire_button.disabled = not zone_controller.can_afford(50, 0)
-	electric_button.disabled = not zone_controller.can_afford(75, 0)
-	acid_button.disabled = not zone_controller.can_afford(100, 0)
+	fire_button.disabled = not run_controller.can_afford(50, 0)
+	electric_button.disabled = not run_controller.can_afford(75, 0)
+	acid_button.disabled = not run_controller.can_afford(100, 0)
 	
-	vortex_button.disabled = not zone_controller.can_afford(150, 0)
-	lift_button.disabled = not zone_controller.can_afford(80, 0)
-	whirlwind_button.disabled = not zone_controller.can_afford(120, 0)
+	vortex_button.disabled = not run_controller.can_afford(150, 0)
+	lift_button.disabled = not run_controller.can_afford(80, 0)
+	whirlwind_button.disabled = not run_controller.can_afford(120, 0)
 	
-	steam_button.disabled = not zone_controller.can_afford(70, 0)
-	comet_button.disabled = not zone_controller.can_afford(100, 0)
+	steam_button.disabled = not run_controller.can_afford(70, 0)
+	comet_button.disabled = not run_controller.can_afford(100, 0)
 	
-	jelly_button.disabled = not zone_controller.can_afford(60, 0)
-	gas_button.disabled = not zone_controller.can_afford(85, 0)
-	acid_cloud_button.disabled = not zone_controller.can_afford(110, 0)
+	jelly_button.disabled = not run_controller.can_afford(60, 0)
+	gas_button.disabled = not run_controller.can_afford(85, 0)
+	acid_cloud_button.disabled = not run_controller.can_afford(110, 0)
 	
-	radiation_button.disabled = not zone_controller.can_afford(95, 0)
-	time_button.disabled = not zone_controller.can_afford(200, 0)
-	teleport_button.disabled = not zone_controller.can_afford(180, 0)
-	tesla_button.disabled = not zone_controller.can_afford(90, 0)
-	fluff_button.disabled = not zone_controller.can_afford(75, 0)
+	radiation_button.disabled = not run_controller.can_afford(95, 0)
+	time_button.disabled = not run_controller.can_afford(200, 0)
+	teleport_button.disabled = not run_controller.can_afford(180, 0)
+	tesla_button.disabled = not run_controller.can_afford(90, 0)
+	fluff_button.disabled = not run_controller.can_afford(75, 0)
 	
 	# Кнопка выброса
 	if not emission_active and not emission_timer.time_left > 0:
-		emission_button.disabled = not zone_controller.can_afford(200, 0)
+		emission_button.disabled = not run_controller.can_afford(200, 0)
 	else:
 		emission_button.disabled = true
 
@@ -227,9 +227,9 @@ func _on_fluff_button_pressed():
 
 
 func _spawn_anomaly(type: String):
-	if zone_controller and zone_controller.has_method("spawn_anomaly"):
+	if run_controller and run_controller.has_method("spawn_anomaly"):
 		var pos = _get_spawn_position()
-		var anomaly = zone_controller.spawn_anomaly(type, pos)
+		var anomaly = run_controller.spawn_anomaly(type, pos)
 		if anomaly:
 			print("Аномалия ", type, " создана")
 		else:
@@ -237,10 +237,10 @@ func _spawn_anomaly(type: String):
 
 
 func _on_emission_button_pressed():
-	if zone_controller and zone_controller.has_method("start_emission"):
-		if zone_controller.can_afford(200, 0):
-			zone_controller.spend_energy(200)
-			zone_controller.start_emission(10.0)
+	if run_controller and run_controller.has_method("start_emission"):
+		if run_controller.can_afford(200, 0):
+			run_controller.spend_energy(200)
+			run_controller.start_emission(10.0)
 			emission_button.disabled = true
 			emission_label.text = "ВЫБРОС! 10с"
 			emission_active = true

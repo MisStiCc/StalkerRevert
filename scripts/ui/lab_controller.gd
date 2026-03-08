@@ -4,9 +4,13 @@ class_name LabController
 ## Контроллер лабораторного комплекса
 ## Управляет интерфейсом ЛК и станциями улучшений
 
+# Функция для получения GameManager
+func _get_gm() -> Node:
+	return get_tree().get_first_node_in_group("game_manager")
+
 # Основная информация
 @onready var run_number_label: Label = $VBox/Header/RunNumber
-@onready var biomass_label: Label = $VBox/InfoPanel/BiomassValue
+@onready var biomass_label: Label = $VBox/InfoPanel/HBox/BiomassValue
 @onready var start_run_button: Button = $VBox/InfoPanel/StartRunButton
 
 # Станции
@@ -16,7 +20,7 @@ class_name LabController
 
 # Хранилище
 @onready var artifact_storage_button: Button = $VBox/StoragePanel/OpenStorageButton
-@onready var artifact_counts_label: Label = $VBox/StoragePanel/ArtifactCounts
+@onready var artifact_counts_label: Label = $VBox/StoragePanel/HBox/ArtifactCounts
 
 # Статистика
 @onready var stats_label: Label = $VBox/StatsPanel/StatsLabel
@@ -38,8 +42,16 @@ var statistics: GameStatistics
 
 func _ready():
 	# Находим данные
-	lab_data = GameManager.get_lab_data()
-	statistics = GameManager.get_statistics()
+	var gm = _get_gm()
+	if gm:
+		lab_data = gm.get_lab_data()
+		statistics = gm.get_statistics()
+	
+	# Если нет данных - создаём новые
+	if not lab_data:
+		lab_data = LabData.new()
+	if not statistics:
+		statistics = GameStatistics.new()
 	
 	# Подключаем кнопки
 	_setup_connections()
@@ -47,7 +59,7 @@ func _ready():
 	# Обновляем интерфейс
 	_refresh_ui()
 	
-	print("🏭 LabController: инициализирован")
+	print("LabController: initialized")
 
 
 func _setup_connections():
@@ -79,13 +91,15 @@ func _animate_buttons():
 
 
 func _play_hover_sound():
-	if GameManager.sound_manager:
-		GameManager.sound_manager.play_sound("ui_hover", 0.3)
+	var gm = _get_gm()
+	if gm and gm.has_method("play_sound"):
+		gm.play_sound("ui_hover", 0.3)
 
 
 func _play_click_sound():
-	if GameManager.sound_manager:
-		GameManager.sound_manager.play_sound("ui_click", 0.6)
+	var gm = _get_gm()
+	if gm and gm.has_method("play_sound"):
+		gm.play_sound("ui_click", 0.6)
 
 
 func _refresh_ui():
@@ -143,13 +157,17 @@ func _format_number(value: float) -> String:
 func _on_start_run_pressed():
 	_play_click_sound()
 	await get_tree().create_timer(0.2).timeout
-	GameManager.change_scene("run")
+	var gm = _get_gm()
+	if gm:
+		gm.change_scene("run")
 
 
 func _on_menu_pressed():
 	_play_click_sound()
 	await get_tree().create_timer(0.2).timeout
-	GameManager.change_scene("main_menu")
+	var gm = _get_gm()
+	if gm:
+		gm.change_scene("main_menu")
 
 
 func _on_settings_pressed():
@@ -159,8 +177,9 @@ func _on_settings_pressed():
 
 func _on_save_pressed():
 	_play_click_sound()
-	# Сохраняем в текущий слот
-	GameManager.save_game(0)
+	var gm = _get_gm()
+	if gm:
+		gm.save_game(0)
 
 
 func _on_storage_pressed():
@@ -191,7 +210,9 @@ func _open_upgrade_station(station_type: String):
 
 
 func _on_upgrade_purchased(upgrade_type: String):
-	lab_data = GameManager.get_lab_data()
+	var gm = _get_gm()
+	if gm:
+		lab_data = gm.get_lab_data()
 	_refresh_ui()
 
 
@@ -203,7 +224,9 @@ func _open_storage():
 
 
 func _on_artifact_exchanged():
-	lab_data = GameManager.get_lab_data()
+	var gm = _get_gm()
+	if gm:
+		lab_data = gm.get_lab_data()
 	_refresh_ui()
 
 
@@ -214,6 +237,8 @@ func show_run_result(result: Dictionary):
 	result_panel.show_result(result)
 	
 	# Обновляем данные
-	lab_data = GameManager.get_lab_data()
-	statistics = GameManager.get_statistics()
+	var gm = _get_gm()
+	if gm:
+		lab_data = gm.get_lab_data()
+		statistics = gm.get_statistics()
 	_refresh_ui()

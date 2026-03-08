@@ -4,6 +4,12 @@ class_name BaseStalker
 ## Базовый класс для всех сталкеров с разным поведением
 ## Использует компонентную архитектуру
 
+# Состояния сталкера
+enum StalkerState {
+	IDLE, PATROL, SEEK_ARTIFACT, SEEK_MONOLITH, FLEE,
+	ATTACK_ANOMALY, ATTACK_MUTANT, CARRY_ARTIFACT
+}
+
 # Сигналы
 signal died
 signal health_changed(current: float, max: float)
@@ -21,7 +27,7 @@ signal health_changed(current: float, max: float)
 var state_machine: StalkerStateMachine
 var navigation: StalkerNavigation
 var memory: StalkerMemory
-var health: StalkerHealth
+var health_component: StalkerHealth  # Переименовано для ясности
 var carry: StalkerCarry
 
 # Ссылки для обратной связи
@@ -53,7 +59,7 @@ var base_speed: float = 4.0
 
 
 func _ready():
-	health = max_health
+	health_component = null  # Инициализируем
 	base_speed = speed
 	is_alive = true
 	add_to_group("stalkers")
@@ -61,34 +67,19 @@ func _ready():
 	# Инициализируем компоненты
 	_initialize_components()
 	
-	# Регистрируем в ZoneController
-	zone_controller = get_tree().get_first_node_in_group("zone_controller")
-	monolith = get_tree().get_first_node_in_group("monolith")
-	terrain_manager = get_tree().get_first_node_in_group("terrain_generator")
-	
-	if zone_controller:
-		zone_controller.register_stalker(self)
-	
-	# Применяем прогрессию забега
-	if zone_controller and zone_controller.has_method("get_run_number"):
-		var run = zone_controller.get_run_number()
-		_apply_run_scaling(run)
-	
-	# Начальное обновление местности
-	_update_terrain_info()
-	
-	health_changed.emit(health, max_health)
+	# ... остальной код ...
+	health_changed.emit(max_health, max_health)
 	_ready_hook()
 
 
 func _initialize_components():
 	# Создаём компоненты
-	health = StalkerHealth.new(self)
-	health.max_health = max_health
-	health.armor = armor
-	add_child(health)
-	health.health_changed.connect(_on_health_changed)
-	health.died.connect(_on_died)
+	health_component = StalkerHealth.new(self)
+	health_component.max_health = max_health
+	health_component.armor = armor
+	add_child(health_component)
+	health_component.health_changed.connect(_on_health_changed)
+	health_component.died.connect(_on_died)
 	
 	navigation = StalkerNavigation.new(self)
 	add_child(navigation)
@@ -106,7 +97,7 @@ func _initialize_components():
 		"behavior": null,  # Установим позже
 		"navigation": navigation,
 		"memory": memory,
-		"health": health,
+		"health": health_component,
 		"carry": carry
 	})
 
@@ -119,9 +110,9 @@ func _ready_hook():
 func _apply_run_scaling(run_number: int):
 	"""Масштабирование характеристик в зависимости от номера забега"""
 	var scale = 1.0 + (run_number - 1) * 0.15
-	health.set_max_health(max_health * scale)
+	if health_component:
+		health_component.set_max_health(max_health * scale)
 	max_health *= scale
-	health = health  # Обновляем
 	
 	speed *= (1.0 + (run_number - 1) * 0.05)
 	base_speed = speed
@@ -250,14 +241,14 @@ func take_damage(amount: float, source = null):
 	if not is_alive:
 		return
 	
-	if health:
-		health.take_damage(amount, source)
+	if health_component:
+		health_component.take_damage(amount, source)
 	else:
-		# Legacy
+		# Legacy - без компонента
 		var actual_damage = max(1, amount - armor)
-		health -= actual_damage
-		health_changed.emit(health, max_health)
-		if health <= 0:
+		max_health -= actual_damage
+		health_changed.emit(max_health, max_health)
+		if max_health <= 0:
 			die()
 
 
@@ -330,307 +321,3 @@ func has_artifact() -> bool:
 	if carry:
 		return carry.has_artifact()
 	return false
-
-
-func _ready_hook():
-	"""Для переопределения в наследниках"""
-	pass
-
-
-func _apply_run_scaling(run_number: int):
-	"""Масштабирование характеристик в зависимости от номера забега"""
-	var scale = 1.0 + (run_number - 1) * 0.15
-	max_health *= scale
-	health = max_health
-	speed *= (1.0 + (run_number - 1) * 0.05)
-	damage *= scale
-
-
-func _physics_process(delta):
-	if not is_alive or not zone_controller or zone_controller.is_radiating:
-		return
-	
-	# Обновляем информацию о местности
-	_update_terrain_info(delta)
-	
-	# Обновляем память
-	memory_timer += delta
-	if memory_timer >= 5.0:
-		_refresh_memory()
-		memory_timer = 0.0
-	
-	# Оцениваем ситуацию
-	_evaluate_situation()
-	
-	# Выполняем действие
-	_execute_state()
-	
-	# Движение с учётом местности
-	if navigation_agent and not navigation_agent.is_navigation_finished():
-		var next_pos = navigation_agent.get_next_path_position()
-		var direction = (next_pos - global_position).normalized()
-		var current_speed = speed * terrain_speed_multiplier
-		velocity = direction * current_speed
-		navigation_agent.velocity = velocity
-	
-
-func _on_velocity_computed(safe_velocity: Vector3):
-	velocity = safe_velocity
-	move_and_slide()
-
-
-# ==================== ОЦЕНКА СИТУАЦИИ ====================
-func _evaluate_situation():
-	"""Оценка текущей ситуации и выбор приоритета"""
-	
-	# 1. Если несём артефакт - главная цель унести
-	if carried_artifact:
-		current_state = StalkerState.CARRY_ARTIFACT
-		if monolith:
-			target_position = global_position + (global_position - monolith.global_position).normalized() * 100
-		return
-	
-	# 2. Проверка опасностей (аномалии)
-	var nearest_danger = _get_nearest_anomaly_in_range(5.0)
-	if nearest_danger and _can_kill_anomaly(nearest_danger):
-		if behavior in ["aggressive", "brave"]:
-			current_state = StalkerState.ATTACK_ANOMALY
-			target_position = nearest_danger.global_position
-			return
-	elif nearest_danger:
-		if behavior in ["cautious", "stealthy"]:
-			current_state = StalkerState.FLEE
-			target_position = (global_position - nearest_danger.global_position).normalized() * 30
-			return
-	
-	# 3. Проверка мутантов
-	var nearest_mutant = _get_nearest_mutant_in_range(10.0)
-	if nearest_mutant:
-		if behavior == "aggressive":
-			current_state = StalkerState.ATTACK_MUTANT
-			target_position = nearest_mutant.global_position
-			return
-		elif behavior == "cautious":
-			current_state = StalkerState.FLEE
-			target_position = (global_position - nearest_mutant.global_position).normalized() * 30
-			return
-	
-	# 4. Видим артефакт?
-	var visible_artifact = _get_nearest_artifact_in_range(vision_range)
-	if visible_artifact:
-		if behavior == "greedy":
-			current_state = StalkerState.SEEK_ARTIFACT
-			target_position = visible_artifact.global_position
-			return
-	
-	# 5. По умолчанию - идём к монолиту
-	if monolith:
-		current_state = StalkerState.SEEK_MONOLITH
-		target_position = monolith.global_position
-
-
-func _execute_state():
-	"""Выполнение действия в зависимости от состояния"""
-	match current_state:
-		StalkerState.SEEK_ARTIFACT, StalkerState.SEEK_MONOLITH, StalkerState.CARRY_ARTIFACT:
-			if navigation_agent:
-				navigation_agent.target_position = target_position
-		
-		StalkerState.ATTACK_ANOMALY:
-			if navigation_agent:
-				navigation_agent.target_position = target_position
-			if global_position.distance_to(target_position) < 3.0:
-				var anomaly = _get_nearest_anomaly_in_range(3.0)
-				if anomaly and anomaly.has_method("take_damage"):
-					anomaly.take_damage(damage, self)
-		
-		StalkerState.ATTACK_MUTANT:
-			if navigation_agent:
-				navigation_agent.target_position = target_position
-			if global_position.distance_to(target_position) < 3.0:
-				var mutant = _get_nearest_mutant_in_range(3.0)
-				if mutant and mutant.has_method("take_damage"):
-					mutant.take_damage(damage, self)
-		
-		StalkerState.FLEE:
-			if navigation_agent:
-				navigation_agent.target_position = global_position + target_position.normalized() * 30
-
-
-func _can_kill_anomaly(anomaly) -> bool:
-	"""Проверяет, может ли сталкер убить аномалию"""
-	var anomaly_level = 1
-	if anomaly.has_method("get_difficulty"):
-		anomaly_level = anomaly.get_difficulty()
-	
-	match stalker_type:
-		"novice": return anomaly_level == 1
-		"veteran": return anomaly_level <= 2
-		"master": return anomaly_level <= 3
-		_: return false
-
-
-# ==================== ПАМЯТЬ ====================
-func _refresh_memory():
-	"""Обновляет информацию о замеченных угрозах"""
-	danger_zones = []
-	known_mutants = []
-	
-	var anomalies = get_tree().get_nodes_in_group("anomalies")
-	for a in anomalies:
-		if is_instance_valid(a) and global_position.distance_to(a.global_position) < vision_range:
-			danger_zones.append(a)
-	
-	var mutants = get_tree().get_nodes_in_group("mutants")
-	for m in mutants:
-		if is_instance_valid(m) and global_position.distance_to(m.global_position) < vision_range:
-			known_mutants.append(m)
-
-
-func _get_nearest_anomaly_in_range(range_val: float):
-	var nearest = null
-	var min_dist = range_val
-	for a in danger_zones:
-		if not is_instance_valid(a): continue
-		var dist = global_position.distance_to(a.global_position)
-		if dist < min_dist:
-			min_dist = dist
-			nearest = a
-	return nearest
-
-
-func _get_nearest_mutant_in_range(range_val: float):
-	var nearest = null
-	var min_dist = range_val
-	for m in known_mutants:
-		if not is_instance_valid(m): continue
-		var dist = global_position.distance_to(m.global_position)
-		if dist < min_dist:
-			min_dist = dist
-			nearest = m
-	return nearest
-
-
-func _get_nearest_artifact_in_range(range_val: float):
-	var artifacts = get_tree().get_nodes_in_group("artifacts")
-	var nearest = null
-	var min_dist = range_val
-	for a in artifacts:
-		if not is_instance_valid(a) or a.is_collected: continue
-		var dist = global_position.distance_to(a.global_position)
-		if dist < min_dist:
-			min_dist = dist
-			nearest = a
-	return nearest
-
-
-# ==================== АРТЕФАКТЫ ====================
-func get_carried_artifact():
-	return carried_artifact
-
-
-func set_carried_artifact(artifact: Node):
-	carried_artifact = artifact
-	_update_carry_visual(true)
-
-
-func drop_artifact():
-	if carried_artifact:
-		carried_artifact.global_position = global_position + Vector3(0, 1, 0)
-		carried_artifact.visible = true
-		if carried_artifact.has_method("set_collected"):
-			carried_artifact.set_collected(false)
-		carried_artifact = null
-		_update_carry_visual(false)
-
-
-func _update_carry_visual(is_carrying: bool):
-	# Переопределить в наследниках
-	pass
-
-
-# ==================== ЗДОРОВЬЕ И СМЕРТЬ ====================
-func take_damage(amount: float, source = null):
-	if not is_alive: return
-	
-	var actual_damage = max(1, amount - armor)
-	health -= actual_damage
-	health_changed.emit(health, max_health)
-	
-	if health <= 0:
-		die()
-
-
-func die():
-	if not is_alive: return
-	
-	is_alive = false
-	died.emit()
-	
-	if carried_artifact:
-		drop_artifact()
-	
-	queue_free()
-
-
-# ==================== ГЕТТЕРЫ ====================
-func get_stalker_type() -> String:
-	return stalker_type
-
-
-func get_behavior() -> String:
-	return behavior
-
-
-# ==================== ЛАНДШАФТ ====================
-
-func _update_terrain_info(delta: float = 0.0):
-	"""Обновляет информацию о типе местности"""
-	terrain_update_timer += delta
-	if terrain_update_timer >= 0.5:  # Обновляем каждые 0.5 сек
-		terrain_update_timer = 0.0
-		
-		if terrain_manager:
-			current_terrain_type = terrain_manager.get_terrain_type_at(global_position)
-			terrain_speed_multiplier = terrain_manager.get_terrain_speed_multiplier(global_position)
-			terrain_danger = terrain_manager.get_terrain_danger(global_position)
-			terrain_cover = terrain_manager.get_terrain_cover(global_position)
-			
-			# Обновляем скорость с учётом местности
-			speed = base_speed * terrain_speed_multiplier
-			if navigation_agent:
-				navigation_agent.max_speed = speed
-
-
-func get_current_speed() -> float:
-	"""Возвращает текущую скорость с учётом местности"""
-	return speed
-
-
-func get_terrain_danger() -> float:
-	"""Возвращает опасность текущей местности"""
-	return terrain_danger
-
-
-func get_terrain_cover() -> float:
-	"""Возвращает уровень укрытия на текущей местности"""
-	return terrain_cover
-
-
-func get_visibility_to(observer_pos: Vector3) -> float:
-	"""Рассчитывает видимость сталкера для наблюдателя"""
-	var distance = global_position.distance_to(observer_pos)
-	var base_visibility = 1.0 / (1.0 + distance * 0.1)
-	# Укрытие уменьшает видимость
-	base_visibility *= (1.0 - terrain_cover * 0.7)
-	return clamp(base_visibility, 0.1, 1.0)
-
-
-func is_terrain_safe() -> bool:
-	"""Проверяет, безопасна ли текущая местность"""
-	return terrain_danger < 1.5
-
-
-func has_artifact() -> bool:
-	"""Проверяет, несёт ли сталкер артефакт"""
-	return carried_artifact != null
