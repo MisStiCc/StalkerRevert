@@ -29,7 +29,7 @@ func _ready():
     await get_tree().process_frame
     camera = get_viewport().get_camera_3d()
     
-    Logger.info("TerrainGenerator инициализирован", "TerrainGenerator")
+    print("TerrainGenerator инициализирован")
 
 
 func _process(_delta):
@@ -84,30 +84,36 @@ func _load_chunk(chunk_pos: Vector2i):
     material.albedo_color = Color(0.3, 0.5, 0.2)
     mesh_instance.material_override = material
     
+    # Добавляем меш в чанк
+    mesh_instance.position = Vector3(chunk_size / 2.0, 0, chunk_size / 2.0)
     chunk.add_child(mesh_instance)
     
-    # Добавляем коллизию
+    # ========== ИСПРАВЛЕННАЯ КОЛЛИЗИЯ ==========
+    # Добавляем коллизию для raycast спавна
     var static_body = StaticBody3D.new()
     var collision = CollisionShape3D.new()
     var shape = BoxShape3D.new()
-    shape.size = Vector3(chunk_size, 1, chunk_size)
+    shape.size = Vector3(chunk_size, 2, chunk_size)  # Увеличил высоту для надежности
     collision.shape = shape
     static_body.add_child(collision)
-    static_body.position = Vector3(chunk_size / 2.0, -0.5, chunk_size / 2.0)
+    static_body.position = Vector3(chunk_size / 2.0, -1.0, chunk_size / 2.0)  # Опустил ниже земли
+    static_body.collision_layer = 1  # Явно указываем слой 1 (для raycast)
+    static_body.collision_mask = 0
     chunk.add_child(static_body)
+    # ============================================
     
     add_child(chunk)
     loaded_chunks[chunk_pos] = chunk
     chunk_generated.emit(chunk_pos)
     
-    Logger.debug("Чанк загружен: " + str(chunk_pos), "TerrainGenerator")
+    print("Чанк загружен: " + str(chunk_pos))
 
 
 func _unload_chunk(chunk_pos: Vector2i):
     if loaded_chunks.has(chunk_pos):
         loaded_chunks[chunk_pos].queue_free()
         loaded_chunks.erase(chunk_pos)
-        Logger.debug("Чанк выгружен: " + str(chunk_pos), "TerrainGenerator")
+        print("Чанк выгружен: " + str(chunk_pos))
 
 
 func get_height_at(position: Vector3) -> float:
@@ -125,4 +131,4 @@ func clear_all_chunks():
         if is_instance_valid(chunk):
             chunk.queue_free()
     loaded_chunks.clear()
-    Logger.info("Все чанки очищены", "TerrainGenerator")
+    print("Все чанки очищены")

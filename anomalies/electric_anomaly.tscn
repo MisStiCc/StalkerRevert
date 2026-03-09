@@ -1,6 +1,6 @@
-[gd_scene load_steps=3 format=3 uid="uid://electric_anomaly"]
+[gd_scene load_steps=5 format=3 uid="uid://electric_anomaly"]
 
-[ext_resource type="Script" path="res://scripts/anomalies/electric_anomaly.gd" id="1"]
+[ext_resource type="Script" path="res://anomalies/electric_anomaly.gd" id="1"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_electric"]
 radius = 4.0
@@ -13,6 +13,7 @@ height = 8.0
 albedo_color = Color(0.2, 0.6, 1, 1)
 emission_enabled = true
 emission = Color(0.2, 0.6, 1, 1)
+emission_energy_multiplier = 3.0
 
 [node name="ElectricAnomaly" type="Area3D"]
 script = ExtResource("1")

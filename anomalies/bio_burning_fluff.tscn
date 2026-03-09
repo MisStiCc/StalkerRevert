@@ -1,6 +1,6 @@
 [gd_scene load_steps=9 format=3 uid="uid://bio_burning_fluff"]
 
-[ext_resource type="Script" path="res://scripts/anomalies/bio_burning_fluff.gd" id="1"]
+[ext_resource type="Script" path="res://anomalies/bio_burning_fluff.gd" id="1"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_fluff"]
 radius = 5.0

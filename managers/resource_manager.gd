@@ -51,7 +51,7 @@ func _ready():
     current_energy = max_energy * 0.5
     current_biomass = max_biomass * 0.3
     set_process(true)
-    Logger.info("ResourceManager инициализирован", "ResourceManager")
+    print("ResourceManager инициализирован", "ResourceManager")
 
 
 func _process(delta):
@@ -64,15 +64,15 @@ func _process(delta):
 
 func add_energy(amount: float):
     current_energy += amount
-    Logger.debug("Энергия +" + str(amount) + ", теперь: " + str(current_energy), "ResourceManager")
+    print("Энергия +" + str(amount) + ", теперь: " + str(current_energy), "ResourceManager")
 
 
 func spend_energy(amount: float) -> bool:
     if current_energy >= amount:
         current_energy -= amount
-        Logger.debug("Энергия -" + str(amount) + ", осталось: " + str(current_energy), "ResourceManager")
+        print("Энергия -" + str(amount) + ", осталось: " + str(current_energy), "ResourceManager")
         return true
-    Logger.warning("Недостаточно энергии: нужно " + str(amount) + ", есть " + str(current_energy), "ResourceManager")
+    print("Недостаточно энергии: нужно " + str(amount) + ", есть " + str(current_energy), "ResourceManager")
     return false
 
 
@@ -87,7 +87,7 @@ func get_energy_percent() -> float:
 func _check_critical_energy():
     if current_energy >= max_energy * critical_threshold:
         critical_energy_reached.emit(get_energy_percent())
-        Logger.warning("Критический уровень энергии: " + str(get_energy_percent() * 100) + "%", "ResourceManager")
+        print("Критический уровень энергии: " + str(get_energy_percent() * 100) + "%", "ResourceManager")
 
 
 # ==================== БИОМАССА ====================
@@ -95,15 +95,15 @@ func _check_critical_energy():
 func add_biomass(amount: float):
     current_biomass += amount
     accumulated_biomass += amount
-    Logger.debug("Биомасса +" + str(amount) + ", теперь: " + str(current_biomass), "ResourceManager")
+    print("Биомасса +" + str(amount) + ", теперь: " + str(current_biomass), "ResourceManager")
 
 
 func spend_biomass(amount: float) -> bool:
     if current_biomass >= amount:
         current_biomass -= amount
-        Logger.debug("Биомасса -" + str(amount) + ", осталось: " + str(current_biomass), "ResourceManager")
+        print("Биомасса -" + str(amount) + ", осталось: " + str(current_biomass), "ResourceManager")
         return true
-    Logger.warning("Недостаточно биомассы: нужно " + str(amount) + ", есть " + str(current_biomass), "ResourceManager")
+    print("Недостаточно биомассы: нужно " + str(amount) + ", есть " + str(current_biomass), "ResourceManager")
     return false
 
 
@@ -118,7 +118,7 @@ func get_biomass_percent() -> float:
 func _check_critical_biomass():
     if current_biomass >= max_biomass * critical_threshold:
         critical_biomass_reached.emit(get_biomass_percent())
-        Logger.warning("Критический уровень биомассы: " + str(get_biomass_percent() * 100) + "%", "ResourceManager")
+        print("Критический уровень биомассы: " + str(get_biomass_percent() * 100) + "%", "ResourceManager")
 
 
 # ==================== УТИЛИТЫ ====================
@@ -131,7 +131,7 @@ func reset():
     current_energy = max_energy * 0.5
     current_biomass = max_biomass * 0.3
     accumulated_biomass = 0.0
-    Logger.info("Ресурсы сброшены", "ResourceManager")
+    print("Ресурсы сброшены", "ResourceManager")
 
 
 func get_status() -> Dictionary:

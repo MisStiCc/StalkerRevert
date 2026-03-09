@@ -1,6 +1,6 @@
-[gd_scene format=3 uid="uid://onek5c8vemlw"]
+[gd_scene format=3 uid="uid://dd6hb27wiv5mu"]
 
-[ext_resource type="Script" uid="uid://vq652fqt0kc0" path="res://scripts/anomalies/thermal_steam.gd" id="1"]
+[ext_resource type="Script" uid="uid://c8nlnik8nfb15" path="res://anomalies/thermal_steam.gd" id="1"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_steam"]
 radius = 7.0
@@ -26,18 +26,18 @@ scale_min = 2.0
 scale_max = 5.0
 color = Color(1, 1, 0.8, 0.5)
 
-[node name="ThermalSteam" type="Area3D" unique_id=1058190615]
+[node name="ThermalSteam" type="Area3D" unique_id=1827457280]
 visible = false
 script = ExtResource("1")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=899414519]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=2043311313]
 shape = SubResource("SphereShape3D_steam")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1941891572]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1199790289]
 material_override = SubResource("Material_steam")
 mesh = SubResource("SphereMesh_steam")
 
-[node name="SteamCloud" type="GPUParticles3D" parent="." unique_id=954515719]
+[node name="SteamCloud" type="GPUParticles3D" parent="." unique_id=741030227]
 amount = 500
 lifetime = 3.0
 explosiveness = 0.1

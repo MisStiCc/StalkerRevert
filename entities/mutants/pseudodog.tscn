@@ -1,26 +1,11 @@
-[gd_scene load_steps=2 format=3 uid="uid://g6clt1o2h7uwx"]
+[gd_scene load_steps=2 format=3 uid="uid://pseudodog"]
 
-[ext_resource type="Script" path="res://scripts/mutants/pseudodog.gd" id="1"]
+[ext_resource type="Script" path="res://entities/mutants/pseudodog.gd" id="1"]
+[ext_resource type="PackedScene" path="res://entities/mutants/base_mutant.tscn" id="2"]
 
-[node name="PseudodogMutant" type="CharacterBody3D"]
+[node name="Pseudodog" instance=ExtResource("2")]
 script = ExtResource("1")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
-shape = CapsuleShape3D.new()
-radius = 0.4
-height = 1.6
-
-[node name="DetectionArea" type="Area3D" parent="."]
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="DetectionArea"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
-shape = SphereShape3D.new()
-radius = 18.0
-
-[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
-mesh = CapsuleMesh.new()
-
 [node name="AttackTimer" type="Timer" parent="."]
-wait_time = 1.2
+wait_time = 1.0
+one_shot = true

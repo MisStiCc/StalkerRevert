@@ -10,6 +10,7 @@ class_name BaseArtifact
 @export var artifact_rarity: GameEnums.Rarity = GameEnums.Rarity.COMMON
 @export var energy_reward: float = 5.0
 @export var effect_duration: float = 0.0
+@export var color: Color = Color.WHITE  # ← ЭТОЙ ПЕРЕМЕННОЙ НЕ ХВАТАЛО!
 
 # Визуал
 @onready var mesh_instance: MeshInstance3D = $MeshInstance3D if has_node("MeshInstance3D") else null
@@ -35,7 +36,7 @@ func _ready():
     _update_visual()
     _ready_hook()
     
-    Logger.debug("Артефакт создан: " + artifact_name + " (" + get_rarity_name() + ") ценность: " + str(value), "Artifact")
+    print("Артефакт создан: " + artifact_name + " (" + get_rarity_name() + ") ценность: " + str(value))
 
 
 func _process(delta):
@@ -60,7 +61,7 @@ func _collect_hook(collector: Node):
     if effect_duration > 0 and collector.has_method("apply_effect"):
         collector.apply_effect(artifact_name, effect_duration)
     
-    Logger.debug("Эффект артефакта применен к " + str(collector), "Artifact")
+    print("Эффект артефакта применен к " + str(collector))
 
 
 func _update_visual():
@@ -100,7 +101,7 @@ func set_rarity_and_value(new_rarity: GameEnums.Rarity, new_value: int):
     rarity = new_rarity
     value = new_value
     _update_visual()
-    Logger.debug("Редкость изменена на " + get_rarity_name() + ", ценность: " + str(value), "Artifact")
+    print("Редкость изменена на " + get_rarity_name() + ", ценность: " + str(value))
 
 
 func get_artifact_name() -> String:

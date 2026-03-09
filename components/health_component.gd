@@ -55,7 +55,7 @@ func _ready():
     current_health = max_health
     set_process(true)
     
-    Logger.debug("HealthComponent инициализирован: HP=" + str(max_health) + " броня=" + str(armor), "HealthComponent")
+    print("HealthComponent инициализирован: HP=" + str(max_health) + " броня=" + str(armor), "HealthComponent")
 
 
 func _process(delta):
@@ -68,7 +68,7 @@ func _process(delta):
         if invulnerability_timer >= invulnerability_duration:
             is_invulnerable = false
             invulnerability_timer = 0.0
-            Logger.debug("Неуязвимость закончилась", "HealthComponent")
+            print("Неуязвимость закончилась", "HealthComponent")
     
     # Регенерация
     if regen_rate > 0 and is_alive and current_health < max_health:
@@ -76,16 +76,16 @@ func _process(delta):
         if regen_timer >= regen_delay:
             var heal_amount = regen_rate * delta
             current_health = min(current_health + heal_amount, max_health)
-            Logger.debug("Регенерация: +" + str(heal_amount), "HealthComponent")
+            print("Регенерация: +" + str(heal_amount), "HealthComponent")
 
 
 func take_damage(amount: float, source: Node = null) -> float:
     if not is_alive:
-        Logger.debug("Попытка нанести урон мертвому entity", "HealthComponent")
+        print("Попытка нанести урон мертвому entity", "HealthComponent")
         return 0.0
     
     if is_invulnerable:
-        Logger.debug("Урон поглощен (неуязвимость)", "HealthComponent")
+        print("Урон поглощен (неуязвимость)", "HealthComponent")
         return 0.0
     
     last_damage_time = Time.get_ticks_msec() / 1000.0
@@ -101,7 +101,7 @@ func take_damage(amount: float, source: Node = null) -> float:
     var is_critical = final_damage > amount * 0.8
     damaged.emit(final_damage, source, is_critical)
     
-    Logger.debug("Получен урон: " + str(final_damage) + " (исходный: " + str(amount) + ") от " + str(source), "HealthComponent")
+    print("Получен урон: " + str(final_damage) + " (исходный: " + str(amount) + ") от " + str(source), "HealthComponent")
     
     if current_health <= 0:
         die(source)
@@ -119,7 +119,7 @@ func heal(amount: float) -> float:
     var healed = current_health - old_health
     
     if healed > 0:
-        Logger.debug("Вылечено: " + str(healed), "HealthComponent")
+        print("Вылечено: " + str(healed), "HealthComponent")
     
     return healed
 
@@ -132,25 +132,25 @@ func die(source: Node = null):
     current_health = 0.0
     died.emit(source)
     
-    Logger.debug("Entity умер от " + str(source), "HealthComponent")
+    print("Entity умер от " + str(source), "HealthComponent")
 
 
 func set_invulnerable(duration: float):
     is_invulnerable = true
     invulnerability_duration = duration
     invulnerability_timer = 0.0
-    Logger.debug("Неуязвимость активирована на " + str(duration) + "с", "HealthComponent")
+    print("Неуязвимость активирована на " + str(duration) + "с", "HealthComponent")
 
 
 func set_armor(value: float):
     armor = max(0.0, value)
-    Logger.debug("Броня изменена на " + str(armor), "HealthComponent")
+    print("Броня изменена на " + str(armor), "HealthComponent")
 
 
 func set_regen(rate: float, delay: float = 5.0):
     regen_rate = max(0.0, rate)
     regen_delay = max(0.1, delay)
-    Logger.debug("Регенерация установлена: " + str(rate) + "/с с задержкой " + str(delay) + "с", "HealthComponent")
+    print("Регенерация установлена: " + str(rate) + "/с с задержкой " + str(delay) + "с", "HealthComponent")
 
 
 func set_max_health(value: float, keep_percent: bool = false):
@@ -163,7 +163,7 @@ func set_max_health(value: float, keep_percent: bool = false):
     else:
         current_health = min(current_health, max_health)
     
-    Logger.debug("Макс. здоровье изменено: " + str(old_max) + " -> " + str(max_health), "HealthComponent")
+    print("Макс. здоровье изменено: " + str(old_max) + " -> " + str(max_health), "HealthComponent")
 
 
 func get_health() -> float:

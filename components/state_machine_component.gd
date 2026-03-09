@@ -43,7 +43,7 @@ var debug_mode: bool = false
 func _ready():
     set_process(true)
     set_physics_process(true)
-    Logger.debug("StateMachineComponent инициализирован", "StateMachine")
+    print("StateMachineComponent инициализирован", "StateMachine")
 
 
 func setup(deps: Dictionary):
@@ -55,9 +55,9 @@ func setup(deps: Dictionary):
     monolith = deps.get("monolith")
     
     if behavior_strategy:
-        Logger.debug("Поведение установлено: " + str(behavior_strategy), "StateMachine")
+        print("Поведение установлено: " + str(behavior_strategy), "StateMachine")
     else:
-        Logger.warning("Поведение не установлено", "StateMachine")
+        print("Поведение не установлено", "StateMachine")
 
 
 func _process(delta):
@@ -106,7 +106,7 @@ func _process_idle(_delta):
     # Просто стоим, ждем
     if current_state_time > 2.0:
         set_state(GameEnums.StalkerState.PATROL)
-        Logger.debug("IDLE -> PATROL (таймаут)", "StateMachine")
+        print("IDLE -> PATROL (таймаут)", "StateMachine")
 
 
 func _process_patrol(_delta):
@@ -236,7 +236,7 @@ func _on_state_entered(state: GameEnums.StalkerState):
     state_entered.emit(state)
     
     if debug_mode:
-        Logger.debug("Вход в состояние: " + _get_state_name(state), "StateMachine")
+        print("Вход в состояние: " + _get_state_name(state), "StateMachine")
     
     match state:
         GameEnums.StalkerState.IDLE:
@@ -256,7 +256,7 @@ func _on_state_exited(state: GameEnums.StalkerState):
     state_exited.emit(state)
     
     if debug_mode:
-        Logger.debug("Выход из состояния: " + _get_state_name(state), "StateMachine")
+        print("Выход из состояния: " + _get_state_name(state), "StateMachine")
     
     match state:
         GameEnums.StalkerState.FLEE:

@@ -1,26 +1,15 @@
-[gd_scene load_steps=2 format=3 uid="uid://k0gpx5s6l1byc"]
+[gd_scene load_steps=2 format=3 uid="uid://pseudogiant"]
 
-[ext_resource type="Script" path="res://scripts/mutants/pseudogiant.gd" id="1"]
+[ext_resource type="Script" path="res://entities/mutants/pseudogiant.gd" id="1"]
+[ext_resource type="PackedScene" path="res://entities/mutants/base_mutant.tscn" id="2"]
 
-[node name="PseudogiantMutant" type="CharacterBody3D"]
+[node name="Pseudogiant" instance=ExtResource("2")]
 script = ExtResource("1")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 0)
-shape = CapsuleShape3D.new()
-radius = 1.2
-height = 5.0
-
-[node name="DetectionArea" type="Area3D" parent="."]
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="DetectionArea"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 0)
-shape = SphereShape3D.new()
-radius = 30.0
-
-[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 0)
-mesh = CapsuleMesh.new()
-
 [node name="AttackTimer" type="Timer" parent="."]
-wait_time = 3.0
+wait_time = 1.0
+one_shot = true
+
+[node name="StompTimer" type="Timer" parent="."]
+wait_time = 5.0
+one_shot = true

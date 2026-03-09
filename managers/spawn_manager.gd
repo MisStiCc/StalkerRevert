@@ -77,10 +77,25 @@ var _mutants_spawned: int = 0
 
 
 func _ready():
-    _monolith = get_tree().get_first_node_in_group("monolith")
+    # _monolith = get_tree().get_first_node_in_group("monolith")
     add_to_group("spawn_manager")
     _setup_timer()
-    Logger.info("SpawnManager инициализирован", "SpawnManager")
+    
+    # Заполняем сцены мутантов
+    mutant_scenes = {
+        "dog_mutant": preload("res://entities/mutants/dog_mutant.tscn"),
+        "flesh": preload("res://entities/mutants/flesh.tscn"),
+        "snork_mutant": preload("res://entities/mutants/snork_mutant.tscn"),
+        "pseudodog": preload("res://entities/mutants/pseudodog.tscn"),
+        "controller_mutant": preload("res://entities/mutants/controller_mutant.tscn"),
+        "poltergeist": preload("res://entities/mutants/poltergeist.tscn"),
+        "bloodsucker": preload("res://entities/mutants/bloodsucker.tscn"),
+        "chimera": preload("res://entities/mutants/chimera.tscn"),
+        "pseudogiant": preload("res://entities/mutants/pseudogiant.tscn"),
+        "zombie": preload("res://entities/mutants/zombie.tscn")
+    }
+    
+    print("SpawnManager инициализирован")
 
 
 func _setup_timer():
@@ -96,13 +111,13 @@ func start_spawning():
     is_active = true
     _wave_timer.start()
     _start_wave()
-    Logger.info("Спавн сталкеров запущен", "SpawnManager")
+    print("Спавн сталкеров запущен")
 
 
 func stop_spawning():
     is_active = false
     _wave_timer.stop()
-    Logger.info("Спавн сталкеров остановлен", "SpawnManager")
+    print("Спавн сталкеров остановлен")
 
 
 func force_wave():
@@ -112,7 +127,7 @@ func force_wave():
 
 func set_difficulty(difficulty: float):
     _difficulty = difficulty
-    Logger.debug("Сложность спавна: " + str(difficulty), "SpawnManager")
+    print("Сложность спавна: " + str(difficulty))
 
 
 # ==================== ВОЛНЫ СТАЛКЕРОВ ====================
@@ -126,7 +141,7 @@ func _start_wave():
     
     var stalkers_to_spawn = _calculate_stalker_count()
     wave_started.emit(current_wave, stalkers_to_spawn)
-    Logger.info("Волна " + str(current_wave) + " начата, сталкеров: " + str(stalkers_to_spawn), "SpawnManager")
+    print("Волна " + str(current_wave) + " начата, сталкеров: " + str(stalkers_to_spawn))
     
     # Спавним сталкеров
     var spawned = 0
@@ -137,7 +152,7 @@ func _start_wave():
     
     is_spawning = false
     wave_ended.emit(current_wave, spawned)
-    Logger.info("Волна " + str(current_wave) + " завершена, создано: " + str(spawned), "SpawnManager")
+    print("Волна " + str(current_wave) + " завершена, создано: " + str(spawned))
 
 
 func _calculate_stalker_count() -> int:
@@ -148,12 +163,12 @@ func _calculate_stalker_count() -> int:
 func _spawn_stalker() -> bool:
     var scene = _get_stalker_scene_by_difficulty()
     if not scene:
-        Logger.warning("Нет сцены для сталкера", "SpawnManager")
+        print("Нет сцены для сталкера")
         return false
     
     var pos = _get_spawn_position()
     if pos == Vector3.ZERO:
-        Logger.warning("Не удалось найти позицию для спавна", "SpawnManager")
+        print("Не удалось найти позицию для спавна")
         return false
     
     var stalker = scene.instantiate()
@@ -163,8 +178,9 @@ func _spawn_stalker() -> bool:
     get_tree().current_scene.add_child(stalker)
     
     # Поворачиваем к монолиту
-    if _monolith:
-        var dir = (_monolith.global_position - pos).normalized()
+    var monolith = get_tree().get_first_node_in_group("monolith")
+    if monolith:
+        var dir = (monolith.global_position - pos).normalized()
         stalker.look_at(pos + dir, Vector3.UP)
     
     # Подключаем сигнал смерти
@@ -180,7 +196,7 @@ func _spawn_stalker() -> bool:
         stalker_type = "master"
     
     stalker_spawned.emit(stalker, stalker_type)
-    Logger.debug("Сталкер заспавнен: " + stalker_type + " на позиции " + str(pos), "SpawnManager")
+    print("Сталкер заспавнен: " + stalker_type + " на позиции " + str(pos))
     
     return true
 
@@ -207,25 +223,37 @@ func _get_stalker_scene_by_difficulty() -> PackedScene:
 
 
 func _get_spawn_position() -> Vector3:
-    if not _monolith:
+    # Ищем монолит каждый раз заново
+    var monolith = get_tree().get_first_node_in_group("monolith")
+    if not monolith:
+        print("Монолит не найден в группе!")
         return Vector3.ZERO
     
-    var angle = randf() * TAU
-    var distance = min_spawn_distance + randf() * (spawn_radius - min_spawn_distance)
-    var pos = _monolith.global_position + Vector3(cos(angle) * distance, 50, sin(angle) * distance)
+    # Пробуем 10 разных позиций
+    for attempt in range(10):
+        var angle = randf() * TAU
+        var distance = min_spawn_distance + randf() * (spawn_radius - min_spawn_distance)
+        var pos = monolith.global_position + Vector3(cos(angle) * distance, 100, sin(angle) * distance)
+        
+        # Raycast для поиска земли
+        var space = get_viewport().get_world_3d().direct_space_state
+        var query = PhysicsRayQueryParameters3D.new()
+        query.from = pos
+        query.to = pos + Vector3(0, -200, 0)
+        query.collision_mask = 1
+        query.hit_from_inside = true
+        
+        var result = space.intersect_ray(query)
+        if result:
+            print("Нашли землю на высоте: ", result.position.y)
+            return result.position + Vector3(0, 1.2, 0)
     
-    # Raycast для поиска земли
-    var space = get_viewport().get_world_3d().direct_space_state
-    var query = PhysicsRayQueryParameters3D.new()
-    query.from = pos
-    query.to = pos + Vector3(0, -100, 0)
-    query.collision_mask = 1
+    print("Не удалось найти позицию после 10 попыток")
     
-    var result = space.intersect_ray(query)
-    if result:
-        return result.position + Vector3(0, 1.2, 0)
-    
-    return Vector3.ZERO
+    # Запасной вариант - спавним прямо рядом с монолитом
+    var fallback_pos = monolith.global_position + Vector3(10, 0, 10)
+    print("Используем запасную позицию: ", fallback_pos)
+    return fallback_pos + Vector3(0, 1.2, 0)
 
 
 func _on_stalker_died(stalker: Node):
@@ -240,19 +268,19 @@ func _on_stalker_died(stalker: Node):
     
     _stalkers_killed += 1
     stalker_died.emit(stalker, return_value)
-    Logger.debug("Сталкер погиб, возвращено биомассы: " + str(return_value), "SpawnManager")
+    print("Сталкер погиб, возвращено биомассы: " + str(return_value))
 
 
 # ==================== МУТАНТЫ ====================
 
 func spawn_mutant(mutant_type: String, position: Vector3, biomass_cost: float) -> Node:
     if not mutant_scenes.has(mutant_type):
-        Logger.error("Неизвестный тип мутанта: " + mutant_type, "SpawnManager")
+        print("Неизвестный тип мутанта: " + mutant_type)
         return null
     
     var scene = mutant_scenes[mutant_type]
     if not scene:
-        Logger.error("Сцена не найдена для мутанта: " + mutant_type, "SpawnManager")
+        print("Сцена не найдена для мутанта: " + mutant_type)
         return null
     
     var mutant = scene.instantiate()
@@ -269,7 +297,7 @@ func spawn_mutant(mutant_type: String, position: Vector3, biomass_cost: float) -
     _mutants_spawned += 1
     
     mutant_spawned.emit(mutant, mutant_type)
-    Logger.debug("Мутант заспавнен: " + mutant_type + " на позиции " + str(position), "SpawnManager")
+    print("Мутант заспавнен: " + mutant_type + " на позиции " + str(position))
     
     return mutant
 
@@ -326,21 +354,21 @@ func reset_statistics():
     _stalkers_killed = 0
     _artifacts_stolen = 0
     _mutants_spawned = 0
-    Logger.debug("Статистика спавна сброшена", "SpawnManager")
+    print("Статистика спавна сброшена")
 
 
 # ==================== НАСТРОЙКИ ====================
 
 func set_health_multiplier(value: float):
     health_multiplier = value
-    Logger.debug("Множитель здоровья мутантов: " + str(value), "SpawnManager")
+    print("Множитель здоровья мутантов: " + str(value))
 
 
 func set_damage_multiplier(value: float):
     damage_multiplier = value
-    Logger.debug("Множитель урона мутантов: " + str(value), "SpawnManager")
+    print("Множитель урона мутантов: " + str(value))
 
 
 func set_cost_multiplier(value: float):
     cost_multiplier = value
-    Logger.debug("Множитель стоимости мутантов: " + str(value), "SpawnManager")
+    print("Множитель стоимости мутантов: " + str(value))

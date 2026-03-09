@@ -20,7 +20,7 @@ var _active_particles: Array[GPUParticles3D] = []
 func _ready():
     add_to_group("particle_manager")
     _initialize_pools()
-    Logger.info("ParticleManager инициализирован", "ParticleManager")
+    print("ParticleManager инициализирован", "ParticleManager")
 
 
 func _initialize_pools():
@@ -96,7 +96,7 @@ func _create_particles_node(particle_type: String) -> GPUParticles3D:
 
 func spawn_particles_at(position: Vector3, particle_type: String, duration: float = 2.0):
     if not _particle_pools.has(particle_type):
-        Logger.warning("Неизвестный тип частиц: " + particle_type, "ParticleManager")
+        print("Неизвестный тип частиц: " + particle_type, "ParticleManager")
         return
     
     # Ищем свободные частицы
@@ -126,7 +126,7 @@ func spawn_particles_at(position: Vector3, particle_type: String, duration: floa
     
     _active_particles.append(particles)
     particle_spawned.emit(particle_type, position)
-    Logger.debug("Частицы " + particle_type + " созданы на " + str(position), "ParticleManager")
+    print("Частицы " + particle_type + " созданы на " + str(position), "ParticleManager")
 
 
 func spawn_dust_at(position: Vector3, intensity: float = 1.0):
@@ -161,7 +161,7 @@ func spawn_pulse_effect():
     var camera = get_viewport().get_camera_3d()
     if camera:
         spawn_smoke_at(camera.global_position + Vector3(0, 5, 0), 5.0)
-    Logger.info("Эффект выброса создан", "ParticleManager")
+    print("Эффект выброса создан", "ParticleManager")
 
 
 func _stop_particles(particles: GPUParticles3D):
@@ -176,7 +176,7 @@ func clear_all_particles():
         if is_instance_valid(particles):
             particles.emitting = false
     _active_particles.clear()
-    Logger.debug("Все частицы очищены", "ParticleManager")
+    print("Все частицы очищены", "ParticleManager")
 
 
 func get_active_count() -> int:

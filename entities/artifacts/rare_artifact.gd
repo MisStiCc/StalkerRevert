@@ -10,7 +10,7 @@ func _ready_hook():
     rotation_speed = 1.5
     float_amplitude = 0.3
     
-    Logger.debug("RareArtifact создан, ценность: " + str(artifact_value), "Artifact")
+    print("RareArtifact создан, ценность: " + str(artifact_value), "Artifact")
 
 
 func _collect_hook(collector: Node):
@@ -19,6 +19,6 @@ func _collect_hook(collector: Node):
     # Временный бафф скорости
     if collector.has_method("set_temporary_speed_boost"):
         collector.set_temporary_speed_boost(1.5, 5.0)
-        Logger.info("RareArtifact: скорость увеличена на 50% на 5с", "Artifact")
+        print("RareArtifact: скорость увеличена на 50% на 5с", "Artifact")
     
-    Logger.info("RareArtifact собран! Даёт +" + str(energy_reward) + " энергии", "Artifact")
+    print("RareArtifact собран! Даёт +" + str(energy_reward) + " энергии", "Artifact")

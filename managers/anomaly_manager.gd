@@ -35,14 +35,35 @@ var radius_multiplier: float = 1.0
 
 func _ready():
     add_to_group("anomaly_manager")
-    Logger.info("AnomalyManager инициализирован", "AnomalyManager")
+    
+    # Заполняем сцены аномалий
+    anomaly_scenes = {
+        "heat_anomaly": preload("res://anomalies/heat_anomaly.tscn"),
+        "electric_anomaly": preload("res://anomalies/electric_anomaly.tscn"),
+        "acid_anomaly": preload("res://anomalies/acid_anomaly.tscn"),
+        "gravity_vortex": preload("res://anomalies/gravity_vortex.tscn"),
+        "gravity_lift": preload("res://anomalies/gravity_lift.tscn"),
+        "gravity_whirlwind": preload("res://anomalies/gravity_whirlwind.tscn"),
+        "thermal_steam": preload("res://anomalies/thermal_steam.tscn"),
+        "thermal_comet": preload("res://anomalies/thermal_comet.tscn"),
+        "chemical_jelly": preload("res://anomalies/chemical_jelly.tscn"),
+        "chemical_gas": preload("res://anomalies/chemical_gas.tscn"),
+        "chemical_acid_cloud": preload("res://anomalies/chemical_acid_cloud.tscn"),
+        "radiation_hotspot": preload("res://anomalies/radiation_hotspot.tscn"),
+        "time_dilation": preload("res://anomalies/time_dilation.tscn"),
+        "teleport": preload("res://anomalies/teleport.tscn"),
+        "electric_tesla": preload("res://anomalies/electric_tesla.tscn"),
+        "bio_burning_fluff": preload("res://anomalies/bio_burning_fluff.tscn")
+    }
+    
+    print("AnomalyManager инициализирован")
 
 
 # ==================== АНОМАЛИИ ====================
 
 func create_anomaly(anomaly_type: String, position: Vector3, difficulty: int, energy_cost: float) -> Node:
     if not anomaly_scenes.has(anomaly_type):
-        Logger.error("Неизвестный тип аномалии: " + anomaly_type, "AnomalyManager")
+        print("Неизвестный тип аномалии: " + anomaly_type)
         return null
     
     var scene = anomaly_scenes[anomaly_type]
@@ -68,7 +89,7 @@ func create_anomaly(anomaly_type: String, position: Vector3, difficulty: int, en
     active_anomalies.append(anomaly)
     
     anomaly_created.emit(anomaly, anomaly_type, difficulty)
-    Logger.info("Аномалия создана: " + anomaly_type + " на позиции " + str(position), "AnomalyManager")
+    print("Аномалия создана: " + anomaly_type + " на позиции " + str(position))
     
     return anomaly
 
@@ -77,7 +98,7 @@ func remove_anomaly(anomaly: Node):
     if is_instance_valid(anomaly):
         active_anomalies.erase(anomaly)
         anomaly.queue_free()
-        Logger.debug("Аномалия удалена", "AnomalyManager")
+    print("Аномалия удалена")
 
 
 func get_active_anomalies() -> Array[Node]:
@@ -132,7 +153,7 @@ func _on_anomaly_destroyed(anomaly: Node):
     create_artifact(artifact_type, position, rarity, value)
     
     anomaly_destroyed.emit(anomaly_type, position, difficulty)
-    Logger.info("Аномалия уничтожена, создан артефакт: " + artifact_type, "AnomalyManager")
+    print("Аномалия уничтожена, создан артефакт: " + artifact_type)
 
 
 # ==================== АРТЕФАКТЫ ====================
@@ -141,7 +162,7 @@ func create_artifact(artifact_type: String, position: Vector3, rarity: String = 
     # Пробуем загрузить сцену
     var scene_path = "res://entities/artifacts/" + artifact_type + ".tscn"
     if not ResourceLoader.exists(scene_path):
-        Logger.error("Сцена артефакта не найдена: " + scene_path, "AnomalyManager")
+        print("Сцена артефакта не найдена: " + scene_path)
         return null
     
     var scene = load(scene_path)
@@ -166,7 +187,7 @@ func create_artifact(artifact_type: String, position: Vector3, rarity: String = 
     _start_artifact_timer(artifact)
     
     artifact_created.emit(artifact, artifact_type, position)
-    Logger.debug("Артефакт создан: " + artifact_type + " на позиции " + str(position), "AnomalyManager")
+    print("Артефакт создан: " + artifact_type + " на позиции " + str(position))
     
     return artifact
 
@@ -176,14 +197,14 @@ func _on_artifact_stolen(artifact: Node, stalker: Node):
     _stop_artifact_timer(artifact)
     
     artifact_stolen.emit(artifact, stalker)
-    Logger.info("Артефакт украден сталкером: " + str(stalker), "AnomalyManager")
+    print("Артефакт украден сталкером: " + str(stalker))
 
 
 func _on_artifact_collected(artifact: Node, collector: Node):
     if artifact in active_artifacts:
         active_artifacts.erase(artifact)
     _stop_artifact_timer(artifact)
-    Logger.debug("Артефакт собран: " + str(collector), "AnomalyManager")
+    print("Артефакт собран: " + str(collector))
 
 
 func _start_artifact_timer(artifact: Node):
@@ -199,7 +220,7 @@ func _start_artifact_timer(artifact: Node):
     timer.start()
     
     artifact_timers[id] = timer
-    Logger.debug("Таймер артефакта запущен на 30с", "AnomalyManager")
+    print("Таймер артефакта запущен на 30с")
 
 
 func _stop_artifact_timer(artifact: Node):
@@ -217,7 +238,7 @@ func _on_artifact_timeout(artifact: Node):
         artifact_timers.erase(artifact.get_instance_id())
         return
     
-    Logger.info("Артефакт превращается в аномалию", "AnomalyManager")
+    print("Артефакт превращается в аномалию")
     
     # Удаляем артефакт
     active_artifacts.erase(artifact)
@@ -240,14 +261,14 @@ func remove_all_artifacts():
             timer.queue_free()
     artifact_timers.clear()
     
-    Logger.info("Все артефакты удалены", "AnomalyManager")
+    print("Все артефакты удалены")
 
 
 func stop_all_timers():
     for timer in artifact_timers.values():
         if is_instance_valid(timer):
             timer.stop()
-    Logger.debug("Все таймеры артефактов остановлены", "AnomalyManager")
+    print("Все таймеры артефактов остановлены")
 
 
 func get_active_artifacts() -> Array[Node]:
@@ -262,12 +283,12 @@ func get_artifact_count() -> int:
 
 func set_damage_multiplier(value: float):
     damage_multiplier = value
-    Logger.debug("Множитель урона аномалий: " + str(value), "AnomalyManager")
+    print("Множитель урона аномалий: " + str(value))
 
 
 func set_radius_multiplier(value: float):
     radius_multiplier = value
-    Logger.debug("Множитель радиуса аномалий: " + str(value), "AnomalyManager")
+    print("Множитель радиуса аномалий: " + str(value))
 
 
 func load_config(config: Dictionary):
@@ -280,4 +301,4 @@ func load_config(config: Dictionary):
     if config.has("difficulty_to_rarity"):
         difficulty_to_rarity = config["difficulty_to_rarity"]
     
-    Logger.info("Конфигурация загружена", "AnomalyManager")
+    print("Конфигурация загружена")

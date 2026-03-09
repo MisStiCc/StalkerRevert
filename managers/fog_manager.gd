@@ -21,18 +21,16 @@ var current_density: float = 0.0
 func _ready():
     add_to_group("fog_manager")
     _find_camera_and_environment()
-    Logger.info("FogManager инициализирован", "FogManager")
+    # print("FogManager инициализирован") - ЗАКОММЕНТИРОВАНО
 
 
 func _find_camera_and_environment():
     camera = get_viewport().get_camera_3d()
     
-    # Ищем WorldEnvironment в сцене
     var env_node = get_tree().get_first_node_in_group("world_environment")
     if env_node:
         world_environment = env_node
     else:
-        # Создаём если нет
         world_environment = WorldEnvironment.new()
         world_environment.name = "WorldEnvironment"
         
@@ -48,7 +46,7 @@ func _find_camera_and_environment():
         world_environment.add_to_group("world_environment")
         add_child.call_deferred(world_environment)
     
-    Logger.debug("WorldEnvironment " + ("найден" if world_environment else "создан"), "FogManager")
+    # print("WorldEnvironment " + ("найден" if world_environment else "создан")) - ЗАКОММЕНТИРОВАНО
 
 
 func _process(_delta):
@@ -65,15 +63,9 @@ func _process(_delta):
 
 
 func _calculate_density(camera_height: float) -> float:
-    # Чем выше камера, тем меньше тумана
     var height_factor = clamp(1.0 - (camera_height / height_falloff), 0.0, 1.0)
-    
-    # Базовое значение + вариация по высоте
     var density = base_density + (max_density - base_density) * height_factor
-    
-    # Добавляем небольшую случайную вариацию для реализма
     density += sin(Time.get_ticks_msec() * 0.001) * 0.002
-    
     return clamp(density, 0.0, max_density)
 
 
@@ -88,14 +80,14 @@ func _apply_fog(density: float):
     env.fog_height = ground_fog_height
     env.fog_height_density = 0.5
     
-    Logger.debug("Плотность тумана: " + str(density), "FogManager")
+    # print("Плотность тумана: " + str(density)) - ЗАКОММЕНТИРОВАНО
 
 
 func set_enabled(value: bool):
     enabled = value
     if not enabled and world_environment and world_environment.environment:
         world_environment.environment.fog_enabled = false
-    Logger.info("Туман " + ("включен" if value else "выключен"), "FogManager")
+    # print("Туман " + ("включен" if value else "выключен")) - ЗАКОММЕНТИРОВАНО
 
 
 func set_density(value: float):

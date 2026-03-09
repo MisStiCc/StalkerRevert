@@ -1,26 +1,11 @@
-[gd_scene load_steps=2 format=3 uid="uid://h7dmu2p3i8vxy"]
+[gd_scene load_steps=2 format=3 uid="uid://flesh"]
 
-[ext_resource type="Script" path="res://scripts/mutants/flesh.gd" id="1"]
+[ext_resource type="Script" path="res://entities/mutants/flesh.gd" id="1"]
+[ext_resource type="PackedScene" path="res://entities/mutants/base_mutant.tscn" id="2"]
 
-[node name="FleshMutant" type="CharacterBody3D"]
+[node name="Flesh" instance=ExtResource("2")]
 script = ExtResource("1")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
-shape = CapsuleShape3D.new()
-radius = 0.7
-height = 2.4
-
-[node name="DetectionArea" type="Area3D" parent="."]
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="DetectionArea"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
-shape = SphereShape3D.new()
-radius = 12.0
-
-[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
-mesh = CapsuleMesh.new()
-
 [node name="AttackTimer" type="Timer" parent="."]
-wait_time = 2.0
+wait_time = 1.0
+one_shot = true

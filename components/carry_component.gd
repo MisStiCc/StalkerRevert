@@ -27,21 +27,21 @@ var max_carry_weight: float = 10.0
 
 
 func _ready():
-    Logger.debug("CarryComponent инициализирован", "CarryComponent")
+    print("CarryComponent инициализирован", "CarryComponent")
 
 
 func pick_up_artifact(artifact: Node) -> bool:
     if is_carrying:
-        Logger.debug("Попытка подобрать артефакт, но уже есть", "CarryComponent")
+        print("Попытка подобрать артефакт, но уже есть", "CarryComponent")
         return false
     
     if not is_instance_valid(artifact):
-        Logger.warning("Попытка подобрать невалидный артефакт", "CarryComponent")
+        print("Попытка подобрать невалидный артефакт", "CarryComponent")
         return false
     
     # Проверяем, что это артефакт
     if not artifact.has_method("collect"):
-        Logger.warning("Объект не является артефактом: " + str(artifact), "CarryComponent")
+        print("Объект не является артефактом: " + str(artifact), "CarryComponent")
         return false
     
     # Подбираем
@@ -60,7 +60,7 @@ func pick_up_artifact(artifact: Node) -> bool:
         artifact.position = Vector3(0, 1.5, 0)
     
     artifact_picked_up.emit(artifact)
-    Logger.info("Артефакт подобран: " + artifact.name, "CarryComponent")
+    print("Артефакт подобран: " + artifact.name, "CarryComponent")
     
     return true
 
@@ -92,7 +92,7 @@ func drop_artifact() -> bool:
         carried_artifact.set_collected(false)
     
     artifact_dropped.emit(carried_artifact)
-    Logger.info("Артефакт выброшен в " + str(world_pos), "CarryComponent")
+    print("Артефакт выброшен в " + str(world_pos), "CarryComponent")
     
     carried_artifact = null
     is_carrying = false
@@ -114,7 +114,7 @@ func steal_artifact() -> bool:
         rarity = carried_artifact.get_rarity_name()
     
     artifact_stolen.emit(carried_artifact)
-    Logger.info("Артефакт украден! Редкость: " + rarity + ", ценность: " + str(value), "CarryComponent")
+    print("Артефакт украден! Редкость: " + rarity + ", ценность: " + str(value), "CarryComponent")
     
     carried_artifact.queue_free()
     carried_artifact = null

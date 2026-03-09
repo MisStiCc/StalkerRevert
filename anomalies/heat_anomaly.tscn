@@ -1,6 +1,6 @@
-[gd_scene load_steps=3 format=3 uid="uid://heat_anomaly"]
+[gd_scene load_steps=5 format=3 uid="uid://heat_anomaly"]
 
-[ext_resource type="Script" path="res://scripts/anomalies/heat_anomaly.gd" id="1"]
+[ext_resource type="Script" path="res://anomalies/heat_anomaly.gd" id="1"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_heat"]
 radius = 5.0
@@ -13,6 +13,7 @@ height = 10.0
 albedo_color = Color(1, 0.5, 0, 1)
 emission_enabled = true
 emission = Color(1, 0.5, 0, 1)
+emission_energy_multiplier = 2.0
 
 [node name="HeatAnomaly" type="Area3D"]
 script = ExtResource("1")

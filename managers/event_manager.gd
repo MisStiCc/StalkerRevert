@@ -32,7 +32,7 @@ func _ready():
     _anomaly_manager = get_tree().get_first_node_in_group("anomaly_manager")
     _spawn_manager = get_tree().get_first_node_in_group("spawn_manager")
     add_to_group("event_manager")
-    Logger.info("EventManager инициализирован", "EventManager")
+    print("EventManager инициализирован", "EventManager")
 
 
 # ==================== ВЫБРОСЫ ====================
@@ -45,7 +45,7 @@ func start_radiation_pulse() -> bool:
     pulse_count += 1
     current_difficulty += difficulty_increase_per_pulse
     
-    Logger.warning("ВЫБРОС #" + str(pulse_count) + " | Сложность: " + str(current_difficulty), "EventManager")
+    print("ВЫБРОС #" + str(pulse_count) + " | Сложность: " + str(current_difficulty), "EventManager")
     radiation_pulse_started.emit(pulse_count)
     
     # Останавливаем таймеры артефактов
@@ -63,7 +63,7 @@ func start_radiation_pulse() -> bool:
     
     is_radiating = false
     radiation_pulse_ended.emit()
-    Logger.info("Выброс закончен", "EventManager")
+    print("Выброс закончен", "EventManager")
     
     # Проверка на победу
     if pulse_count >= pulses_to_win:
@@ -85,7 +85,7 @@ func _drop_all_artifacts():
                 s.drop_artifact()
                 dropped += 1
     
-    Logger.debug("Сброшено артефактов во время выброса: " + str(dropped), "EventManager")
+    print("Сброшено артефактов во время выброса: " + str(dropped), "EventManager")
 
 
 func _shuffle_all_anomalies():
@@ -113,7 +113,7 @@ func _shuffle_all_anomalies():
             var new_pos = _get_random_position_for_level(level)
             if new_pos != Vector3.ZERO:
                 a.global_position = new_pos
-                Logger.debug("Аномалия ур." + str(level) + " перемещена", "EventManager")
+                print("Аномалия ур." + str(level) + " перемещена", "EventManager")
 
 
 func _get_random_position_for_level(level: int) -> Vector3:
@@ -178,14 +178,14 @@ func check_stalker_touch_monolith(stalker: Node) -> bool:
 
 
 func trigger_game_over():
-    Logger.error("GAME OVER - Сталкер коснулся Монолита!", "EventManager")
+    print("GAME OVER - Сталкер коснулся Монолита!", "EventManager")
     game_over.emit()
     get_tree().paused = true
 
 
 func _win_game():
     var reward = _calculate_reward()
-    Logger.info("ПОБЕДА! Забег #" + str(run_number) + " | Награда: " + str(reward), "EventManager")
+    print("ПОБЕДА! Забег #" + str(run_number) + " | Награда: " + str(reward), "EventManager")
     game_won.emit(run_number, reward)
     get_tree().paused = true
 
@@ -218,7 +218,7 @@ func reset():
     pulse_count = 0
     current_difficulty = 1.0
     accumulated_biomass = 0.0
-    Logger.info("EventManager сброшен", "EventManager")
+    print("EventManager сброшен", "EventManager")
 
 
 # ==================== ГЕТТЕРЫ ====================

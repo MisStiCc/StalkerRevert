@@ -1,7 +1,7 @@
 [gd_scene load_steps=2 format=3 uid="uid://novice_stalker"]
 
-[ext_resource type="PackedScene" path="res://scenes/stalkers/base_stalker.tscn" id="1"]
-[ext_resource type="Script" path="res://scripts/stalkers/novice_stalker.gd" id="2"]
+[ext_resource type="PackedScene" path="res://entities/stalkers/base_stalker.tscn" id="1"]
+[ext_resource type="Script" path="res://entities/stalkers/novice_stalker.gd" id="2"]
 
 [node name="NoviceStalker" instance=ExtResource("1")]
 script = ExtResource("2")

@@ -10,9 +10,9 @@ func _ready_hook():
     rotation_speed = 1.0
     float_amplitude = 0.2
     
-    Logger.debug("CommonArtifact создан, ценность: " + str(artifact_value), "Artifact")
+    print("CommonArtifact создан, ценность: " + str(artifact_value), "Artifact")
 
 
 func _collect_hook(collector: Node):
     super._collect_hook(collector)
-    Logger.info("CommonArtifact собран! Даёт +" + str(energy_reward) + " энергии", "Artifact")
+    print("CommonArtifact собран! Даёт +" + str(energy_reward) + " энергии", "Artifact")

@@ -39,7 +39,7 @@ var _current_biomass: float = 0.0
 
 func _ready():
     add_to_group("progression_manager")
-    Logger.info("ProgressionManager инициализирован", "ProgressionManager")
+    print("ProgressionManager инициализирован", "ProgressionManager")
 
 
 # ==================== ЗАБЕГИ ====================
@@ -50,7 +50,7 @@ func start_new_run() -> Dictionary:
     pulses_to_win = pulses_to_win_base + int((current_run - 1) / 2)
     _current_biomass = 0.0
     
-    Logger.info("Забег #" + str(current_run) + " | Сложность: " + str(current_difficulty) + " | Цель: " + str(pulses_to_win) + " выбросов", "ProgressionManager")
+    print("Забег #" + str(current_run) + " | Сложность: " + str(current_difficulty) + " | Цель: " + str(pulses_to_win) + " выбросов", "ProgressionManager")
     
     run_started.emit(current_run, current_difficulty)
     
@@ -71,7 +71,7 @@ func end_run(success: bool, accumulated_biomass: float) -> float:
         reward = _calculate_reward(accumulated_biomass)
         total_biomass_earned += reward
     
-    Logger.info("Забег #" + str(current_run) + " завершён. Успех: " + str(success) + " | Награда: " + str(reward), "ProgressionManager")
+    print("Забег #" + str(current_run) + " завершён. Успех: " + str(success) + " | Награда: " + str(reward), "ProgressionManager")
     run_ended.emit(current_run, reward, success)
     
     return reward
@@ -87,7 +87,7 @@ func _calculate_reward(accumulated: float) -> float:
 func increase_difficulty(amount: float = difficulty_increase_per_pulse):
     current_difficulty += amount
     difficulty_changed.emit(current_difficulty)
-    Logger.debug("Сложность увеличена до: " + str(current_difficulty), "ProgressionManager")
+    print("Сложность увеличена до: " + str(current_difficulty), "ProgressionManager")
 
 
 # ==================== МНОЖИТЕЛИ ====================
@@ -162,7 +162,7 @@ func reset_statistics():
     artifacts_stolen = 0
     total_biomass_earned = 0.0
     _current_biomass = 0.0
-    Logger.info("Статистика сброшена", "ProgressionManager")
+    print("Статистика сброшена", "ProgressionManager")
 
 
 # ==================== ГЕТТЕРЫ ====================

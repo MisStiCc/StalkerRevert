@@ -34,7 +34,7 @@ var _is_music_playing: bool = false
 func _ready():
     _setup_players()
     add_to_group("sound_manager")
-    Logger.info("SoundManager инициализирован", "SoundManager")
+    print("SoundManager инициализирован", "SoundManager")
 
 
 func _setup_players():
@@ -61,14 +61,14 @@ func _setup_players():
         add_child(player)
         _sfx_players.append(player)
     
-    Logger.debug("Аудиоплееры созданы: 1 музыка, 1 окружение, 5 SFX", "SoundManager")
+    print("Аудиоплееры созданы: 1 музыка, 1 окружение, 5 SFX", "SoundManager")
 
 
 # ==================== МУЗЫКА ====================
 
 func play_music(track_name: String, fade_time: float = 1.0):
     if not music_tracks.has(track_name):
-        Logger.warning("Неизвестный трек: " + track_name, "SoundManager")
+        print("Неизвестный трек: " + track_name, "SoundManager")
         return
     
     var track = music_tracks[track_name]
@@ -84,7 +84,7 @@ func play_music(track_name: String, fade_time: float = 1.0):
     _current_music_track = track_name
     
     music_changed.emit(track_name)
-    Logger.debug("Смена музыки на: " + track_name, "SoundManager")
+    print("Смена музыки на: " + track_name, "SoundManager")
 
 
 func stop_music(fade_time: float = 1.0):
@@ -92,7 +92,7 @@ func stop_music(fade_time: float = 1.0):
     _music_fade_timer = fade_time
     _target_music = null
     _current_music_track = ""
-    Logger.debug("Музыка останавливается", "SoundManager")
+    print("Музыка останавливается", "SoundManager")
 
 
 func _process(delta):
@@ -123,7 +123,7 @@ func _process(delta):
 func play_sound(sound_name: String, volume_mod: float = 1.0, pitch_mod: float = 1.0):
     var sound = _find_sound(sound_name)
     if not sound:
-        Logger.warning("Звук не найден: " + sound_name, "SoundManager")
+        print("Звук не найден: " + sound_name, "SoundManager")
         return
     
     var player = _get_free_sfx_player()
@@ -136,7 +136,7 @@ func play_sound(sound_name: String, volume_mod: float = 1.0, pitch_mod: float = 
     player.play()
     
     sound_played.emit(sound_name)
-    Logger.debug("Звук воспроизведен: " + sound_name, "SoundManager")
+    print("Звук воспроизведен: " + sound_name, "SoundManager")
 
 
 func _find_sound(sound_name: String) -> AudioStream:
@@ -201,7 +201,7 @@ func play_pulse_warning():
 func set_master_volume(value: float):
     master_volume = clamp(value, 0.0, 1.0)
     _update_volumes()
-    Logger.info("Громкость master: " + str(value), "SoundManager")
+    print("Громкость master: " + str(value), "SoundManager")
 
 
 func set_music_volume(value: float):

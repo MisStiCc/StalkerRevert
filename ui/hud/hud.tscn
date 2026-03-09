@@ -1,0 +1,275 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://ui/hud/hud.gd" id="1"]
+
+[node name="HUD" type="CanvasLayer"]
+layer = 1
+script = ExtResource("1")
+
+[node name="Resources" type="Panel" parent="."]
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 200.0
+offset_bottom = 100.0
+color = Color(0.1, 0.1, 0.1, 0.8)
+
+[node name="EnergyLabel" type="Label" parent="Resources"]
+offset_left = 10.0
+offset_top = 10.0
+text = "⚡ Энергия:"
+
+[node name="EnergyValue" type="Label" parent="Resources"]
+offset_left = 100.0
+offset_top = 10.0
+text = "0"
+
+[node name="BiomassLabel" type="Label" parent="Resources"]
+offset_left = 10.0
+offset_top = 35.0
+text = "🧬 Биомасса:"
+
+[node name="BiomassValue" type="Label" parent="Resources"]
+offset_left = 100.0
+offset_top = 35.0
+text = "0"
+
+[node name="WaveLabel" type="Label" parent="Resources"]
+offset_left = 10.0
+offset_top = 60.0
+text = "🌊 Волна: 0"
+theme_override_colors/font_color = Color(1, 1, 0, 1)
+visible = false
+
+[node name="StalkerCountLabel" type="Label" parent="Resources"]
+offset_left = 10.0
+offset_top = 60.0
+text = "👥 Сталкеров: 0"
+visible = true
+
+[node name="EmissionPanel" type="Panel" parent="."]
+offset_left = 220.0
+offset_top = 10.0
+offset_right = 400.0
+offset_bottom = 100.0
+color = Color(0.1, 0.1, 0.1, 0.8)
+
+[node name="EmissionLabel" type="Label" parent="EmissionPanel"]
+offset_left = 10.0
+offset_top = 10.0
+text = ""
+theme_override_colors/font_color = Color(1, 0, 0, 1)
+theme_override_font_sizes/font_size = 16
+
+[node name="EmissionTimerLabel" type="Label" parent="EmissionPanel"]
+offset_left = 10.0
+offset_top = 35.0
+text = ""
+theme_override_colors/font_color = Color(1, 0.5, 0, 1)
+
+[node name="EmissionButton" type="Button" parent="EmissionPanel"]
+offset_left = 10.0
+offset_top = 60.0
+offset_right = 160.0
+offset_bottom = 85.0
+text = "🔥 ВЫБРОС"
+
+[node name="AnomalyPanel" type="Panel" parent="."]
+offset_left = 10.0
+offset_top = 110.0
+offset_right = 300.0
+offset_bottom = 300.0
+color = Color(0.1, 0.1, 0.1, 0.8)
+
+[node name="Title" type="Label" parent="AnomalyPanel"]
+offset_left = 10.0
+offset_top = 5.0
+text = "АНОМАЛИИ"
+theme_override_colors/font_color = Color(1, 0.5, 0, 1)
+
+[node name="FireButton" type="Button" parent="AnomalyPanel"]
+offset_left = 10.0
+offset_top = 30.0
+offset_right = 90.0
+offset_bottom = 55.0
+text = "Жарка"
+
+[node name="ElectricButton" type="Button" parent="AnomalyPanel"]
+offset_left = 100.0
+offset_top = 30.0
+offset_right = 180.0
+offset_bottom = 55.0
+text = "Электра"
+
+[node name="AcidButton" type="Button" parent="AnomalyPanel"]
+offset_left = 190.0
+offset_top = 30.0
+offset_right = 270.0
+offset_bottom = 55.0
+text = "Кислота"
+
+[node name="VortexButton" type="Button" parent="AnomalyPanel"]
+offset_left = 10.0
+offset_top = 60.0
+offset_right = 90.0
+offset_bottom = 85.0
+text = "Воронка"
+
+[node name="LiftButton" type="Button" parent="AnomalyPanel"]
+offset_left = 100.0
+offset_top = 60.0
+offset_right = 180.0
+offset_bottom = 85.0
+text = "Лифт"
+
+[node name="WhirlwindButton" type="Button" parent="AnomalyPanel"]
+offset_left = 190.0
+offset_top = 60.0
+offset_right = 270.0
+offset_bottom = 85.0
+text = "Карусель"
+
+[node name="SteamButton" type="Button" parent="AnomalyPanel"]
+offset_left = 10.0
+offset_top = 90.0
+offset_right = 90.0
+offset_bottom = 115.0
+text = "Пар"
+
+[node name="CometButton" type="Button" parent="AnomalyPanel"]
+offset_left = 100.0
+offset_top = 90.0
+offset_right = 180.0
+offset_bottom = 115.0
+text = "Комета"
+
+[node name="JellyButton" type="Button" parent="AnomalyPanel"]
+offset_left = 10.0
+offset_top = 120.0
+offset_right = 90.0
+offset_bottom = 145.0
+text = "Холодец"
+
+[node name="GasButton" type="Button" parent="AnomalyPanel"]
+offset_left = 100.0
+offset_top = 120.0
+offset_right = 180.0
+offset_bottom = 145.0
+text = "Газировка"
+
+[node name="AcidCloudButton" type="Button" parent="AnomalyPanel"]
+offset_left = 190.0
+offset_top = 120.0
+offset_right = 270.0
+offset_bottom = 145.0
+text = "Кисель"
+
+[node name="RadiationButton" type="Button" parent="AnomalyPanel"]
+offset_left = 10.0
+offset_top = 150.0
+offset_right = 90.0
+offset_bottom = 175.0
+text = "Радиация"
+
+[node name="TimeButton" type="Button" parent="AnomalyPanel"]
+offset_left = 100.0
+offset_top = 150.0
+offset_right = 180.0
+offset_bottom = 175.0
+text = "Время"
+
+[node name="TeleportButton" type="Button" parent="AnomalyPanel"]
+offset_left = 190.0
+offset_top = 150.0
+offset_right = 270.0
+offset_bottom = 175.0
+text = "Телепорт"
+
+[node name="TeslaButton" type="Button" parent="AnomalyPanel"]
+offset_left = 10.0
+offset_top = 180.0
+offset_right = 90.0
+offset_bottom = 205.0
+text = "Тесла"
+
+[node name="FluffButton" type="Button" parent="AnomalyPanel"]
+offset_left = 100.0
+offset_top = 180.0
+offset_right = 180.0
+offset_bottom = 205.0
+text = "Жг.пух"
+
+[node name="MutantPanel" type="Panel" parent="."]
+offset_left = 310.0
+offset_top = 110.0
+offset_right = 500.0
+offset_bottom = 250.0
+color = Color(0.1, 0.1, 0.1, 0.8)
+
+[node name="Title" type="Label" parent="MutantPanel"]
+offset_left = 10.0
+offset_top = 5.0
+text = "МУТАНТЫ"
+theme_override_colors/font_color = Color(0, 1, 0, 1)
+
+[node name="DogButton" type="Button" parent="MutantPanel"]
+offset_left = 10.0
+offset_top = 30.0
+offset_right = 90.0
+offset_bottom = 55.0
+text = "Собака"
+
+[node name="FleshButton" type="Button" parent="MutantPanel"]
+offset_left = 100.0
+offset_top = 30.0
+offset_right = 180.0
+offset_bottom = 55.0
+text = "Плоть"
+
+[node name="SnorkButton" type="Button" parent="MutantPanel"]
+offset_left = 10.0
+offset_top = 60.0
+offset_right = 90.0
+offset_bottom = 85.0
+text = "Снорк"
+
+[node name="PseudodogButton" type="Button" parent="MutantPanel"]
+offset_left = 100.0
+offset_top = 60.0
+offset_right = 180.0
+offset_bottom = 85.0
+text = "Псевдо"
+
+[node name="ControllerButton" type="Button" parent="MutantPanel"]
+offset_left = 10.0
+offset_top = 90.0
+offset_right = 90.0
+offset_bottom = 115.0
+text = "Контрол"
+
+[node name="PoltergeistButton" type="Button" parent="MutantPanel"]
+offset_left = 100.0
+offset_top = 90.0
+offset_right = 180.0
+offset_bottom = 115.0
+text = "Полтер"
+
+[node name="BloodsuckerButton" type="Button" parent="MutantPanel"]
+offset_left = 10.0
+offset_top = 120.0
+offset_right = 90.0
+offset_bottom = 145.0
+text = "Кровосос"
+
+[node name="ChimeraButton" type="Button" parent="MutantPanel"]
+offset_left = 100.0
+offset_top = 120.0
+offset_right = 180.0
+offset_bottom = 145.0
+text = "Химера"
+
+[node name="ZombieButton" type="Button" parent="MutantPanel"]
+offset_left = 10.0
+offset_top = 150.0
+offset_right = 90.0
+offset_bottom = 175.0
+text = "Зомби"

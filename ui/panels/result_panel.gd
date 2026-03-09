@@ -58,7 +58,7 @@ func show_result(result: Dictionary):
         artifacts_label.text = "Собрано артефактов:\nCommon: %d   Rare: %d   Legendary: %d" % [common, rare, legendary]
         artifacts_label.visible = true
     else:
-        artifacts_label.visible = False
+        artifacts_label.visible = false
     
     open()
 
