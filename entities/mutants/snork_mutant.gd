@@ -12,7 +12,6 @@ var is_jumping: bool = false
 var jump_target: Vector3
 var jump_timer: Timer
 
-
 func _ready():
 	health = 120.0
 	max_health = 120.0
@@ -26,9 +25,11 @@ func _ready():
 	
 	jump_timer = Timer.new()
 	jump_timer.one_shot = true
+	jump_timer.wait_time = jump_cooldown
 	jump_timer.timeout.connect(_on_jump_cooldown_ended)
 	add_child(jump_timer)
 	
+	_setup_label()
 	print("Snork mutant initialized")
 
 
@@ -43,49 +44,80 @@ func _physics_process(delta):
 	super._physics_process(delta)
 
 
-func _chase(delta):
-	super._chase(delta)
+func _patrol(delta):
+	var stalkers = get_tree().get_nodes_in_group("stalkers")
+	var nearest_stalker = null
+	var nearest_dist = INF
 	
-	if can_jump and target_stalker and is_instance_valid(target_stalker):
+	for stalker in stalkers:
+		if is_instance_valid(stalker):
+			var dist = global_position.distance_to(stalker.global_position)
+			if dist < detection_radius and dist < nearest_dist:
+				nearest_dist = dist
+				nearest_stalker = stalker
+	
+	if nearest_stalker:
+		target_stalker = nearest_stalker
+		current_state = State.CHASE
+	
+	super._patrol(delta)
+
+
+func _chase(delta):
+	if not target_stalker or not is_instance_valid(target_stalker):
+		current_state = State.PATROL
+		return
+	
+	var direction = (target_stalker.global_position - global_position).normalized()
+	velocity = direction * speed
+	
+	if can_jump and not is_jumping:
 		var dist = global_position.distance_to(target_stalker.global_position)
 		if dist < jump_range and dist > 3.0:
-			_try_jump_on_stalker()
+			_try_jump()
+	
+	if global_position.distance_to(target_stalker.global_position) < 2.0:
+		current_state = State.ATTACK
 
 
-func _try_jump_on_stalker():
+func _try_jump():
 	if not target_stalker or not is_instance_valid(target_stalker):
 		return
 	
+	print("Snork прыгает!")
 	jump_target = target_stalker.global_position
 	is_jumping = true
 	can_jump = false
 	
-	jump_timer.wait_time = jump_cooldown
 	jump_timer.start()
 
 
 func _handle_jump(delta):
+	if is_instance_valid(target_stalker):
+		jump_target = target_stalker.global_position
+	
 	var direction = (jump_target - global_position).normalized()
 	velocity = direction * jump_force
-	velocity.y = jump_force * 0.5
+	velocity.y = 2.0
 	
 	move_and_slide()
 	
-	if global_position.distance_to(jump_target) < 2.0 or is_on_floor():
-		_land_on_target()
+	if is_on_floor() or global_position.distance_to(jump_target) < 2.0:
+		_land()
 
 
-func _land_on_target():
+func _land():
 	is_jumping = false
-	velocity = Vector3.ZERO
+	velocity.y = 0
 	
-	if target_stalker and is_instance_valid(target_stalker):
-		if global_position.distance_to(target_stalker.global_position) < 3.0:
-			if target_stalker.has_method("take_damage"):
-				target_stalker.take_damage(damage * leap_damage_multiplier, self)
-				attacked_stalker.emit(target_stalker)
+	if is_instance_valid(target_stalker):
+		var dist = global_position.distance_to(target_stalker.global_position)
+		if dist < 3.0:
+			target_stalker.take_damage(damage * leap_damage_multiplier, self)
+			attacked_stalker.emit(target_stalker)
+			print("Snork атакует с прыжка!")
 	
-	if target_stalker and is_instance_valid(target_stalker):
+	if is_instance_valid(target_stalker):
 		if global_position.distance_to(target_stalker.global_position) < 2.0:
 			current_state = State.ATTACK
 		else:
@@ -99,9 +131,21 @@ func _on_jump_cooldown_ended():
 
 
 func _attack(delta):
-	super._attack(delta)
+	if not target_stalker or not is_instance_valid(target_stalker):
+		current_state = State.PATROL
+		return
 	
-	if current_state == State.ATTACK and target_stalker and is_instance_valid(target_stalker):
+	var dist = global_position.distance_to(target_stalker.global_position)
+	if dist > 2.0:
+		current_state = State.CHASE
+		return
+	
+	if attack_timer.is_stopped():
+		target_stalker.take_damage(damage, self)
+		attacked_stalker.emit(target_stalker)
+		attack_timer.start()
+		print("Snork атакует!")
+		
 		if randf() < 0.3:
 			_jump_away()
 
@@ -110,10 +154,22 @@ func _jump_away():
 	if not target_stalker or not is_instance_valid(target_stalker):
 		return
 	
-	var away_direction = (global_position - target_stalker.global_position).normalized()
-	jump_target = global_position + away_direction * 5.0
+	var away = (global_position - target_stalker.global_position).normalized()
+	jump_target = global_position + away * 5.0
 	is_jumping = true
 	can_jump = false
-	
-	jump_timer.wait_time = jump_cooldown
+	velocity.y = 2.0
 	jump_timer.start()
+	print("Snork отпрыгивает!")
+
+
+func _setup_label():
+	var label = Label3D.new()
+	label.name = "MutantLabel"
+	label.position = Vector3(0, 2.5, 0)
+	label.font_size = 24
+	label.outline_size = 2
+	label.outline_modulate = Color.BLACK
+	label.modulate = Color(1.0, 0.4, 0.2)  # оранжевый
+	label.text = "👹 СНОРК"
+	add_child(label)

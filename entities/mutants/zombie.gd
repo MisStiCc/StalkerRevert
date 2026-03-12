@@ -3,7 +3,6 @@ extends BaseMutant
 class_name ZombieMutant
 
 @export var rage_threshold: float = 50.0
-@export var grab_damage: float = 15.0
 @export var infection_chance: float = 0.2
 
 var accumulated_rage: float = 0.0
@@ -20,8 +19,7 @@ func _ready():
 	
 	super._ready()
 	
-	current_state = State.PATROL
-	
+	_setup_label()
 	print("Zombie mutant initialized")
 
 
@@ -89,6 +87,7 @@ func _attack(delta):
 			_try_infect(target_stalker)
 		
 		attack_timer.start()
+		print("Zombie атакует!")
 
 
 func _try_infect(stalker: Node3D):
@@ -111,3 +110,15 @@ func take_damage(dmg: float, source = null):
 		health += dmg * 0.1
 	
 	super.take_damage(dmg, source)
+
+
+func _setup_label():
+	var label = Label3D.new()
+	label.name = "MutantLabel"
+	label.position = Vector3(0, 2.5, 0)
+	label.font_size = 24
+	label.outline_size = 2
+	label.outline_modulate = Color.BLACK
+	label.modulate = Color(0.3, 0.8, 0.3)  # зеленый
+	label.text = "🧟 ЗОМБИ"
+	add_child(label)

@@ -16,10 +16,14 @@ func _ready():
 	
 	super._ready()
 	
+	_setup_label()
 	print("Dog mutant initialized")
 
 
 func _physics_process(delta):
+	if current_state == State.DEAD:
+		return
+	
 	var nearby_dogs = _count_nearby_dogs()
 	if nearby_dogs > 0:
 		var original_speed = speed
@@ -43,29 +47,70 @@ func _count_nearby_dogs() -> int:
 	return count
 
 
+func _patrol(delta):
+	var stalkers = get_tree().get_nodes_in_group("stalkers")
+	var nearest_stalker = null
+	var nearest_dist = INF
+	
+	for stalker in stalkers:
+		if is_instance_valid(stalker):
+			var dist = global_position.distance_to(stalker.global_position)
+			if dist < detection_radius and dist < nearest_dist:
+				nearest_dist = dist
+				nearest_stalker = stalker
+	
+	if nearest_stalker:
+		target_stalker = nearest_stalker
+		current_state = State.CHASE
+	
+	super._patrol(delta)
+
+
+func _chase(delta):
+	if not target_stalker or not is_instance_valid(target_stalker):
+		current_state = State.PATROL
+		return
+	
+	var direction = (target_stalker.global_position - global_position).normalized()
+	velocity = direction * speed
+	
+	var dist = global_position.distance_to(target_stalker.global_position)
+	if dist < 2.0:
+		current_state = State.ATTACK
+
+
+func _attack(delta):
+	if not target_stalker or not is_instance_valid(target_stalker):
+		current_state = State.PATROL
+		return
+	
+	var dist = global_position.distance_to(target_stalker.global_position)
+	if dist > 2.0:
+		current_state = State.CHASE
+		return
+	
+	if attack_timer.is_stopped():
+		target_stalker.take_damage(damage, self)
+		attacked_stalker.emit(target_stalker)
+		attack_timer.start()
+		print("DogMutant атакует!")
+
+
 func take_damage(dmg: float, source = null):
 	if randf() < dodge_chance:
+		print("DogMutant уклонился!")
 		return
 	
 	super.take_damage(dmg, source)
 
 
-func _chase(delta):
-	super._chase(delta)
-	
-	if target_stalker and is_instance_valid(target_stalker):
-		var dist = global_position.distance_to(target_stalker.global_position)
-		if dist < 3.0 and current_state == State.CHASE:
-			_try_flank()
-
-
-func _try_flank():
-	if not target_stalker or not is_instance_valid(target_stalker):
-		return
-	
-	var to_target = (target_stalker.global_position - global_position).normalized()
-	var right = Vector3(to_target.z, 0, -to_target.x)
-	
-	var flank_position = target_stalker.global_position + right * 2.0
-	var direction = (flank_position - global_position).normalized()
-	velocity = direction * speed
+func _setup_label():
+	var label = Label3D.new()
+	label.name = "MutantLabel"
+	label.position = Vector3(0, 2.5, 0)
+	label.font_size = 24
+	label.outline_size = 2
+	label.outline_modulate = Color.BLACK
+	label.modulate = Color(1, 0.8, 0.4)  # светло-оранжевый
+	label.text = "🐕 СОБАКА"
+	add_child(label)

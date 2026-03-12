@@ -1,3 +1,86 @@
+
+----------------------------------------
+ФАЙЛ: res://allFiles.gd
+----------------------------------------
+
+@tool
+extends EditorScript
+
+func _run():
+	print("Начинаю сбор файлов...")
+	
+	var output = ""
+	var file_count = 0
+	
+	# Просто собираем все файлы
+	var all_files = []
+	collect_files("res://", all_files)
+	
+	# Записываем каждый файл
+	for file_path in all_files:
+		# Пропускаем системные папки
+		if file_path.contains(".godot") or file_path.contains(".git"):
+			continue
+			
+		file_count += 1
+		print("Обрабатываю: " + file_path)
+		
+		# Разделитель
+		output += "\n" + "----------------------------------------" + "\n"
+		output += "ФАЙЛ: " + file_path + "\n"
+		output += "----------------------------------------" + "\n\n"
+		
+		# Содержимое
+		var content = read_file(file_path)
+		output += content + "\n"
+	
+	# Сохраняем результат
+	var save_path = "res://project_export.txt"
+	var file = FileAccess.open(save_path, FileAccess.WRITE)
+	if file:
+		file.store_string(output)
+		file.close()
+		print("\n✅ ГОТОВО!")
+		print("📁 Файлов обработано: " + str(file_count))
+		print("📄 Результат: " + save_path)
+	else:
+		print("❌ Ошибка сохранения файла!")
+
+func collect_files(path: String, files: Array):
+	var dir = DirAccess.open(path)
+	if dir == null:
+		return
+		
+	dir.list_dir_begin()
+	var item = dir.get_next()
+	
+	while item != "":
+		if item == "." or item == "..":
+			item = dir.get_next()
+			continue
+			
+		var full = path + item
+		
+		if dir.current_is_dir():
+			collect_files(full + "/", files)
+		else:
+			files.append(full)
+			
+		item = dir.get_next()
+	
+	dir.list_dir_end()
+
+func read_file(path: String) -> String:
+	if not FileAccess.file_exists(path):
+		return "[ФАЙЛ НЕ НАЙДЕН]"
+		
+	var file = FileAccess.open(path, FileAccess.READ)
+	if file:
+		return file.get_as_text()
+	else:
+		return "[ОШИБКА ЧТЕНИЯ]"
+
+
 ----------------------------------------
 ФАЙЛ: res://allFiles.gd.uid
 ----------------------------------------
@@ -2526,8 +2609,8 @@ var nav_agent: NavigationAgent3D = null:
 		if nav_agent:
 			nav_agent.velocity_computed.connect(_on_velocity_computed)
 			nav_agent.navigation_finished.connect(_on_navigation_finished)
-			nav_agent.target_desired_distance = 1.0
-			nav_agent.path_desired_distance = 0.5
+			nav_agent.target_desired_distance = 2.0
+			nav_agent.path_desired_distance = 1.0
 			print("NavigationAgent3D подключен")
 
 # Параметры
@@ -2550,9 +2633,10 @@ var patrol_loop: bool = true
 # Внутреннее состояние
 var _last_entity_pos: Vector3 = Vector3.ZERO
 var _stuck_timer: float = 0.0
-var _stuck_threshold: float = 3.0
-var _stuck_distance: float = 0.5
+var _stuck_threshold: float = 5.0  # Увеличил до 5 секунд
+var _stuck_distance: float = 1.0    # Увеличил до 1 метра
 var _last_target: Vector3 = Vector3.ZERO
+var _move_start_time: float = 0.0
 
 
 func _ready():
@@ -2561,8 +2645,8 @@ func _ready():
 		if nav_agent:
 			nav_agent.velocity_computed.connect(_on_velocity_computed)
 			nav_agent.navigation_finished.connect(_on_navigation_finished)
-			nav_agent.target_desired_distance = 1.0
-			nav_agent.path_desired_distance = 0.5
+			nav_agent.target_desired_distance = 2.0
+			nav_agent.path_desired_distance = 1.0
 	
 	set_process(true)
 	set_physics_process(true)
@@ -2574,16 +2658,19 @@ func _process(delta):
 	if not is_moving or not nav_agent:
 		return
 	
-	if _last_entity_pos.distance_to(entity.global_position) < _stuck_distance:
-		_stuck_timer += delta
-		if _stuck_timer >= _stuck_threshold:
-			print("Застревание обнаружено, ищу новый путь")
-			path_blocked.emit()
-			if _last_target != Vector3.ZERO:
-				nav_agent.target_position = _last_target
+	# Проверка на застревание - только если прошло достаточно времени
+	if _move_start_time > 2.0:
+		if _last_entity_pos.distance_to(entity.global_position) < _stuck_distance:
+			_stuck_timer += delta
+			if _stuck_timer >= _stuck_threshold:
+				print("Застревание обнаружено, ищу новый путь")
+				path_blocked.emit()
+				# Пробуем переустановить цель
+				if _last_target != Vector3.ZERO:
+					nav_agent.target_position = _last_target
+				_stuck_timer = 0.0
+		else:
 			_stuck_timer = 0.0
-	else:
-		_stuck_timer = 0.0
 	
 	_last_entity_pos = entity.global_position
 
@@ -2645,6 +2732,8 @@ func move_to(position: Vector3):
 	is_moving = true
 	is_patrolling = false
 	_stuck_timer = 0.0
+	_move_start_time = 0.0
+	_last_entity_pos = entity.global_position
 	target_updated.emit(position)
 	
 	print("Движение к цели: " + str(position))
@@ -2718,7 +2807,6 @@ func get_current_patrol_index() -> int:
 
 func get_patrol_points() -> Array[Vector3]:
 	return patrol_points.duplicate()
-
 
 ----------------------------------------
 ФАЙЛ: res://components/navigation_component.gd.uid
@@ -6194,6 +6282,7 @@ var is_invisible: bool = false
 var can_go_invisible: bool = true
 var invisibility_timer: Timer
 var leap_timer: Timer
+var mesh_instance: MeshInstance3D
 
 func _ready():
 	match subspecies:
@@ -6221,6 +6310,8 @@ func _ready():
 	
 	mutant_type = "bloodsucker"
 	
+	mesh_instance = $MeshInstance3D
+	
 	super._ready()
 	
 	invisibility_timer = Timer.new()
@@ -6234,6 +6325,7 @@ func _ready():
 	leap_timer.timeout.connect(_on_leap_ended)
 	add_child(leap_timer)
 	
+	_setup_label()
 	print("Bloodsucker mutant initialized: ", subspecies)
 
 
@@ -6259,49 +6351,76 @@ func _try_go_invisible():
 	invisibility_timer.wait_time = invisibility_duration
 	invisibility_timer.start()
 	
-	print("Bloodsucker: стал невидимым!")
+	print("Bloodsucker стал невидимым!")
 
 
 func _on_invisibility_ended():
 	is_invisible = false
+	print("Bloodsucker стал видимым")
 	
 	await get_tree().create_timer(invisibility_cooldown).timeout
 	can_go_invisible = true
 
 
 func _update_invisibility_visuals():
-	for child in get_children():
-		if child is MeshInstance3D:
-			child.visible = not is_invisible
+	if not mesh_instance:
+		return
+	
+	var alpha = 0.2 if is_invisible else 1.0
+	if mesh_instance.material_override:
+		mesh_instance.material_override.albedo_color.a = alpha
+
+
+func _patrol(delta):
+	var stalkers = get_tree().get_nodes_in_group("stalkers")
+	var nearest_stalker = null
+	var nearest_dist = INF
+	
+	for stalker in stalkers:
+		if is_instance_valid(stalker):
+			var dist = global_position.distance_to(stalker.global_position)
+			if dist < detection_radius and dist < nearest_dist:
+				nearest_dist = dist
+				nearest_stalker = stalker
+	
+	if nearest_stalker:
+		target_stalker = nearest_stalker
+		current_state = State.CHASE
+	
+	super._patrol(delta)
 
 
 func _chase(delta):
-	super._chase(delta)
+	if not target_stalker or not is_instance_valid(target_stalker):
+		current_state = State.PATROL
+		return
 	
-	if is_invisible and target_stalker and is_instance_valid(target_stalker):
+	var direction = (target_stalker.global_position - global_position).normalized()
+	velocity = direction * speed
+	
+	if is_invisible and is_instance_valid(target_stalker):
 		var dist = global_position.distance_to(target_stalker.global_position)
 		if dist < ambush_range:
 			_ambush_attack()
+	
+	if global_position.distance_to(target_stalker.global_position) < 2.0:
+		current_state = State.ATTACK
 
 
 func _ambush_attack():
 	if not target_stalker or not is_instance_valid(target_stalker):
 		return
 	
-	print("Bloodsucker: атакую из засады!")
-	
+	print("Bloodsucker атакует из засады!")
 	is_invisible = false
 	invisibility_timer.stop()
 	
 	var direction = (target_stalker.global_position - global_position).normalized()
-	var leap_target = target_stalker.global_position
-	
 	velocity = direction * speed * 2.0
-	velocity.y = 5.0
+	velocity.y = 2.0
 	
-	if target_stalker.has_method("take_damage"):
-		target_stalker.take_damage(leap_damage, self)
-		attacked_stalker.emit(target_stalker)
+	target_stalker.take_damage(leap_damage, self)
+	attacked_stalker.emit(target_stalker)
 	
 	leap_timer.start()
 
@@ -6311,33 +6430,44 @@ func _on_leap_ended():
 
 
 func _attack(delta):
-	if target_stalker and is_instance_valid(target_stalker):
-		var dist = global_position.distance_to(target_stalker.global_position)
-		if dist > 3.0:
-			current_state = State.CHASE
-		else:
-			if attack_timer.is_stopped():
-				target_stalker.take_damage(damage, self)
-				attacked_stalker.emit(target_stalker)
-				attack_timer.start()
+	if not target_stalker or not is_instance_valid(target_stalker):
+		current_state = State.PATROL
+		return
+	
+	var dist = global_position.distance_to(target_stalker.global_position)
+	if dist > 2.0:
+		current_state = State.CHASE
+		return
+	
+	if attack_timer.is_stopped():
+		target_stalker.take_damage(damage, self)
+		attacked_stalker.emit(target_stalker)
+		attack_timer.start()
+		print("Bloodsucker атакует!")
 
 
 func take_damage(dmg: float, source = null):
 	if not is_invisible:
 		dmg *= 1.5
 	
-	super.take_damage(dmg, source)
-	
 	if is_invisible:
 		is_invisible = false
 		invisibility_timer.stop()
-
-
-func die():
-	if is_invisible:
-		is_invisible = false
+		print("Bloodsucker стал видимым из-за урона")
 	
-	super.die()
+	super.take_damage(dmg, source)
+
+
+func _setup_label():
+	var label = Label3D.new()
+	label.name = "MutantLabel"
+	label.position = Vector3(0, 2.5, 0)
+	label.font_size = 24
+	label.outline_size = 2
+	label.outline_modulate = Color.BLACK
+	label.modulate = Color(1.0, 0.2, 0.2)  # красный
+	label.text = "🩸 КРОВОСОС"
+	add_child(label)
 
 ----------------------------------------
 ФАЙЛ: res://entities/mutants/bloodsucker.gd.uid
@@ -6374,16 +6504,12 @@ class_name ChimeraMutant
 @export var leap_distance: float = 15.0
 @export var leap_damage: float = 50.0
 @export var secondary_head_damage: float = 10.0
-@export var leap_height: float = 8.0
-@export var leap_duration: float = 1.5  # Максимальная длительность прыжка
 
 var can_leap: bool = true
 var leap_timer: Timer
 var is_leaping: bool = false
 var leap_target: Vector3
-var leap_start_y: float
 var leap_time: float = 0.0
-
 
 func _ready():
 	health = 250.0
@@ -6402,9 +6528,7 @@ func _ready():
 	leap_timer.timeout.connect(_on_leap_cooldown_ended)
 	add_child(leap_timer)
 	
-	if is_night_only and not _is_night():
-		current_state = State.PATROL
-	
+	_setup_label()
 	print("Chimera mutant initialized")
 
 
@@ -6412,26 +6536,11 @@ func _physics_process(delta):
 	if current_state == State.DEAD:
 		return
 	
-	if is_night_only:
-		if not _is_night():
-			velocity = Vector3.ZERO
-			move_and_slide()
-			return
-	
 	if is_leaping:
 		_handle_leap(delta)
 		return
 	
-	# Если нет цели, ищем новую
-	if not target_stalker or not is_instance_valid(target_stalker):
-		_find_new_target()
-	
 	super._physics_process(delta)
-
-
-func _is_night() -> bool:
-	var hour = Time.get_datetime_dict_from_system()["hour"]
-	return hour < 6 or hour >= 20
 
 
 func _find_new_target():
@@ -6482,7 +6591,6 @@ func _start_leap():
 	print("Chimera: прыгаю!")
 	is_leaping = true
 	can_leap = false
-	leap_start_y = global_position.y
 	leap_target = target_stalker.global_position
 	leap_time = 0.0
 	
@@ -6492,47 +6600,31 @@ func _start_leap():
 func _handle_leap(delta):
 	leap_time += delta
 	
-	# Если цель исчезла во время прыжка, продолжаем к последней известной позиции
-	if not target_stalker or not is_instance_valid(target_stalker):
-		if leap_time > leap_duration:
-			_land()
-			return
-	else:
-		# Обновляем цель во время прыжка
+	if is_instance_valid(target_stalker):
 		leap_target = target_stalker.global_position
 	
 	var direction = (leap_target - global_position).normalized()
 	velocity = direction * speed * 3.0
-	velocity.y = 8.0 - (leap_time * 2.0)  # Постепенно снижаемся
+	velocity.y = 8.0 - (leap_time * 2.0)
 	
 	move_and_slide()
 	
-	# Ограничиваем высоту
-	if global_position.y > leap_start_y + leap_height:
-		velocity.y = -10.0
-	
-	# Проверяем условия приземления
-	var dist_to_target = global_position.distance_to(leap_target)
-	if is_on_floor() or dist_to_target < 2.0 or leap_time > leap_duration:
+	if is_on_floor() or global_position.distance_to(leap_target) < 2.0 or leap_time > 1.5:
 		_land()
 
 
 func _land():
 	print("Chimera: приземлился!")
 	is_leaping = false
-	velocity = Vector3.ZERO
 	
-	# Наносим урон всем в радиусе
 	var stalkers = get_tree().get_nodes_in_group("stalkers")
 	for stalker in stalkers:
 		if is_instance_valid(stalker):
 			var dist = global_position.distance_to(stalker.global_position)
 			if dist < 5.0:
-				if stalker.has_method("take_damage"):
-					stalker.take_damage(leap_damage, self)
-					attacked_stalker.emit(stalker)
+				stalker.take_damage(leap_damage, self)
+				attacked_stalker.emit(stalker)
 	
-	# Ищем новую цель
 	_find_new_target()
 
 
@@ -6559,15 +6651,19 @@ func _attack(delta):
 			attacked_stalker.emit(target_stalker)
 		
 		attack_timer.start()
+		print("Chimera атакует!")
 
 
-func take_damage(dmg: float, source = null):
-	super.take_damage(dmg, source)
-
-
-func die():
-	print("Chimera: предсмертный рёв!")
-	super.die()
+func _setup_label():
+	var label = Label3D.new()
+	label.name = "MutantLabel"
+	label.position = Vector3(0, 3.5, 0)  # Выше, потому что химера большая
+	label.font_size = 28
+	label.outline_size = 2
+	label.outline_modulate = Color.BLACK
+	label.modulate = Color(0.8, 0.2, 0.8)  # фиолетовый
+	label.text = "🦎 ХИМЕРА"
+	add_child(label)
 
 ----------------------------------------
 ФАЙЛ: res://entities/mutants/chimera.gd.uid
@@ -6602,7 +6698,8 @@ class_name ControllerMutant
 
 var control_timer: Timer
 var is_controlling: bool = false
-
+var controlled_stalker: Node3D = null
+var can_control: bool = true
 
 func _ready():
 	health = 80.0
@@ -6620,6 +6717,7 @@ func _ready():
 	control_timer.timeout.connect(_on_control_ended)
 	add_child(control_timer)
 	
+	_setup_label()
 	print("Controller mutant initialized")
 
 
@@ -6635,23 +6733,50 @@ func _physics_process(delta):
 	super._physics_process(delta)
 
 
-func _chase(delta):
-	super._chase(delta)
+func _patrol(delta):
+	var stalkers = get_tree().get_nodes_in_group("stalkers")
+	var nearest_stalker = null
+	var nearest_dist = INF
 	
-	if target_stalker and is_instance_valid(target_stalker):
+	for stalker in stalkers:
+		if is_instance_valid(stalker):
+			var dist = global_position.distance_to(stalker.global_position)
+			if dist < detection_radius and dist < nearest_dist:
+				nearest_dist = dist
+				nearest_stalker = stalker
+	
+	if nearest_stalker:
+		target_stalker = nearest_stalker
+		current_state = State.CHASE
+	
+	super._patrol(delta)
+
+
+func _chase(delta):
+	if not target_stalker or not is_instance_valid(target_stalker):
+		current_state = State.PATROL
+		return
+	
+	var direction = (target_stalker.global_position - global_position).normalized()
+	velocity = direction * speed
+	
+	if can_control and not is_controlling:
 		var dist = global_position.distance_to(target_stalker.global_position)
-		if dist < control_range and not is_controlling and control_timer.is_stopped():
-			_try_control_stalker()
+		if dist < control_range:
+			_try_control()
+	
+	if global_position.distance_to(target_stalker.global_position) < 2.0:
+		current_state = State.ATTACK
 
 
-func _try_control_stalker():
+func _try_control():
 	if not target_stalker or not is_instance_valid(target_stalker):
 		return
 	
-	if target_stalker.has_method("is_controllable") and not target_stalker.is_controllable():
-		return
-	
+	print("Controller пытается взять контроль!")
 	is_controlling = true
+	can_control = false
+	controlled_stalker = target_stalker
 	current_state = State.ATTACK
 	
 	_apply_control_effect(target_stalker)
@@ -6663,33 +6788,63 @@ func _try_control_stalker():
 func _apply_control_effect(stalker: Node3D):
 	if stalker.has_method("set_controlled"):
 		stalker.set_controlled(true, self)
+		print("Controller взял под контроль!")
 
 
 func _on_control_ended():
+	if is_instance_valid(controlled_stalker) and controlled_stalker.has_method("set_controlled"):
+		controlled_stalker.set_controlled(false, self)
+		print("Controller отпустил контроль")
+	
+	is_controlling = false
+	controlled_stalker = null
+	
+	await get_tree().create_timer(control_cooldown).timeout
+	can_control = true
+	
+	if is_instance_valid(target_stalker):
+		current_state = State.CHASE
+	else:
+		current_state = State.PATROL
+
+
+func _attack(delta):
+	if is_controlling:
+		velocity = Vector3.ZERO
+		return
+	
 	if not target_stalker or not is_instance_valid(target_stalker):
-		is_controlling = false
 		current_state = State.PATROL
 		return
 	
-	if target_stalker.has_method("set_controlled"):
-		target_stalker.set_controlled(false, self)
+	var dist = global_position.distance_to(target_stalker.global_position)
+	if dist > 2.0:
+		current_state = State.CHASE
+		return
 	
-	is_controlling = false
-	current_state = State.CHASE
+	if can_control and not is_controlling and control_timer.is_stopped():
+		_try_control()
 
 
 func take_damage(dmg: float, source = null):
-	if is_controlling:
+	if is_controlling and randf() < 0.3:
+		print("Контроль прерван уроном!")
+		control_timer.stop()
 		_on_control_ended()
 	
 	super.take_damage(dmg, source)
 
 
-func die():
-	if is_controlling:
-		_on_control_ended()
-	
-	super.die()
+func _setup_label():
+	var label = Label3D.new()
+	label.name = "MutantLabel"
+	label.position = Vector3(0, 2.8, 0)
+	label.font_size = 24
+	label.outline_size = 2
+	label.outline_modulate = Color.BLACK
+	label.modulate = Color(0.8, 0.4, 1.0)  # сиреневый
+	label.text = "🧙 КОНТРОЛЛЕР"
+	add_child(label)
 
 ----------------------------------------
 ФАЙЛ: res://entities/mutants/controller_mutant.gd.uid
@@ -6736,10 +6891,14 @@ func _ready():
 	
 	super._ready()
 	
+	_setup_label()
 	print("Dog mutant initialized")
 
 
 func _physics_process(delta):
+	if current_state == State.DEAD:
+		return
+	
 	var nearby_dogs = _count_nearby_dogs()
 	if nearby_dogs > 0:
 		var original_speed = speed
@@ -6763,32 +6922,73 @@ func _count_nearby_dogs() -> int:
 	return count
 
 
+func _patrol(delta):
+	var stalkers = get_tree().get_nodes_in_group("stalkers")
+	var nearest_stalker = null
+	var nearest_dist = INF
+	
+	for stalker in stalkers:
+		if is_instance_valid(stalker):
+			var dist = global_position.distance_to(stalker.global_position)
+			if dist < detection_radius and dist < nearest_dist:
+				nearest_dist = dist
+				nearest_stalker = stalker
+	
+	if nearest_stalker:
+		target_stalker = nearest_stalker
+		current_state = State.CHASE
+	
+	super._patrol(delta)
+
+
+func _chase(delta):
+	if not target_stalker or not is_instance_valid(target_stalker):
+		current_state = State.PATROL
+		return
+	
+	var direction = (target_stalker.global_position - global_position).normalized()
+	velocity = direction * speed
+	
+	var dist = global_position.distance_to(target_stalker.global_position)
+	if dist < 2.0:
+		current_state = State.ATTACK
+
+
+func _attack(delta):
+	if not target_stalker or not is_instance_valid(target_stalker):
+		current_state = State.PATROL
+		return
+	
+	var dist = global_position.distance_to(target_stalker.global_position)
+	if dist > 2.0:
+		current_state = State.CHASE
+		return
+	
+	if attack_timer.is_stopped():
+		target_stalker.take_damage(damage, self)
+		attacked_stalker.emit(target_stalker)
+		attack_timer.start()
+		print("DogMutant атакует!")
+
+
 func take_damage(dmg: float, source = null):
 	if randf() < dodge_chance:
+		print("DogMutant уклонился!")
 		return
 	
 	super.take_damage(dmg, source)
 
 
-func _chase(delta):
-	super._chase(delta)
-	
-	if target_stalker and is_instance_valid(target_stalker):
-		var dist = global_position.distance_to(target_stalker.global_position)
-		if dist < 3.0 and current_state == State.CHASE:
-			_try_flank()
-
-
-func _try_flank():
-	if not target_stalker or not is_instance_valid(target_stalker):
-		return
-	
-	var to_target = (target_stalker.global_position - global_position).normalized()
-	var right = Vector3(to_target.z, 0, -to_target.x)
-	
-	var flank_position = target_stalker.global_position + right * 2.0
-	var direction = (flank_position - global_position).normalized()
-	velocity = direction * speed
+func _setup_label():
+	var label = Label3D.new()
+	label.name = "MutantLabel"
+	label.position = Vector3(0, 2.5, 0)
+	label.font_size = 24
+	label.outline_size = 2
+	label.outline_modulate = Color.BLACK
+	label.modulate = Color(1, 0.8, 0.4)  # светло-оранжевый
+	label.text = "🐕 СОБАКА"
+	add_child(label)
 
 ----------------------------------------
 ФАЙЛ: res://entities/mutants/dog_mutant.gd.uid
@@ -6822,7 +7022,7 @@ extends BaseMutant
 class_name FleshMutant
 
 @export var aggression_threshold: float = 30.0
-@export var charge_speed: float = 12.0
+@export var charge_speed: float = 15.0
 @export var charge_damage: float = 35.0
 @export var charge_cooldown: float = 5.0
 
@@ -6835,7 +7035,7 @@ var charge_timer: Timer
 func _ready():
 	health = 200.0
 	max_health = 200.0
-	speed = 4.0
+	speed = 6.0
 	damage = 15.0
 	armor = 20.0
 	biomass_cost = 60.0
@@ -6843,22 +7043,19 @@ func _ready():
 	
 	super._ready()
 	
-	current_state = State.PATROL
-	
 	charge_timer = Timer.new()
 	charge_timer.one_shot = true
+	charge_timer.wait_time = charge_cooldown
 	charge_timer.timeout.connect(_on_charge_cooldown_ended)
 	add_child(charge_timer)
 	
+	_setup_label()
 	print("Flesh mutant initialized")
 
 
 func _physics_process(delta):
 	if current_state == State.DEAD:
 		return
-	
-	if accumulated_damage > aggression_threshold and current_state == State.PATROL:
-		_become_aggressive()
 	
 	if is_charging:
 		_handle_charge(delta)
@@ -6868,18 +7065,6 @@ func _physics_process(delta):
 
 
 func _patrol(delta):
-	if target_stalker and is_instance_valid(target_stalker):
-		var dist = global_position.distance_to(target_stalker.global_position)
-		if dist < 3.0:
-			_become_aggressive()
-	
-	super._patrol(delta)
-
-
-func _become_aggressive():
-	current_state = State.CHASE
-	accumulated_damage = 0.0
-	
 	var stalkers = get_tree().get_nodes_in_group("stalkers")
 	var nearest_stalker = null
 	var nearest_dist = INF
@@ -6887,18 +7072,22 @@ func _become_aggressive():
 	for stalker in stalkers:
 		if is_instance_valid(stalker):
 			var dist = global_position.distance_to(stalker.global_position)
-			if dist < nearest_dist:
+			if dist < detection_radius and dist < nearest_dist:
 				nearest_dist = dist
 				nearest_stalker = stalker
 	
 	if nearest_stalker:
 		target_stalker = nearest_stalker
+		current_state = State.CHASE
+		accumulated_damage = 0.0
+		print("Flesh стал агрессивным!")
+	
+	super._patrol(delta)
 
 
 func _chase(delta):
 	if not target_stalker or not is_instance_valid(target_stalker):
 		current_state = State.PATROL
-		accumulated_damage = 0.0
 		return
 	
 	var direction = (target_stalker.global_position - global_position).normalized()
@@ -6917,39 +7106,42 @@ func _start_charge():
 	if not target_stalker or not is_instance_valid(target_stalker):
 		return
 	
+	print("Flesh начинает таран!")
 	is_charging = true
 	can_charge = false
 	charge_target = target_stalker.global_position
 	
-	charge_timer.wait_time = charge_cooldown
 	charge_timer.start()
 
 
 func _handle_charge(delta):
+	if is_instance_valid(target_stalker):
+		charge_target = target_stalker.global_position
+	
 	var direction = (charge_target - global_position).normalized()
 	velocity = direction * charge_speed
-	velocity.y = 3.0
+	velocity.y = 0
 	
 	move_and_slide()
 	
-	if global_position.distance_to(charge_target) < 2.0 or is_on_wall():
+	if is_on_wall() or global_position.distance_to(charge_target) < 2.0:
 		_end_charge()
 
 
 func _end_charge():
+	print("Flesh закончил таран!")
 	is_charging = false
-	velocity = Vector3.ZERO
 	
 	var stalkers = get_tree().get_nodes_in_group("stalkers")
 	for stalker in stalkers:
 		if is_instance_valid(stalker):
 			var dist = global_position.distance_to(stalker.global_position)
 			if dist < 4.0:
-				if stalker.has_method("take_damage"):
-					stalker.take_damage(charge_damage, self)
-					attacked_stalker.emit(stalker)
+				stalker.take_damage(charge_damage, self)
+				attacked_stalker.emit(stalker)
+				print("Flesh нанёс урон тараном!")
 	
-	if target_stalker and is_instance_valid(target_stalker):
+	if is_instance_valid(target_stalker):
 		current_state = State.CHASE
 	else:
 		current_state = State.PATROL
@@ -6965,7 +7157,7 @@ func _attack(delta):
 		return
 	
 	var dist = global_position.distance_to(target_stalker.global_position)
-	if dist > 2.5:
+	if dist > 2.0:
 		current_state = State.CHASE
 		return
 	
@@ -6973,11 +7165,30 @@ func _attack(delta):
 		target_stalker.take_damage(damage, self)
 		attacked_stalker.emit(target_stalker)
 		attack_timer.start()
+		print("Flesh атакует!")
 
 
 func take_damage(dmg: float, source = null):
 	accumulated_damage += dmg
+	
+	if accumulated_damage > aggression_threshold and current_state == State.PATROL:
+		current_state = State.CHASE
+		accumulated_damage = 0.0
+		print("Flesh разъярен!")
+	
 	super.take_damage(dmg, source)
+
+
+func _setup_label():
+	var label = Label3D.new()
+	label.name = "MutantLabel"
+	label.position = Vector3(0, 2.8, 0)  # Выше, потому что плоть крупная
+	label.font_size = 24
+	label.outline_size = 2
+	label.outline_modulate = Color.BLACK
+	label.modulate = Color(0.9, 0.5, 0.5)  # розовый
+	label.text = "🐗 ПЛОТЬ"
+	add_child(label)
 
 ----------------------------------------
 ФАЙЛ: res://entities/mutants/flesh.gd.uid
@@ -7015,11 +7226,11 @@ class_name PoltergeistMutant
 @export var throw_damage: float = 30.0
 @export var invisibility_threshold: float = 0.3
 
-var is_flying: bool = true
 var can_telekinesis: bool = true
 var telekinesis_timer: Timer
 var is_invisible: bool = false
 var float_offset: float = 0.0
+var mesh_instance: MeshInstance3D
 
 func _ready():
 	health = 60.0
@@ -7031,6 +7242,8 @@ func _ready():
 	detection_radius = 25.0
 	mutant_type = "poltergeist"
 	
+	mesh_instance = $MeshInstance3D
+	
 	super._ready()
 	
 	telekinesis_timer = Timer.new()
@@ -7039,8 +7252,7 @@ func _ready():
 	telekinesis_timer.timeout.connect(_on_telekinesis_cooldown_ended)
 	add_child(telekinesis_timer)
 	
-	current_state = State.PATROL
-	
+	_setup_label()
 	print("Poltergeist mutant initialized")
 
 
@@ -7086,19 +7298,7 @@ func _patrol(delta):
 		target_stalker = nearest_stalker
 		current_state = State.CHASE
 	
-	_fly_in_patrol(delta)
-
-
-func _fly_in_patrol(delta):
-	var time = Time.get_ticks_msec() * 0.001
-	var radius = 10.0
-	
-	var target_x = cos(time * 0.5) * radius
-	var target_z = sin(time * 0.5) * radius
-	
-	var direction = (Vector3(target_x, flight_height, target_z) - global_position).normalized()
-	velocity.x = direction.x * speed * 0.5
-	velocity.z = direction.z * speed * 0.5
+	super._patrol(delta)
 
 
 func _chase(delta):
@@ -7108,58 +7308,31 @@ func _chase(delta):
 	
 	var dist = global_position.distance_to(target_stalker.global_position)
 	
-	if dist < telekinesis_range:
-		_try_telekinesis_attack()
-		
-		var retreat_direction = (global_position - target_stalker.global_position).normalized()
-		velocity.x = retreat_direction.x * speed
-		velocity.z = retreat_direction.z * speed
+	if dist < telekinesis_range and can_telekinesis:
+		_use_telekinesis()
+	
+	if dist < telekinesis_range * 0.7:
+		var retreat = (global_position - target_stalker.global_position).normalized()
+		velocity.x = retreat.x * speed
+		velocity.z = retreat.z * speed
 	else:
 		var direction = (target_stalker.global_position - global_position).normalized()
 		velocity.x = direction.x * speed
 		velocity.z = direction.z * speed
 
 
-func _try_telekinesis_attack():
-	if not can_telekinesis:
-		return
-	
+func _use_telekinesis():
 	if not target_stalker or not is_instance_valid(target_stalker):
 		return
 	
+	print("Poltergeist использует телекинез!")
 	can_telekinesis = false
-	
-	_throw_object(target_stalker.global_position)
 	
 	if target_stalker.has_method("take_damage"):
 		target_stalker.take_damage(throw_damage, self)
 		attacked_stalker.emit(target_stalker)
 	
 	telekinesis_timer.start()
-
-
-func _throw_object(target_pos: Vector3):
-	var projectile = MeshInstance3D.new()
-	projectile.mesh = SphereMesh.new()
-	projectile.mesh.radius = 0.3
-	projectile.mesh.height = 0.6
-	
-	var material = StandardMaterial3D.new()
-	material.albedo_color = Color(0.5, 0.5, 0.5)
-	material.emission = Color(0.3, 0.3, 0.3)
-	material.emission_energy = 1.0
-	projectile.material_override = material
-	
-	projectile.global_position = global_position
-	get_tree().current_scene.add_child(projectile)
-	
-	var direction = (target_pos - global_position).normalized()
-	var tween = create_tween()
-	tween.tween_property(projectile, "global_position", target_pos, 0.5)
-	
-	await tween.finished
-	if is_instance_valid(projectile):
-		projectile.queue_free()
 
 
 func _on_telekinesis_cooldown_ended():
@@ -7169,25 +7342,37 @@ func _on_telekinesis_cooldown_ended():
 func _try_become_invisible():
 	if not is_invisible and randf() < invisibility_threshold:
 		is_invisible = true
+		print("Poltergeist стал невидимым!")
 
 
 func _update_invisibility():
-	for child in get_children():
-		if child is MeshInstance3D:
-			child.visible = not is_invisible
+	if not mesh_instance:
+		return
+	
+	var alpha = 0.3 if is_invisible else 1.0
+	if mesh_instance.material_override:
+		mesh_instance.material_override.albedo_color.a = alpha
 
 
 func take_damage(dmg: float, source = null):
 	if randf() < 0.3:
+		print("Poltergeist избежал урона!")
 		return
 	
+	is_invisible = false
 	super.take_damage(dmg * 1.5, source)
-	is_invisible = false
 
 
-func die():
-	is_invisible = false
-	super.die()
+func _setup_label():
+	var label = Label3D.new()
+	label.name = "MutantLabel"
+	label.position = Vector3(0, 3.0, 0)
+	label.font_size = 24
+	label.outline_size = 2
+	label.outline_modulate = Color.BLACK
+	label.modulate = Color(0.5, 0.8, 1.0)  # голубой
+	label.text = "👻 ПОЛТЕРГЕЙСТ"
+	add_child(label)
 
 ----------------------------------------
 ФАЙЛ: res://entities/mutants/poltergeist.gd.uid
@@ -7226,6 +7411,7 @@ class_name PseudodogMutant
 
 var can_howl: bool = true
 var howl_timer: Timer
+var pack_count: int = 0
 
 func _ready():
 	match subspecies:
@@ -7257,9 +7443,11 @@ func _ready():
 	
 	howl_timer = Timer.new()
 	howl_timer.one_shot = true
+	howl_timer.wait_time = howl_cooldown
 	howl_timer.timeout.connect(_on_howl_cooldown_ended)
 	add_child(howl_timer)
 	
+	_setup_label()
 	print("Pseudodog mutant initialized: ", subspecies)
 
 
@@ -7267,14 +7455,20 @@ func _physics_process(delta):
 	if current_state == State.DEAD:
 		return
 	
-	if subspecies == "PsyDog":
-		_psy_attempt()
+	_update_pack_bonus()
 	
-	var nearby_packs = _count_nearby_pseudodogs()
-	if nearby_packs > 0:
-		speed = speed * (1.0 + nearby_packs * 0.1)
+	if subspecies == "PsyDog" and can_howl and current_state == State.CHASE:
+		_try_psy_howl()
 	
 	super._physics_process(delta)
+
+
+func _update_pack_bonus():
+	pack_count = _count_nearby_pseudodogs()
+	if pack_count > 0:
+		var original_speed = speed
+		speed = original_speed * (1.0 + pack_count * 0.1)
+		# Скорость восстановится в следующем кадре через super._physics_process
 
 
 func _count_nearby_pseudodogs() -> int:
@@ -7282,7 +7476,7 @@ func _count_nearby_pseudodogs() -> int:
 	var mutants = get_tree().get_nodes_in_group("mutants")
 	
 	for mutant in mutants:
-		if mutant == self:
+		if mutant == self or not is_instance_valid(mutant):
 			continue
 		if mutant is PseudodogMutant and global_position.distance_to(mutant.global_position) < 15.0:
 			count += 1
@@ -7290,43 +7484,38 @@ func _count_nearby_pseudodogs() -> int:
 	return count
 
 
-func _psy_attempt():
-	if not can_howl or current_state != State.CHASE:
-		return
+func _patrol(delta):
+	var stalkers = get_tree().get_nodes_in_group("stalkers")
+	var nearest_stalker = null
+	var nearest_dist = INF
 	
-	if target_stalker and is_instance_valid(target_stalker):
-		var dist = global_position.distance_to(target_stalker.global_position)
-		if dist < detection_radius and randf() < 0.1:
-			_psy_howl()
-
-
-func _psy_howl():
-	if not target_stalker or not is_instance_valid(target_stalker):
-		return
+	for stalker in stalkers:
+		if is_instance_valid(stalker):
+			var dist = global_position.distance_to(stalker.global_position)
+			if dist < detection_radius and dist < nearest_dist:
+				nearest_dist = dist
+				nearest_stalker = stalker
 	
-	can_howl = false
+	if nearest_stalker:
+		target_stalker = nearest_stalker
+		current_state = State.CHASE
 	
-	if target_stalker.has_method("stun"):
-		target_stalker.stun(2.0)
-	
-	if target_stalker.has_method("take_damage"):
-		target_stalker.take_damage(damage * 0.5, self)
-	
-	howl_timer.wait_time = howl_cooldown
-	howl_timer.start()
-
-
-func _on_howl_cooldown_ended():
-	can_howl = true
+	super._patrol(delta)
 
 
 func _chase(delta):
-	super._chase(delta)
+	if not target_stalker or not is_instance_valid(target_stalker):
+		current_state = State.PATROL
+		return
 	
-	if target_stalker and is_instance_valid(target_stalker):
-		var dist = global_position.distance_to(target_stalker.global_position)
-		if dist < 5.0 and current_state == State.CHASE:
-			_flank_target()
+	var direction = (target_stalker.global_position - global_position).normalized()
+	velocity = direction * speed
+	
+	var dist = global_position.distance_to(target_stalker.global_position)
+	if dist < 2.0:
+		current_state = State.ATTACK
+	elif dist < 5.0 and randf() < 0.01:
+		_flank_target()
 
 
 func _flank_target():
@@ -7334,14 +7523,42 @@ func _flank_target():
 		return
 	
 	var to_target = (target_stalker.global_position - global_position).normalized()
-	var right = Vector3(to_target.z, 0, -to_target.x)
+	var right = Vector3(to_target.z, 0, -to_target.x).normalized()
 	
 	if randf() > 0.5:
 		right = -right
 	
-	var flank_pos = target_stalker.global_position + right * 3.0
-	var direction = (flank_pos - global_position).normalized()
-	velocity = direction * speed
+	var flank_dir = (to_target + right * 0.5).normalized()
+	velocity = flank_dir * speed
+	print("Pseudodog фланкирует!")
+
+
+func _try_psy_howl():
+	if not target_stalker or not is_instance_valid(target_stalker) or randf() > 0.05:
+		return
+	
+	var dist = global_position.distance_to(target_stalker.global_position)
+	if dist < detection_radius:
+		_psy_howl()
+
+
+func _psy_howl():
+	if not target_stalker or not is_instance_valid(target_stalker):
+		return
+	
+	print("Pseudodog использует пси-вой!")
+	can_howl = false
+	
+	if target_stalker.has_method("stun"):
+		target_stalker.stun(2.0)
+	
+	target_stalker.take_damage(damage * 0.5, self)
+	
+	howl_timer.start()
+
+
+func _on_howl_cooldown_ended():
+	can_howl = true
 
 
 func _attack(delta):
@@ -7350,26 +7567,29 @@ func _attack(delta):
 		return
 	
 	var dist = global_position.distance_to(target_stalker.global_position)
-	if dist > 2.5:
+	if dist > 2.0:
 		current_state = State.CHASE
 		return
 	
-	var nearby_packs = _count_nearby_pseudodogs()
-	var total_damage = damage * (1.0 + nearby_packs * pack_attack_bonus * 0.2)
+	var total_damage = damage * (1.0 + pack_count * pack_attack_bonus * 0.2)
 	
 	if attack_timer.is_stopped():
 		target_stalker.take_damage(total_damage, self)
 		attacked_stalker.emit(target_stalker)
 		attack_timer.start()
+		print("Pseudodog атакует! Урон: ", total_damage)
 
 
-func take_damage(dmg: float, source = null):
-	super.take_damage(dmg, source)
-
-
-func die():
-	print("Pseudodog: предсмертный вой!")
-	super.die()
+func _setup_label():
+	var label = Label3D.new()
+	label.name = "MutantLabel"
+	label.position = Vector3(0, 2.5, 0)
+	label.font_size = 24
+	label.outline_size = 2
+	label.outline_modulate = Color.BLACK
+	label.modulate = Color(0.6, 0.4, 0.2)  # коричневый
+	label.text = "🐺 ПСЕВДОСОБАКА"
+	add_child(label)
 
 ----------------------------------------
 ФАЙЛ: res://entities/mutants/pseudodog.gd.uid
@@ -7382,15 +7602,40 @@ uid://dl6ko2to41q06
 ФАЙЛ: res://entities/mutants/pseudodog.tscn
 ----------------------------------------
 
-[gd_scene load_steps=2 format=3 uid="uid://pseudodog"]
+[gd_scene load_steps=5 format=3 uid="uid://pseudodog"]
 
 [ext_resource type="Script" path="res://entities/mutants/pseudodog.gd" id="1"]
 [ext_resource type="PackedScene" path="res://entities/mutants/base_mutant.tscn" id="2"]
 
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
+radius = 0.5
+height = 2.0
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_1"]
+radius = 0.5
+height = 2.0
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1"]
+albedo_color = Color(0.5, 0.5, 0.5, 1)
+
 [node name="Pseudodog" instance=ExtResource("2")]
 script = ExtResource("1")
 
-[node name="AttackTimer" type="Timer" parent="."]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." index="0"]
+shape = SubResource("CapsuleShape3D_1")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." index="1"]
+mesh = SubResource("CapsuleMesh_1")
+material_override = SubResource("StandardMaterial3D_1")
+
+[node name="DetectionArea" type="Area3D" parent="." index="2"]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="DetectionArea" index="0"]
+shape = SubResource("CapsuleShape3D_1")
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="." index="3"]
+
+[node name="AttackTimer" type="Timer" parent="." index="4"]
 wait_time = 1.0
 one_shot = true
 
@@ -7402,7 +7647,6 @@ one_shot = true
 extends BaseMutant
 class_name PseudogiantMutant
 
-@export var ground_stomp_force: float = 30.0
 @export var shockwave_radius: float = 10.0
 @export var shockwave_damage: float = 40.0
 @export var stomp_cooldown: float = 5.0
@@ -7425,9 +7669,11 @@ func _ready():
 	
 	stomp_timer = Timer.new()
 	stomp_timer.one_shot = true
+	stomp_timer.wait_time = stomp_cooldown
 	stomp_timer.timeout.connect(_on_stomp_cooldown_ended)
 	add_child(stomp_timer)
 	
+	_setup_label()
 	print("Pseudogiant mutant initialized")
 
 
@@ -7440,12 +7686,26 @@ func _physics_process(delta):
 		move_and_slide()
 		return
 	
-	if can_stomp and target_stalker and is_instance_valid(target_stalker):
-		var dist = global_position.distance_to(target_stalker.global_position)
-		if dist < shockwave_radius * 1.5 and current_state == State.CHASE:
-			_ground_stomp()
-	
 	super._physics_process(delta)
+
+
+func _patrol(delta):
+	var stalkers = get_tree().get_nodes_in_group("stalkers")
+	var nearest_stalker = null
+	var nearest_dist = INF
+	
+	for stalker in stalkers:
+		if is_instance_valid(stalker):
+			var dist = global_position.distance_to(stalker.global_position)
+			if dist < detection_radius and dist < nearest_dist:
+				nearest_dist = dist
+				nearest_stalker = stalker
+	
+	if nearest_stalker:
+		target_stalker = nearest_stalker
+		current_state = State.CHASE
+	
+	super._patrol(delta)
 
 
 func _chase(delta):
@@ -7455,6 +7715,11 @@ func _chase(delta):
 	
 	var direction = (target_stalker.global_position - global_position).normalized()
 	velocity = direction * speed
+	
+	if can_stomp and not is_stomping:
+		var dist = global_position.distance_to(target_stalker.global_position)
+		if dist < shockwave_radius * 1.5:
+			_ground_stomp()
 	
 	if global_position.distance_to(target_stalker.global_position) < 2.5:
 		current_state = State.ATTACK
@@ -7472,7 +7737,6 @@ func _ground_stomp():
 	await get_tree().create_timer(0.5).timeout
 	is_stomping = false
 	
-	stomp_timer.wait_time = stomp_cooldown
 	stomp_timer.start()
 
 
@@ -7486,39 +7750,13 @@ func _create_shockwave():
 				var damage_mult = 1.0 - (dist / shockwave_radius)
 				var final_damage = shockwave_damage * damage_mult
 				
-				if stalker.has_method("take_damage"):
-					stalker.take_damage(final_damage, self)
-					attacked_stalker.emit(stalker)
+				stalker.take_damage(final_damage, self)
+				attacked_stalker.emit(stalker)
 				
 				if stalker.has_method("stun"):
 					stalker.stun(1.0 * damage_mult)
 	
-	_create_stomp_visuals()
-
-
-func _create_stomp_visuals():
-	var shockwave = MeshInstance3D.new()
-	shockwave.mesh = TorusMesh.new()
-	shockwave.mesh.inner_radius = 0.1
-	shockwave.mesh.outer_radius = 0.5
-	
-	var material = StandardMaterial3D.new()
-	material.albedo_color = Color(0.8, 0.6, 0.4)
-	material.emission = Color(0.6, 0.4, 0.2)
-	material.emission_energy = 2.0
-	shockwave.material_override = material
-	
-	shockwave.global_position = global_position
-	shockwave.global_position.y = 0.1
-	get_tree().current_scene.add_child(shockwave)
-	
-	var tween = create_tween()
-	tween.tween_property(shockwave, "scale", Vector3(shockwave_radius * 2, 1, shockwave_radius * 2), 0.5)
-	tween.tween_property(shockwave, "material_override:albedo_color:a", 0.0, 0.5)
-	
-	await tween.finished
-	if is_instance_valid(shockwave):
-		shockwave.queue_free()
+	print("Pseudogiant создал ударную волну!")
 
 
 func _on_stomp_cooldown_ended():
@@ -7543,10 +7781,19 @@ func _attack(delta):
 			target_stalker.stun(0.5)
 		
 		attack_timer.start()
+		print("Pseudogiant атакует!")
 
 
-func take_damage(dmg: float, source = null):
-	super.take_damage(dmg * 0.5, source)
+func _setup_label():
+	var label = Label3D.new()
+	label.name = "MutantLabel"
+	label.position = Vector3(0, 4.0, 0)  # Очень высоко, потому что гигант
+	label.font_size = 30
+	label.outline_size = 3
+	label.outline_modulate = Color.BLACK
+	label.modulate = Color(0.5, 0.2, 0.2)  # темно-красный
+	label.text = "👺 ПСЕВДОГИГАНТ"
+	add_child(label)
 
 ----------------------------------------
 ФАЙЛ: res://entities/mutants/pseudogiant.gd.uid
@@ -7593,7 +7840,6 @@ var is_jumping: bool = false
 var jump_target: Vector3
 var jump_timer: Timer
 
-
 func _ready():
 	health = 120.0
 	max_health = 120.0
@@ -7607,9 +7853,11 @@ func _ready():
 	
 	jump_timer = Timer.new()
 	jump_timer.one_shot = true
+	jump_timer.wait_time = jump_cooldown
 	jump_timer.timeout.connect(_on_jump_cooldown_ended)
 	add_child(jump_timer)
 	
+	_setup_label()
 	print("Snork mutant initialized")
 
 
@@ -7624,49 +7872,80 @@ func _physics_process(delta):
 	super._physics_process(delta)
 
 
-func _chase(delta):
-	super._chase(delta)
+func _patrol(delta):
+	var stalkers = get_tree().get_nodes_in_group("stalkers")
+	var nearest_stalker = null
+	var nearest_dist = INF
 	
-	if can_jump and target_stalker and is_instance_valid(target_stalker):
+	for stalker in stalkers:
+		if is_instance_valid(stalker):
+			var dist = global_position.distance_to(stalker.global_position)
+			if dist < detection_radius and dist < nearest_dist:
+				nearest_dist = dist
+				nearest_stalker = stalker
+	
+	if nearest_stalker:
+		target_stalker = nearest_stalker
+		current_state = State.CHASE
+	
+	super._patrol(delta)
+
+
+func _chase(delta):
+	if not target_stalker or not is_instance_valid(target_stalker):
+		current_state = State.PATROL
+		return
+	
+	var direction = (target_stalker.global_position - global_position).normalized()
+	velocity = direction * speed
+	
+	if can_jump and not is_jumping:
 		var dist = global_position.distance_to(target_stalker.global_position)
 		if dist < jump_range and dist > 3.0:
-			_try_jump_on_stalker()
+			_try_jump()
+	
+	if global_position.distance_to(target_stalker.global_position) < 2.0:
+		current_state = State.ATTACK
 
 
-func _try_jump_on_stalker():
+func _try_jump():
 	if not target_stalker or not is_instance_valid(target_stalker):
 		return
 	
+	print("Snork прыгает!")
 	jump_target = target_stalker.global_position
 	is_jumping = true
 	can_jump = false
 	
-	jump_timer.wait_time = jump_cooldown
 	jump_timer.start()
 
 
 func _handle_jump(delta):
+	if is_instance_valid(target_stalker):
+		jump_target = target_stalker.global_position
+	
 	var direction = (jump_target - global_position).normalized()
 	velocity = direction * jump_force
-	velocity.y = jump_force * 0.5
+	velocity.y = 2.0
 	
 	move_and_slide()
 	
-	if global_position.distance_to(jump_target) < 2.0 or is_on_floor():
-		_land_on_target()
+	if is_on_floor() or global_position.distance_to(jump_target) < 2.0:
+		_land()
 
 
-func _land_on_target():
+func _land():
 	is_jumping = false
-	velocity = Vector3.ZERO
+	velocity.y = 0
 	
-	if target_stalker and is_instance_valid(target_stalker):
-		if global_position.distance_to(target_stalker.global_position) < 3.0:
-			if target_stalker.has_method("take_damage"):
-				target_stalker.take_damage(damage * leap_damage_multiplier, self)
-				attacked_stalker.emit(target_stalker)
+	if is_instance_valid(target_stalker):
+		var dist = global_position.distance_to(target_stalker.global_position)
+		if dist < 3.0:
+			target_stalker.take_damage(damage * leap_damage_multiplier, self)
+			attacked_stalker.emit(target_stalker)
+			print("Snork атакует с прыжка!")
 	
-	if target_stalker and is_instance_valid(target_stalker):
+	if is_instance_valid(target_stalker):
 		if global_position.distance_to(target_stalker.global_position) < 2.0:
 			current_state = State.ATTACK
 		else:
@@ -7680,9 +7959,21 @@ func _on_jump_cooldown_ended():
 
 
 func _attack(delta):
-	super._attack(delta)
+	if not target_stalker or not is_instance_valid(target_stalker):
+		current_state = State.PATROL
+		return
 	
-	if current_state == State.ATTACK and target_stalker and is_instance_valid(target_stalker):
+	var dist = global_position.distance_to(target_stalker.global_position)
+	if dist > 2.0:
+		current_state = State.CHASE
+		return
+	
+	if attack_timer.is_stopped():
+		target_stalker.take_damage(damage, self)
+		attacked_stalker.emit(target_stalker)
+		attack_timer.start()
+		print("Snork атакует!")
+		
 		if randf() < 0.3:
 			_jump_away()
 
@@ -7691,13 +7982,25 @@ func _jump_away():
 	if not target_stalker or not is_instance_valid(target_stalker):
 		return
 	
-	var away_direction = (global_position - target_stalker.global_position).normalized()
-	jump_target = global_position + away_direction * 5.0
+	var away = (global_position - target_stalker.global_position).normalized()
+	jump_target = global_position + away * 5.0
 	is_jumping = true
 	can_jump = false
-	
-	jump_timer.wait_time = jump_cooldown
+	velocity.y = 2.0
 	jump_timer.start()
+	print("Snork отпрыгивает!")
+
+
+func _setup_label():
+	var label = Label3D.new()
+	label.name = "MutantLabel"
+	label.position = Vector3(0, 2.5, 0)
+	label.font_size = 24
+	label.outline_size = 2
+	label.outline_modulate = Color.BLACK
+	label.modulate = Color(1.0, 0.4, 0.2)  # оранжевый
+	label.text = "👹 СНОРК"
+	add_child(label)
 
 ----------------------------------------
 ФАЙЛ: res://entities/mutants/snork_mutant.gd.uid
@@ -7731,7 +8034,6 @@ extends BaseMutant
 class_name ZombieMutant
 
 @export var rage_threshold: float = 50.0
-@export var grab_damage: float = 15.0
 @export var infection_chance: float = 0.2
 
 var accumulated_rage: float = 0.0
@@ -7748,8 +8050,7 @@ func _ready():
 	
 	super._ready()
 	
-	current_state = State.PATROL
-	
+	_setup_label()
 	print("Zombie mutant initialized")
 
 
@@ -7817,6 +8118,7 @@ func _attack(delta):
 			_try_infect(target_stalker)
 		
 		attack_timer.start()
+		print("Zombie атакует!")
 
 
 func _try_infect(stalker: Node3D):
@@ -7839,6 +8141,18 @@ func take_damage(dmg: float, source = null):
 		health += dmg * 0.1
 	
 	super.take_damage(dmg, source)
+
+
+func _setup_label():
+	var label = Label3D.new()
+	label.name = "MutantLabel"
+	label.position = Vector3(0, 2.5, 0)
+	label.font_size = 24
+	label.outline_size = 2
+	label.outline_modulate = Color.BLACK
+	label.modulate = Color(0.3, 0.8, 0.3)  # зеленый
+	label.text = "🧟 ЗОМБИ"
+	add_child(label)
 
 ----------------------------------------
 ФАЙЛ: res://entities/mutants/zombie.gd.uid
@@ -7945,9 +8259,26 @@ func _ready():
 	add_to_group("stalkers")
 	add_to_group("stalkers_" + GameEnums.StalkerType.keys()[stalker_type].to_lower())
 	
+	# Настраиваем подпись
+	_setup_label()
+	
 	super._ready()
 	
 	print("BaseStalker инициализирован: тип=" + str(stalker_type) + " поведение=" + str(behavior_type))
+
+
+func _setup_label():
+	if label:
+		match stalker_type:
+			GameEnums.StalkerType.NOVICE:
+				label.text = "🟢 НОВИЧОК"
+				label.modulate = Color(0.2, 0.8, 0.2)
+			GameEnums.StalkerType.VETERAN:
+				label.text = "🔵 ВЕТЕРАН"
+				label.modulate = Color(0.2, 0.4, 1.0)
+			GameEnums.StalkerType.MASTER:
+				label.text = "🟣 МАСТЕР"
+				label.modulate = Color(0.8, 0.2, 0.8)
 
 
 func _apply_type_parameters():
@@ -7997,7 +8328,7 @@ func _initialize_stalker_components():
 	carry_component.artifact_dropped.connect(_on_artifact_dropped)
 	carry_component.artifact_stolen.connect(_on_artifact_stolen)
 	
-	# StateMachineComponent - ТЕПЕРЬ behavior_strategy УЖЕ ЕСТЬ!
+	# StateMachineComponent
 	state_machine = StateMachineComponent.new()
 	state_machine.stalker = self
 	add_child(state_machine)
@@ -8220,7 +8551,6 @@ func get_status() -> Dictionary:
 		status["memory"] = memory_component.get_memory_stats()
 	
 	return status
-
 
 ----------------------------------------
 ФАЙЛ: res://entities/stalkers/base_stalker.gd.uid
@@ -8870,29 +9200,46 @@ uid://b4fuu5628gahc
 ФАЙЛ: res://entities/stalkers/master_stalker.gd
 ----------------------------------------
 
+# entities/stalkers/master_stalker.gd
 extends BaseStalker
 class_name MasterStalker
 
 func _ready_hook():
-    stalker_type = GameEnums.StalkerType.MASTER
-    behavior_type = GameEnums.StalkerBehavior.AGGRESSIVE
-    max_health = 250.0
-    move_speed = 6.0
-    damage = 25.0
-    vision_range = 30.0
-    
-    if visuals:
-        var material = StandardMaterial3D.new()
-        material.albedo_color = Color(0.8, 0.2, 0.8)
-        material.metallic = 0.8
-        material.roughness = 0.1
-        material.emission_enabled = true
-        material.emission = Color(0.8, 0.2, 0.8)
-        visuals.material_override = material
-    
-    if label:
-        label.text = "MASTER"
-        label.modulate = Color(0.8, 0.2, 0.8)
+	stalker_type = GameEnums.StalkerType.MASTER
+	behavior_type = GameEnums.StalkerBehavior.AGGRESSIVE
+	
+	# Параметры
+	max_health = 250.0
+	move_speed = 6.0
+	damage = 25.0
+	vision_range = 30.0
+	
+	# Визуал
+	if visuals:
+		var material = StandardMaterial3D.new()
+		material.albedo_color = Color(0.8, 0.2, 0.8)
+		material.metallic = 0.8
+		material.roughness = 0.1
+		material.emission_enabled = true
+		material.emission = Color(0.8, 0.2, 0.8)
+		visuals.material_override = material
+	
+	print("MasterStalker инициализирован")
+
+
+func _physics_hook(delta):
+	# Мастера активно ищут цели
+	if current_state == GameEnums.StalkerState.PATROL and randf() < 0.05:
+		# Активно сканируем местность
+		var mutants = get_tree().get_nodes_in_group("mutants")
+		for mutant in mutants:
+			if is_instance_valid(mutant):
+				var dist = global_position.distance_to(mutant.global_position)
+				if dist < vision_range * 1.5:
+					print("Мастер заметил мутанта издалека!")
+					current_target = mutant
+					current_state = GameEnums.StalkerState.ATTACK_MUTANT
+					break
 
 ----------------------------------------
 ФАЙЛ: res://entities/stalkers/master_stalker.gd.uid
@@ -8922,25 +9269,35 @@ outline_size = 3
 ФАЙЛ: res://entities/stalkers/novice_stalker.gd
 ----------------------------------------
 
+# entities/stalkers/novice_stalker.gd
 extends BaseStalker
 class_name NoviceStalker
 
 func _ready_hook():
-    stalker_type = GameEnums.StalkerType.NOVICE
-    behavior_type = GameEnums.StalkerBehavior.GREEDY
-    max_health = 80.0
-    move_speed = 4.0
-    damage = 8.0
-    vision_range = 20.0
-    
-    if visuals:
-        var material = StandardMaterial3D.new()
-        material.albedo_color = Color(0.2, 0.8, 0.2)
-        visuals.material_override = material
-    
-    if label:
-        label.text = "NOVICE"
-        label.modulate = Color(0.2, 0.8, 0.2)
+	stalker_type = GameEnums.StalkerType.NOVICE
+	behavior_type = GameEnums.StalkerBehavior.GREEDY
+	
+	# Параметры уже установлены в базовом классе, но можно переопределить
+	max_health = 80.0
+	move_speed = 4.0
+	damage = 8.0
+	vision_range = 20.0
+	
+	# Визуал
+	if visuals:
+		var material = StandardMaterial3D.new()
+		material.albedo_color = Color(0.2, 0.8, 0.2)
+		visuals.material_override = material
+	
+	# Подпись уже настроена в базовом классе
+	
+	print("NoviceStalker инициализирован")
+
+
+func _physics_hook(delta):
+	# Новички часто оглядываются
+	if randf() < 0.01 and current_state == GameEnums.StalkerState.PATROL:
+		print("Новичок оглядывается по сторонам")
 
 ----------------------------------------
 ФАЙЛ: res://entities/stalkers/novice_stalker.gd.uid
@@ -8966,15 +9323,15 @@ script = ExtResource("2")
 ----------------------------------------
 
 # entities/stalkers/stalker_spawner.gd
-extends Node
+extends Node3D
 class_name StalkerSpawner
 
 signal stalker_spawned(stalker: Node, stalker_type: String)
 
 @export var stalker_scenes: Dictionary = {
-    "novice": null,
-    "veteran": null,
-    "master": null
+	"novice": preload("res://entities/stalkers/novice_stalker.tscn"),
+	"veteran": preload("res://entities/stalkers/veteran_stalker.tscn"),
+	"master": preload("res://entities/stalkers/master_stalker.tscn")
 }
 @export var spawn_radius: float = 80.0
 @export var min_spawn_distance: float = 60.0
@@ -8984,89 +9341,103 @@ var _difficulty: float = 1.0
 
 
 func _ready():
-    add_to_group("spawner")
-    print("StalkerSpawner: _ready()")
+	add_to_group("spawner")
+	print("StalkerSpawner: _ready()")
+	
+	# Ищем монолит
+	_monolith = get_tree().get_first_node_in_group("monolith")
+	if not _monolith:
+		print("StalkerSpawner: Монолит не найден при инициализации!")
 
 
 func set_difficulty(diff: float):
-    _difficulty = diff
+	_difficulty = diff
 
 
 func spawn_stalker() -> Node:
-    if not _monolith:
-        _monolith = get_tree().get_first_node_in_group("monolith")
-        if not _monolith:
-            print("Монолит не найден!")
-            return null
-    
-    var scene = _get_stalker_scene_by_difficulty()
-    if not scene:
-        print("Нет сцены для сталкера!")
-        return null
-    
-    var pos = _get_spawn_position()
-    if pos == Vector3.ZERO:
-        print("Не удалось найти позицию для спавна!")
-        return null
-    
-    var stalker = scene.instantiate()
-    stalker.position = pos
-    get_tree().current_scene.add_child(stalker)
-    
-    if _monolith:
-        var dir = (_monolith.global_position - pos).normalized()
-        stalker.look_at(pos + dir, Vector3.UP)
-    
-    var stalker_type = "novice"
-    if scene == stalker_scenes.get("veteran"):
-        stalker_type = "veteran"
-    elif scene == stalker_scenes.get("master"):
-        stalker_type = "master"
-    
-    stalker_spawned.emit(stalker, stalker_type)
-    return stalker
+	if not _monolith:
+		_monolith = get_tree().get_first_node_in_group("monolith")
+		if not _monolith:
+			print("Монолит не найден!")
+			return null
+	
+	var scene = _get_stalker_scene_by_difficulty()
+	if not scene:
+		print("Нет сцены для сталкера!")
+		return null
+	
+	var pos = _get_spawn_position()
+	if pos == Vector3.ZERO:
+		print("Не удалось найти позицию для спавна!")
+		return null
+	
+	var stalker = scene.instantiate()
+	stalker.position = pos
+	get_tree().current_scene.add_child(stalker)
+	
+	if _monolith:
+		var dir = (_monolith.global_position - pos).normalized()
+		stalker.look_at(pos + dir, Vector3.UP)
+	
+	var stalker_type = "novice"
+	if scene == stalker_scenes.get("veteran"):
+		stalker_type = "veteran"
+	elif scene == stalker_scenes.get("master"):
+		stalker_type = "master"
+	
+	stalker_spawned.emit(stalker, stalker_type)
+	print("Сталкер заспавнен: " + stalker_type + " на позиции " + str(pos))
+	
+	return stalker
 
 
 func _get_stalker_scene_by_difficulty() -> PackedScene:
-    var rand_val = randf()
-    
-    if _difficulty < 1.2:
-        if rand_val < 0.6: return stalker_scenes.get("novice")
-        elif rand_val < 0.9: return stalker_scenes.get("veteran")
-        else: return stalker_scenes.get("master")
-    elif _difficulty < 1.5:
-        if rand_val < 0.4: return stalker_scenes.get("novice")
-        elif rand_val < 0.8: return stalker_scenes.get("veteran")
-        else: return stalker_scenes.get("master")
-    elif _difficulty < 2.0:
-        if rand_val < 0.3: return stalker_scenes.get("novice")
-        elif rand_val < 0.7: return stalker_scenes.get("veteran")
-        else: return stalker_scenes.get("master")
-    else:
-        if rand_val < 0.2: return stalker_scenes.get("novice")
-        elif rand_val < 0.6: return stalker_scenes.get("veteran")
-        else: return stalker_scenes.get("master")
+	var rand_val = randf()
+	
+	if _difficulty < 1.2:
+		if rand_val < 0.6: return stalker_scenes.get("novice")
+		elif rand_val < 0.9: return stalker_scenes.get("veteran")
+		else: return stalker_scenes.get("master")
+	elif _difficulty < 1.5:
+		if rand_val < 0.4: return stalker_scenes.get("novice")
+		elif rand_val < 0.8: return stalker_scenes.get("veteran")
+		else: return stalker_scenes.get("master")
+	elif _difficulty < 2.0:
+		if rand_val < 0.3: return stalker_scenes.get("novice")
+		elif rand_val < 0.7: return stalker_scenes.get("veteran")
+		else: return stalker_scenes.get("master")
+	else:
+		if rand_val < 0.2: return stalker_scenes.get("novice")
+		elif rand_val < 0.6: return stalker_scenes.get("veteran")
+		else: return stalker_scenes.get("master")
 
 
 func _get_spawn_position() -> Vector3:
-    if not _monolith:
-        return Vector3.ZERO
-    
-    var angle = randf() * TAU
-    var distance = min_spawn_distance + randf() * (spawn_radius - min_spawn_distance)
-    var pos = _monolith.global_position + Vector3(cos(angle) * distance, 50, sin(angle) * distance)
-    
-    var space = get_viewport().get_world_3d().direct_space_state
-    var query = PhysicsRayQueryParameters3D.new()
-    query.from = pos
-    query.to = pos + Vector3(0, -100, 0)
-    query.collision_mask = 1
-    
-    var result = space.intersect_ray(query)
-    if result:
-        return result.position + Vector3(0, 1.2, 0)
-    
-    return Vector3.ZERO
+	if not _monolith:
+		return Vector3.ZERO
+	
+	# Пробуем 20 разных позиций
+	for attempt in range(20):
+		var angle = randf() * TAU
+		var distance = min_spawn_distance + randf() * (spawn_radius - min_spawn_distance)
+		var pos = _monolith.global_position + Vector3(cos(angle) * distance, 100, sin(angle) * distance)
+		
+		var space = get_viewport().get_world_3d().direct_space_state
+		var query = PhysicsRayQueryParameters3D.new()
+		query.from = pos
+		query.to = pos + Vector3(0, -200, 0)
+		query.collision_mask = 1
+		query.hit_from_inside = true
+		
+		var result = space.intersect_ray(query)
+		if result:
+			return result.position + Vector3(0, 1.2, 0)
+	
+	print("Не удалось найти позицию после 20 попыток")
+	
+	# Запасной вариант
+	var fallback_pos = _monolith.global_position + Vector3(10, 0, 10)
+	return fallback_pos + Vector3(0, 1.2, 0)
 
 ----------------------------------------
 ФАЙЛ: res://entities/stalkers/stalker_spawner.gd.uid
@@ -9095,27 +9466,37 @@ path_max_distance = 1000.0
 ФАЙЛ: res://entities/stalkers/veteran_stalker.gd
 ----------------------------------------
 
+# entities/stalkers/veteran_stalker.gd
 extends BaseStalker
 class_name VeteranStalker
 
 func _ready_hook():
-    stalker_type = GameEnums.StalkerType.VETERAN
-    behavior_type = GameEnums.StalkerBehavior.BRAVE
-    max_health = 150.0
-    move_speed = 5.5
-    damage = 15.0
-    vision_range = 25.0
-    
-    if visuals:
-        var material = StandardMaterial3D.new()
-        material.albedo_color = Color(0.2, 0.4, 1.0)
-        material.metallic = 0.7
-        material.roughness = 0.2
-        visuals.material_override = material
-    
-    if label:
-        label.text = "VETERAN"
-        label.modulate = Color(0.2, 0.4, 1.0)
+	stalker_type = GameEnums.StalkerType.VETERAN
+	behavior_type = GameEnums.StalkerBehavior.BRAVE
+	
+	# Параметры
+	max_health = 150.0
+	move_speed = 5.5
+	damage = 15.0
+	vision_range = 25.0
+	
+	# Визуал
+	if visuals:
+		var material = StandardMaterial3D.new()
+		material.albedo_color = Color(0.2, 0.4, 1.0)
+		material.metallic = 0.7
+		material.roughness = 0.2
+		visuals.material_override = material
+	
+	print("VeteranStalker инициализирован")
+
+
+func _physics_hook(delta):
+	# Ветераны уверенно идут к цели
+	if current_state == GameEnums.StalkerState.SEEK_MONOLITH and is_instance_valid(monolith):
+		var dist = global_position.distance_to(monolith.global_position)
+		if dist < 10.0:
+			print("Ветеран приближается к монолиту!")
 
 ----------------------------------------
 ФАЙЛ: res://entities/stalkers/veteran_stalker.gd.uid

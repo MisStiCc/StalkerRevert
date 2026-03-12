@@ -6,16 +6,12 @@ class_name ChimeraMutant
 @export var leap_distance: float = 15.0
 @export var leap_damage: float = 50.0
 @export var secondary_head_damage: float = 10.0
-@export var leap_height: float = 8.0
-@export var leap_duration: float = 1.5  # Максимальная длительность прыжка
 
 var can_leap: bool = true
 var leap_timer: Timer
 var is_leaping: bool = false
 var leap_target: Vector3
-var leap_start_y: float
 var leap_time: float = 0.0
-
 
 func _ready():
 	health = 250.0
@@ -34,9 +30,7 @@ func _ready():
 	leap_timer.timeout.connect(_on_leap_cooldown_ended)
 	add_child(leap_timer)
 	
-	if is_night_only and not _is_night():
-		current_state = State.PATROL
-	
+	_setup_label()
 	print("Chimera mutant initialized")
 
 
@@ -44,26 +38,11 @@ func _physics_process(delta):
 	if current_state == State.DEAD:
 		return
 	
-	if is_night_only:
-		if not _is_night():
-			velocity = Vector3.ZERO
-			move_and_slide()
-			return
-	
 	if is_leaping:
 		_handle_leap(delta)
 		return
 	
-	# Если нет цели, ищем новую
-	if not target_stalker or not is_instance_valid(target_stalker):
-		_find_new_target()
-	
 	super._physics_process(delta)
-
-
-func _is_night() -> bool:
-	var hour = Time.get_datetime_dict_from_system()["hour"]
-	return hour < 6 or hour >= 20
 
 
 func _find_new_target():
@@ -114,7 +93,6 @@ func _start_leap():
 	print("Chimera: прыгаю!")
 	is_leaping = true
 	can_leap = false
-	leap_start_y = global_position.y
 	leap_target = target_stalker.global_position
 	leap_time = 0.0
 	
@@ -124,47 +102,31 @@ func _start_leap():
 func _handle_leap(delta):
 	leap_time += delta
 	
-	# Если цель исчезла во время прыжка, продолжаем к последней известной позиции
-	if not target_stalker or not is_instance_valid(target_stalker):
-		if leap_time > leap_duration:
-			_land()
-			return
-	else:
-		# Обновляем цель во время прыжка
+	if is_instance_valid(target_stalker):
 		leap_target = target_stalker.global_position
 	
 	var direction = (leap_target - global_position).normalized()
 	velocity = direction * speed * 3.0
-	velocity.y = 8.0 - (leap_time * 2.0)  # Постепенно снижаемся
+	velocity.y = 8.0 - (leap_time * 2.0)
 	
 	move_and_slide()
 	
-	# Ограничиваем высоту
-	if global_position.y > leap_start_y + leap_height:
-		velocity.y = -10.0
-	
-	# Проверяем условия приземления
-	var dist_to_target = global_position.distance_to(leap_target)
-	if is_on_floor() or dist_to_target < 2.0 or leap_time > leap_duration:
+	if is_on_floor() or global_position.distance_to(leap_target) < 2.0 or leap_time > 1.5:
 		_land()
 
 
 func _land():
 	print("Chimera: приземлился!")
 	is_leaping = false
-	velocity = Vector3.ZERO
 	
-	# Наносим урон всем в радиусе
 	var stalkers = get_tree().get_nodes_in_group("stalkers")
 	for stalker in stalkers:
 		if is_instance_valid(stalker):
 			var dist = global_position.distance_to(stalker.global_position)
 			if dist < 5.0:
-				if stalker.has_method("take_damage"):
-					stalker.take_damage(leap_damage, self)
-					attacked_stalker.emit(stalker)
+				stalker.take_damage(leap_damage, self)
+				attacked_stalker.emit(stalker)
 	
-	# Ищем новую цель
 	_find_new_target()
 
 
@@ -191,12 +153,16 @@ func _attack(delta):
 			attacked_stalker.emit(target_stalker)
 		
 		attack_timer.start()
+		print("Chimera атакует!")
 
 
-func take_damage(dmg: float, source = null):
-	super.take_damage(dmg, source)
-
-
-func die():
-	print("Chimera: предсмертный рёв!")
-	super.die()
+func _setup_label():
+	var label = Label3D.new()
+	label.name = "MutantLabel"
+	label.position = Vector3(0, 3.5, 0)  # Выше, потому что химера большая
+	label.font_size = 28
+	label.outline_size = 2
+	label.outline_modulate = Color.BLACK
+	label.modulate = Color(0.8, 0.2, 0.8)  # фиолетовый
+	label.text = "🦎 ХИМЕРА"
+	add_child(label)

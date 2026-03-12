@@ -80,9 +80,26 @@ func _ready():
 	add_to_group("stalkers")
 	add_to_group("stalkers_" + GameEnums.StalkerType.keys()[stalker_type].to_lower())
 	
+	# Настраиваем подпись
+	_setup_label()
+	
 	super._ready()
 	
 	print("BaseStalker инициализирован: тип=" + str(stalker_type) + " поведение=" + str(behavior_type))
+
+
+func _setup_label():
+	if label:
+		match stalker_type:
+			GameEnums.StalkerType.NOVICE:
+				label.text = "🟢 НОВИЧОК"
+				label.modulate = Color(0.2, 0.8, 0.2)
+			GameEnums.StalkerType.VETERAN:
+				label.text = "🔵 ВЕТЕРАН"
+				label.modulate = Color(0.2, 0.4, 1.0)
+			GameEnums.StalkerType.MASTER:
+				label.text = "🟣 МАСТЕР"
+				label.modulate = Color(0.8, 0.2, 0.8)
 
 
 func _apply_type_parameters():
@@ -132,7 +149,7 @@ func _initialize_stalker_components():
 	carry_component.artifact_dropped.connect(_on_artifact_dropped)
 	carry_component.artifact_stolen.connect(_on_artifact_stolen)
 	
-	# StateMachineComponent - ТЕПЕРЬ behavior_strategy УЖЕ ЕСТЬ!
+	# StateMachineComponent
 	state_machine = StateMachineComponent.new()
 	state_machine.stalker = self
 	add_child(state_machine)

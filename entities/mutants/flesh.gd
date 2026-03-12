@@ -3,7 +3,7 @@ extends BaseMutant
 class_name FleshMutant
 
 @export var aggression_threshold: float = 30.0
-@export var charge_speed: float = 12.0
+@export var charge_speed: float = 15.0
 @export var charge_damage: float = 35.0
 @export var charge_cooldown: float = 5.0
 
@@ -16,7 +16,7 @@ var charge_timer: Timer
 func _ready():
 	health = 200.0
 	max_health = 200.0
-	speed = 4.0
+	speed = 6.0
 	damage = 15.0
 	armor = 20.0
 	biomass_cost = 60.0
@@ -24,22 +24,19 @@ func _ready():
 	
 	super._ready()
 	
-	current_state = State.PATROL
-	
 	charge_timer = Timer.new()
 	charge_timer.one_shot = true
+	charge_timer.wait_time = charge_cooldown
 	charge_timer.timeout.connect(_on_charge_cooldown_ended)
 	add_child(charge_timer)
 	
+	_setup_label()
 	print("Flesh mutant initialized")
 
 
 func _physics_process(delta):
 	if current_state == State.DEAD:
 		return
-	
-	if accumulated_damage > aggression_threshold and current_state == State.PATROL:
-		_become_aggressive()
 	
 	if is_charging:
 		_handle_charge(delta)
@@ -49,18 +46,6 @@ func _physics_process(delta):
 
 
 func _patrol(delta):
-	if target_stalker and is_instance_valid(target_stalker):
-		var dist = global_position.distance_to(target_stalker.global_position)
-		if dist < 3.0:
-			_become_aggressive()
-	
-	super._patrol(delta)
-
-
-func _become_aggressive():
-	current_state = State.CHASE
-	accumulated_damage = 0.0
-	
 	var stalkers = get_tree().get_nodes_in_group("stalkers")
 	var nearest_stalker = null
 	var nearest_dist = INF
@@ -68,18 +53,22 @@ func _become_aggressive():
 	for stalker in stalkers:
 		if is_instance_valid(stalker):
 			var dist = global_position.distance_to(stalker.global_position)
-			if dist < nearest_dist:
+			if dist < detection_radius and dist < nearest_dist:
 				nearest_dist = dist
 				nearest_stalker = stalker
 	
 	if nearest_stalker:
 		target_stalker = nearest_stalker
+		current_state = State.CHASE
+		accumulated_damage = 0.0
+		print("Flesh стал агрессивным!")
+	
+	super._patrol(delta)
 
 
 func _chase(delta):
 	if not target_stalker or not is_instance_valid(target_stalker):
 		current_state = State.PATROL
-		accumulated_damage = 0.0
 		return
 	
 	var direction = (target_stalker.global_position - global_position).normalized()
@@ -98,39 +87,42 @@ func _start_charge():
 	if not target_stalker or not is_instance_valid(target_stalker):
 		return
 	
+	print("Flesh начинает таран!")
 	is_charging = true
 	can_charge = false
 	charge_target = target_stalker.global_position
 	
-	charge_timer.wait_time = charge_cooldown
 	charge_timer.start()
 
 
 func _handle_charge(delta):
+	if is_instance_valid(target_stalker):
+		charge_target = target_stalker.global_position
+	
 	var direction = (charge_target - global_position).normalized()
 	velocity = direction * charge_speed
-	velocity.y = 3.0
+	velocity.y = 0
 	
 	move_and_slide()
 	
-	if global_position.distance_to(charge_target) < 2.0 or is_on_wall():
+	if is_on_wall() or global_position.distance_to(charge_target) < 2.0:
 		_end_charge()
 
 
 func _end_charge():
+	print("Flesh закончил таран!")
 	is_charging = false
-	velocity = Vector3.ZERO
 	
 	var stalkers = get_tree().get_nodes_in_group("stalkers")
 	for stalker in stalkers:
 		if is_instance_valid(stalker):
 			var dist = global_position.distance_to(stalker.global_position)
 			if dist < 4.0:
-				if stalker.has_method("take_damage"):
-					stalker.take_damage(charge_damage, self)
-					attacked_stalker.emit(stalker)
+				stalker.take_damage(charge_damage, self)
+				attacked_stalker.emit(stalker)
+				print("Flesh нанёс урон тараном!")
 	
-	if target_stalker and is_instance_valid(target_stalker):
+	if is_instance_valid(target_stalker):
 		current_state = State.CHASE
 	else:
 		current_state = State.PATROL
@@ -146,7 +138,7 @@ func _attack(delta):
 		return
 	
 	var dist = global_position.distance_to(target_stalker.global_position)
-	if dist > 2.5:
+	if dist > 2.0:
 		current_state = State.CHASE
 		return
 	
@@ -154,8 +146,27 @@ func _attack(delta):
 		target_stalker.take_damage(damage, self)
 		attacked_stalker.emit(target_stalker)
 		attack_timer.start()
+		print("Flesh атакует!")
 
 
 func take_damage(dmg: float, source = null):
 	accumulated_damage += dmg
+	
+	if accumulated_damage > aggression_threshold and current_state == State.PATROL:
+		current_state = State.CHASE
+		accumulated_damage = 0.0
+		print("Flesh разъярен!")
+	
 	super.take_damage(dmg, source)
+
+
+func _setup_label():
+	var label = Label3D.new()
+	label.name = "MutantLabel"
+	label.position = Vector3(0, 2.8, 0)  # Выше, потому что плоть крупная
+	label.font_size = 24
+	label.outline_size = 2
+	label.outline_modulate = Color.BLACK
+	label.modulate = Color(0.9, 0.5, 0.5)  # розовый
+	label.text = "🐗 ПЛОТЬ"
+	add_child(label)

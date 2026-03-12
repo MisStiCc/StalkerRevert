@@ -7,11 +7,11 @@ class_name PoltergeistMutant
 @export var throw_damage: float = 30.0
 @export var invisibility_threshold: float = 0.3
 
-var is_flying: bool = true
 var can_telekinesis: bool = true
 var telekinesis_timer: Timer
 var is_invisible: bool = false
 var float_offset: float = 0.0
+var mesh_instance: MeshInstance3D
 
 func _ready():
 	health = 60.0
@@ -23,6 +23,8 @@ func _ready():
 	detection_radius = 25.0
 	mutant_type = "poltergeist"
 	
+	mesh_instance = $MeshInstance3D
+	
 	super._ready()
 	
 	telekinesis_timer = Timer.new()
@@ -31,8 +33,7 @@ func _ready():
 	telekinesis_timer.timeout.connect(_on_telekinesis_cooldown_ended)
 	add_child(telekinesis_timer)
 	
-	current_state = State.PATROL
-	
+	_setup_label()
 	print("Poltergeist mutant initialized")
 
 
@@ -78,19 +79,7 @@ func _patrol(delta):
 		target_stalker = nearest_stalker
 		current_state = State.CHASE
 	
-	_fly_in_patrol(delta)
-
-
-func _fly_in_patrol(delta):
-	var time = Time.get_ticks_msec() * 0.001
-	var radius = 10.0
-	
-	var target_x = cos(time * 0.5) * radius
-	var target_z = sin(time * 0.5) * radius
-	
-	var direction = (Vector3(target_x, flight_height, target_z) - global_position).normalized()
-	velocity.x = direction.x * speed * 0.5
-	velocity.z = direction.z * speed * 0.5
+	super._patrol(delta)
 
 
 func _chase(delta):
@@ -100,58 +89,31 @@ func _chase(delta):
 	
 	var dist = global_position.distance_to(target_stalker.global_position)
 	
-	if dist < telekinesis_range:
-		_try_telekinesis_attack()
-		
-		var retreat_direction = (global_position - target_stalker.global_position).normalized()
-		velocity.x = retreat_direction.x * speed
-		velocity.z = retreat_direction.z * speed
+	if dist < telekinesis_range and can_telekinesis:
+		_use_telekinesis()
+	
+	if dist < telekinesis_range * 0.7:
+		var retreat = (global_position - target_stalker.global_position).normalized()
+		velocity.x = retreat.x * speed
+		velocity.z = retreat.z * speed
 	else:
 		var direction = (target_stalker.global_position - global_position).normalized()
 		velocity.x = direction.x * speed
 		velocity.z = direction.z * speed
 
 
-func _try_telekinesis_attack():
-	if not can_telekinesis:
-		return
-	
+func _use_telekinesis():
 	if not target_stalker or not is_instance_valid(target_stalker):
 		return
 	
+	print("Poltergeist использует телекинез!")
 	can_telekinesis = false
-	
-	_throw_object(target_stalker.global_position)
 	
 	if target_stalker.has_method("take_damage"):
 		target_stalker.take_damage(throw_damage, self)
 		attacked_stalker.emit(target_stalker)
 	
 	telekinesis_timer.start()
-
-
-func _throw_object(target_pos: Vector3):
-	var projectile = MeshInstance3D.new()
-	projectile.mesh = SphereMesh.new()
-	projectile.mesh.radius = 0.3
-	projectile.mesh.height = 0.6
-	
-	var material = StandardMaterial3D.new()
-	material.albedo_color = Color(0.5, 0.5, 0.5)
-	material.emission = Color(0.3, 0.3, 0.3)
-	material.emission_energy = 1.0
-	projectile.material_override = material
-	
-	projectile.global_position = global_position
-	get_tree().current_scene.add_child(projectile)
-	
-	var direction = (target_pos - global_position).normalized()
-	var tween = create_tween()
-	tween.tween_property(projectile, "global_position", target_pos, 0.5)
-	
-	await tween.finished
-	if is_instance_valid(projectile):
-		projectile.queue_free()
 
 
 func _on_telekinesis_cooldown_ended():
@@ -161,22 +123,34 @@ func _on_telekinesis_cooldown_ended():
 func _try_become_invisible():
 	if not is_invisible and randf() < invisibility_threshold:
 		is_invisible = true
+		print("Poltergeist стал невидимым!")
 
 
 func _update_invisibility():
-	for child in get_children():
-		if child is MeshInstance3D:
-			child.visible = not is_invisible
+	if not mesh_instance:
+		return
+	
+	var alpha = 0.3 if is_invisible else 1.0
+	if mesh_instance.material_override:
+		mesh_instance.material_override.albedo_color.a = alpha
 
 
 func take_damage(dmg: float, source = null):
 	if randf() < 0.3:
+		print("Poltergeist избежал урона!")
 		return
 	
+	is_invisible = false
 	super.take_damage(dmg * 1.5, source)
-	is_invisible = false
 
 
-func die():
-	is_invisible = false
-	super.die()
+func _setup_label():
+	var label = Label3D.new()
+	label.name = "MutantLabel"
+	label.position = Vector3(0, 3.0, 0)
+	label.font_size = 24
+	label.outline_size = 2
+	label.outline_modulate = Color.BLACK
+	label.modulate = Color(0.5, 0.8, 1.0)  # голубой
+	label.text = "👻 ПОЛТЕРГЕЙСТ"
+	add_child(label)

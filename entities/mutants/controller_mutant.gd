@@ -8,7 +8,8 @@ class_name ControllerMutant
 
 var control_timer: Timer
 var is_controlling: bool = false
-
+var controlled_stalker: Node3D = null
+var can_control: bool = true
 
 func _ready():
 	health = 80.0
@@ -26,6 +27,7 @@ func _ready():
 	control_timer.timeout.connect(_on_control_ended)
 	add_child(control_timer)
 	
+	_setup_label()
 	print("Controller mutant initialized")
 
 
@@ -41,23 +43,50 @@ func _physics_process(delta):
 	super._physics_process(delta)
 
 
-func _chase(delta):
-	super._chase(delta)
+func _patrol(delta):
+	var stalkers = get_tree().get_nodes_in_group("stalkers")
+	var nearest_stalker = null
+	var nearest_dist = INF
 	
-	if target_stalker and is_instance_valid(target_stalker):
+	for stalker in stalkers:
+		if is_instance_valid(stalker):
+			var dist = global_position.distance_to(stalker.global_position)
+			if dist < detection_radius and dist < nearest_dist:
+				nearest_dist = dist
+				nearest_stalker = stalker
+	
+	if nearest_stalker:
+		target_stalker = nearest_stalker
+		current_state = State.CHASE
+	
+	super._patrol(delta)
+
+
+func _chase(delta):
+	if not target_stalker or not is_instance_valid(target_stalker):
+		current_state = State.PATROL
+		return
+	
+	var direction = (target_stalker.global_position - global_position).normalized()
+	velocity = direction * speed
+	
+	if can_control and not is_controlling:
 		var dist = global_position.distance_to(target_stalker.global_position)
-		if dist < control_range and not is_controlling and control_timer.is_stopped():
-			_try_control_stalker()
+		if dist < control_range:
+			_try_control()
+	
+	if global_position.distance_to(target_stalker.global_position) < 2.0:
+		current_state = State.ATTACK
 
 
-func _try_control_stalker():
+func _try_control():
 	if not target_stalker or not is_instance_valid(target_stalker):
 		return
 	
-	if target_stalker.has_method("is_controllable") and not target_stalker.is_controllable():
-		return
-	
+	print("Controller пытается взять контроль!")
 	is_controlling = true
+	can_control = false
+	controlled_stalker = target_stalker
 	current_state = State.ATTACK
 	
 	_apply_control_effect(target_stalker)
@@ -69,30 +98,60 @@ func _try_control_stalker():
 func _apply_control_effect(stalker: Node3D):
 	if stalker.has_method("set_controlled"):
 		stalker.set_controlled(true, self)
+		print("Controller взял под контроль!")
 
 
 func _on_control_ended():
+	if is_instance_valid(controlled_stalker) and controlled_stalker.has_method("set_controlled"):
+		controlled_stalker.set_controlled(false, self)
+		print("Controller отпустил контроль")
+	
+	is_controlling = false
+	controlled_stalker = null
+	
+	await get_tree().create_timer(control_cooldown).timeout
+	can_control = true
+	
+	if is_instance_valid(target_stalker):
+		current_state = State.CHASE
+	else:
+		current_state = State.PATROL
+
+
+func _attack(delta):
+	if is_controlling:
+		velocity = Vector3.ZERO
+		return
+	
 	if not target_stalker or not is_instance_valid(target_stalker):
-		is_controlling = false
 		current_state = State.PATROL
 		return
 	
-	if target_stalker.has_method("set_controlled"):
-		target_stalker.set_controlled(false, self)
+	var dist = global_position.distance_to(target_stalker.global_position)
+	if dist > 2.0:
+		current_state = State.CHASE
+		return
 	
-	is_controlling = false
-	current_state = State.CHASE
+	if can_control and not is_controlling and control_timer.is_stopped():
+		_try_control()
 
 
 func take_damage(dmg: float, source = null):
-	if is_controlling:
+	if is_controlling and randf() < 0.3:
+		print("Контроль прерван уроном!")
+		control_timer.stop()
 		_on_control_ended()
 	
 	super.take_damage(dmg, source)
 
 
-func die():
-	if is_controlling:
-		_on_control_ended()
-	
-	super.die()
+func _setup_label():
+	var label = Label3D.new()
+	label.name = "MutantLabel"
+	label.position = Vector3(0, 2.8, 0)
+	label.font_size = 24
+	label.outline_size = 2
+	label.outline_modulate = Color.BLACK
+	label.modulate = Color(0.8, 0.4, 1.0)  # сиреневый
+	label.text = "🧙 КОНТРОЛЛЕР"
+	add_child(label)
