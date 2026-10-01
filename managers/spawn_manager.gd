@@ -278,8 +278,8 @@ func _get_spawn_position() -> Vector3:
 		
 		var result = space.intersect_ray(query)
 		if result:
-			# СТАЛКЕР НА ВЫСОТЕ SPAWN_HEIGHT НАД ЗЕМЛЁЙ
-			var ground_pos = Vector3(result.position.x, SPAWN_HEIGHT, result.position.z)
+			# СТАЛКЕР НА ВЫСОТЕ SPAWN_HEIGHT НАД РЕЛЬЕФОМ
+			var ground_pos = Vector3(result.position.x, result.position.y + SPAWN_HEIGHT, result.position.z)
 			
 			var too_close = false
 			for existing_pos in _last_spawn_positions:
@@ -314,7 +314,7 @@ func _get_fallback_spawn_position() -> Vector3:
 		
 		var result = space.intersect_ray(query)
 		if result:
-			var ground_pos = Vector3(result.position.x, SPAWN_HEIGHT, result.position.z)
+			var ground_pos = Vector3(result.position.x, result.position.y + SPAWN_HEIGHT, result.position.z)
 			
 			var too_close = false
 			for existing_pos in _last_spawn_positions:

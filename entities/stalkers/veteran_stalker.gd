@@ -51,9 +51,8 @@ func _ready():
 	
 	super._ready()
 	
-	var pos = global_position
-	pos.y = STALKER_HEIGHT
-	global_position = pos
+	# Высоту задаёт спавн по лучу (рельеф) и физика: фиксированный Y=1.8
+	# на холмах закапывал тело в рельеф, и оно проваливалось насквозь
 	
 	print("VeteranStalker готов на позиции ", global_position)
 
@@ -140,23 +139,21 @@ func _physics_hook(delta):
 
 
 func _check_height():
-	"""Спасение только при провале под землю (Y < 0).
-	Физика сама ставит тело на пол, поэтому штатную высоту не трогаем."""
-	if global_position.y >= 0.0:
-		return
-	
+	"""Спасение на рельефе: сильно зарыт или завис над землёй - ставим на пол.
+	На склоне origin законно отличается от нуля, фиксированная Y больше не эталон."""
 	var query = PhysicsRayQueryParameters3D.new()
-	query.from = Vector3(global_position.x, 5.0, global_position.z)
-	query.to = Vector3(global_position.x, -10.0, global_position.z)
+	query.from = global_position + Vector3.UP * 3.0
+	query.to = global_position + Vector3.DOWN * 12.0
 	query.collision_mask = 1
 	var result = get_world_3d().direct_space_state.intersect_ray(query)
 	
+	if result and abs(global_position.y - (result.position.y + STALKER_HEIGHT)) <= 2.0:
+		return  # Стоит на рельефе штатно
+	
 	velocity = Vector3.ZERO
 	if result:
-		var pos = global_position
-		pos.y = result.position.y + STALKER_HEIGHT
-		global_position = pos
-		print("VeteranStalker: провалился под землю, возвращён на пол Y=", pos.y)
+		global_position.y = result.position.y + STALKER_HEIGHT
+		print("VeteranStalker: провалился под землю, возвращён на рельеф Y=", global_position.y)
 	else:
 		# Земли нет (чанк выгружен) - возвращаем к монолиту
 		var mx = 10.0
