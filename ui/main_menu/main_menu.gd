@@ -42,7 +42,7 @@ func _ready():
 func _load_cover_art():
 	"""Фон меню - тот же арт, что и в лаборатории: res://ui/lab/lab_background.svg.
 	В арте уже есть заголовок игры, поэтому текстовый Title прячем."""
-	const COVER_PATH := "res://ui/lab/lab_background.svg"
+	const COVER_PATH := "res://ui/main_menu/main_menu.svg"
 	if ResourceLoader.exists(COVER_PATH):
 		cover_art.texture = load(COVER_PATH)
 		title_label.visible = false
