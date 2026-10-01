@@ -11,7 +11,7 @@ signal game_won(run_number: int, reward: float)
 
 # Параметры
 @export var pulse_duration: float = 5.0
-@export var pulses_to_win: int = 5
+@export var pulses_to_win: int = 3
 @export var difficulty_increase_per_pulse: float = 0.2
 
 # Состояние

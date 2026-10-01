@@ -11,7 +11,7 @@ signal difficulty_changed(new_difficulty: float)
 # Параметры сложности
 @export var base_difficulty: float = 1.0
 @export var difficulty_increase_per_run: float = 0.2
-@export var pulses_to_win_base: int = 5
+@export var pulses_to_win_base: int = 3
 @export var difficulty_increase_per_pulse: float = 0.15
 
 # Параметры масштабирования
@@ -47,7 +47,8 @@ func _ready():
 func start_new_run() -> Dictionary:
     current_run = total_runs + 1
     current_difficulty = base_difficulty + (current_run - 1) * difficulty_increase_per_run
-    pulses_to_win = pulses_to_win_base + int((current_run - 1) / 2.0)
+    # Фиксированная цель, совпадает с pulses_to_win в EventManager
+    pulses_to_win = pulses_to_win_base
     _current_biomass = 0.0
     
     print("Забег #" + str(current_run) + " | Сложность: " + str(current_difficulty) + " | Цель: " + str(pulses_to_win) + " выбросов", "ProgressionManager")

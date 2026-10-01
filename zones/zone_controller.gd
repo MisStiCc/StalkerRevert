@@ -43,7 +43,8 @@ var sound_manager: SoundManager
 @export var max_biomass: float = 1000.0
 @export var critical_biomass_threshold: float = 0.8
 @export var pulse_duration: float = 5.0
-@export var pulses_to_win: int = 5
+# Победа: 3 выброса (от кнопки или от переполнения биомассы) ИЛИ отбить все волны
+@export var pulses_to_win: int = 3
 
 # Параметры забега
 var run_params: Dictionary = {}
