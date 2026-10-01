@@ -207,7 +207,11 @@ func move_to(position: Vector3):
 	# Проверяем, находится ли цель на навмеше
 	var map = nav_agent.get_navigation_map()
 	var closest_point = NavigationServer3D.map_get_closest_point(map, position)
-	var distance_to_navmesh = closest_point.distance_to(position)
+	# Горизонтальная дистанция: прыгающие мутанты (химера) висят над проходимой
+	# землёй, и 3D-дистанция давала ложные "цель далеко от навмеша"
+	var target_xz := Vector2(position.x, position.z)
+	var closest_xz := Vector2(closest_point.x, closest_point.z)
+	var distance_to_navmesh = target_xz.distance_to(closest_xz)
 	
 	if distance_to_navmesh > 5.0:
 		# НЕ подменяем цель ближайшей точкой: при пустом или неполном навмеше

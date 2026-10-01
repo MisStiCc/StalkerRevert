@@ -186,13 +186,16 @@ func _process_attack_anomaly(_delta):
 func _process_attack_mutant(_delta):
 	var target = _get_attack_target()
 	if target and is_instance_valid(target):
-		var dist = stalker.global_position.distance_to(target.global_position)
-		if dist < 3.0:
-			# Атака с кулдауном сталкера (общий attack_timer с _check_attack)
+		var to_target = target.global_position - stalker.global_position
+		var horizontal_dist = Vector2(to_target.x, to_target.z).length()
+		var dy: float = abs(to_target.y)
+		# Прыгающие мутанты висят в воздухе: бьём только когда цель рядом
+		# по горизонтали и не выше 2.5м; пока летает - спокойно ждём внизу
+		if horizontal_dist < 3.0 and dy < 2.5:
 			if target.has_method("take_damage") and stalker.attack_timer <= 0.0:
 				target.take_damage(stalker.damage, stalker)
 				stalker.attack_timer = stalker.attack_cooldown
-		elif navigation and (not navigation.is_navigating() or _target_update_timer > 1.0):
+		elif horizontal_dist >= 3.0 and navigation and (not navigation.is_navigating() or _target_update_timer > 1.0):
 			print("StateMachine: ATTACK_MUTANT - двигаюсь к мутанту")
 			navigation.move_to(target.global_position)
 			_target_update_timer = 0.0
