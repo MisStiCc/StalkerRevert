@@ -174,10 +174,10 @@ func _update_speed_based_on_distance():
 	
 	if state_machine.current_state == GameEnums.StalkerState.SEEK_MONOLITH and is_instance_valid(monolith):
 		var dist = global_position.distance_to(monolith.global_position)
-		if dist < _confidence_range:
-			navigation_component.set_speed(_original_speed * 1.3)
-		else:
-			navigation_component.set_speed(_original_speed)
+		var target_speed = _original_speed * 1.3 if dist < _confidence_range else _original_speed
+		# Без проверки значение печаталось в консоль каждый физический кадр
+		if not is_equal_approx(navigation_component.move_speed, target_speed):
+			navigation_component.set_speed(target_speed)
 
 
 func _check_attack(delta):

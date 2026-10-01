@@ -57,7 +57,7 @@ var _move_start_time: float = 0.0
 var _retry_count: int = 0
 var _max_retries: int = 3
 var _log_timer: float = 0.0
-var _debug_enabled: bool = true  # Включим отладку для поиска проблем
+var _debug_enabled: bool = false  # Включается через enable_debug(true)
 
 
 func _ready():
@@ -179,7 +179,8 @@ func _on_navigation_finished():
 		return
 	is_moving = false
 	_retry_count = 0
-	print("NavigationComponent: цель достигнута! Позиция: ", entity.global_position)
+	if _debug_enabled:
+		print("NavigationComponent: цель достигнута! Позиция: ", entity.global_position)
 	target_reached.emit()
 	
 	if is_patrolling and patrol_points.size() > 0:
@@ -201,7 +202,8 @@ func move_to(position: Vector3):
 		return
 	
 	if _last_target.distance_to(position) < 1.0 and is_moving:
-		print("NavigationComponent: уже двигаюсь к этой цели")
+		if _debug_enabled:
+			print("NavigationComponent: уже двигаюсь к этой цели")
 		return
 	
 	# Проверяем, находится ли цель на навмеше
@@ -221,7 +223,10 @@ func move_to(position: Vector3):
 		print("NavigationComponent: цель далеко от навмеша! Цель: ", position,
 			  " Ближайшая точка: ", closest_point, " Дистанция: ", distance_to_navmesh)
 	
-	print("NavigationComponent: двигаюсь к цели ", position)
+	# Печатаем только значимые перенацеливания: погоня шагами по 0.3м
+	# не должна заваливать консоль (output overflow в редакторе)
+	if _debug_enabled or _last_target.distance_to(position) > 2.0:
+		print("NavigationComponent: двигаюсь к цели ", position)
 	_last_target = position
 	target_position = position
 	nav_agent.target_position = position

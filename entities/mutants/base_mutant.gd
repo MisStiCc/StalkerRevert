@@ -130,7 +130,10 @@ func _patrol(_delta):
 	if navigation_component and not navigation_component.is_navigating():
 		navigation_component.move_to(target_pos)
 	
-	if global_position.distance_to(target_pos) < 2.0:
+	# Прибытие по горизонтали: вертикальные 1.8м до навмеша съедали порог
+	# и превращали подход к точке в ползание с "цель достигнута" каждый кадр
+	var to_point = target_pos - global_position
+	if Vector2(to_point.x, to_point.z).length() < 1.5:
 		current_patrol_index = (current_patrol_index + 1) % patrol_points.size()
 		if navigation_component:
 			navigation_component.move_to(patrol_points[current_patrol_index])
@@ -149,19 +152,21 @@ func _chase(_delta):
 				navigation_component.stop()
 		return
 	
-	# Используем навигацию для движения к цели
-	if navigation_component:
-		navigation_component.move_to(target_stalker.global_position)
-	
-	var dist = global_position.distance_to(target_stalker.global_position)
-	if dist < 2.0:
+	var to_target = target_stalker.global_position - global_position
+	var horizontal_dist = Vector2(to_target.x, to_target.z).length()
+	if horizontal_dist < 2.0:
 		current_state = State.ATTACK
 		_try_attack()
-	elif dist > detection_radius * 1.5:
+	elif horizontal_dist < 2.6:
+		# Мёртвая зона навигации (в 2.5м путь сразу finished): идём напрямую
+		var dir = Vector3(to_target.x, 0.0, to_target.z).normalized()
+		velocity.x = dir.x * speed
+		velocity.z = dir.z * speed
+	elif horizontal_dist > detection_radius * 1.5:
 		# Потеряли цель
 		target_stalker = null
 		current_state = State.PATROL
-		if navigation_component:
+		if navigation_component and navigation_component.is_navigating():
 			navigation_component.stop()
 
 
@@ -179,7 +184,7 @@ func _attack(_delta):
 		return
 	
 	# Не двигаемся во время атаки
-	if navigation_component:
+	if navigation_component and navigation_component.is_navigating():
 		navigation_component.stop()
 	
 	velocity.x = 0
