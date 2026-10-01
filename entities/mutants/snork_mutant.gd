@@ -6,11 +6,14 @@ class_name SnorkMutant
 @export var jump_cooldown: float = 3.0
 @export var jump_range: float = 8.0
 @export var leap_damage_multiplier: float = 1.5
+@export var max_jump_height: float = 5.0  # Максимальная высота прыжка
 
 var can_jump: bool = true
 var is_jumping: bool = false
 var jump_target: Vector3
 var jump_timer: Timer
+var _jump_start_time: float = 0.0
+var _jump_duration: float = 1.5
 
 func _ready():
 	health = 120.0
@@ -69,7 +72,8 @@ func _chase(delta):
 		return
 	
 	var direction = (target_stalker.global_position - global_position).normalized()
-	velocity = direction * speed
+	velocity.x = direction.x * speed
+	velocity.z = direction.z * speed
 	
 	if can_jump and not is_jumping:
 		var dist = global_position.distance_to(target_stalker.global_position)
@@ -88,21 +92,35 @@ func _try_jump():
 	jump_target = target_stalker.global_position
 	is_jumping = true
 	can_jump = false
+	_jump_start_time = Time.get_ticks_msec() / 1000.0
 	
 	jump_timer.start()
 
 
 func _handle_jump(delta):
+	var jump_progress = min(1.0, (Time.get_ticks_msec() / 1000.0 - _jump_start_time) / _jump_duration)
+	
 	if is_instance_valid(target_stalker):
 		jump_target = target_stalker.global_position
 	
 	var direction = (jump_target - global_position).normalized()
-	velocity = direction * jump_force
-	velocity.y = 2.0
+	
+	# Уменьшаем скорость к концу прыжка
+	var current_jump_force = jump_force * (1.0 - jump_progress * 0.5)
+	velocity.x = direction.x * current_jump_force
+	velocity.z = direction.z * current_jump_force
+	
+	# Ограничиваем вертикальную скорость
+	velocity.y = min(direction.y * current_jump_force * 0.5 + 2.0, max_jump_height)
 	
 	move_and_slide()
 	
-	if is_on_floor() or global_position.distance_to(jump_target) < 2.0:
+	# Условия окончания прыжка
+	var hit_ground = is_on_floor() and velocity.y <= 0
+	var max_height_reached = global_position.y > jump_target.y + max_jump_height
+	var time_expired = jump_progress >= 1.0
+	
+	if hit_ground or max_height_reached or time_expired:
 		_land()
 
 
@@ -158,6 +176,7 @@ func _jump_away():
 	jump_target = global_position + away * 5.0
 	is_jumping = true
 	can_jump = false
+	_jump_start_time = Time.get_ticks_msec() / 1000.0
 	velocity.y = 2.0
 	jump_timer.start()
 	print("Snork отпрыгивает!")

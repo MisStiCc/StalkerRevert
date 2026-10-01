@@ -33,6 +33,7 @@ var _is_music_playing: bool = false
 
 func _ready():
     _setup_players()
+    _register_dummy_sounds()  # Добавляем заглушки
     add_to_group("sound_manager")
     print("SoundManager инициализирован", "SoundManager")
 
@@ -62,6 +63,47 @@ func _setup_players():
         _sfx_players.append(player)
     
     print("Аудиоплееры созданы: 1 музыка, 1 окружение, 5 SFX", "SoundManager")
+
+
+func _register_dummy_sounds():
+    # Создаем заглушки для UI звуков
+    var dummy_stream = AudioStreamWAV.new()
+    dummy_stream.data = []  # Пустой WAV файл
+    dummy_stream.format = AudioStreamWAV.FORMAT_16_BITS
+    dummy_stream.mix_rate = 44100
+    dummy_stream.stereo = false
+    
+    # Регистрируем все необходимые звуки
+    footstep_sounds["ui_hover"] = dummy_stream
+    footstep_sounds["ui_click"] = dummy_stream
+    footstep_sounds["upgrade"] = dummy_stream
+    footstep_sounds["exchange"] = dummy_stream
+    footstep_sounds["pulse_warning"] = dummy_stream
+    
+    # Базовые звуки для аномалий
+    anomaly_sounds["electric"] = dummy_stream
+    anomaly_sounds["thermal"] = dummy_stream
+    anomaly_sounds["gravity"] = dummy_stream
+    anomaly_sounds["chemical"] = dummy_stream
+    anomaly_sounds["radiation"] = dummy_stream
+    
+    # Звуки мутантов
+    mutant_sounds["bloodsucker"] = dummy_stream
+    mutant_sounds["flesh"] = dummy_stream
+    mutant_sounds["snork"] = dummy_stream
+    mutant_sounds["pseudodog"] = dummy_stream
+    mutant_sounds["controller"] = dummy_stream
+    mutant_sounds["poltergeist"] = dummy_stream
+    mutant_sounds["chimera"] = dummy_stream
+    mutant_sounds["zombie"] = dummy_stream
+    
+    # Звуки шагов
+    footstep_sounds["grass"] = dummy_stream
+    footstep_sounds["sand"] = dummy_stream
+    footstep_sounds["stone"] = dummy_stream
+    footstep_sounds["water"] = dummy_stream
+    
+    print("Заглушки звуков созданы", "SoundManager")
 
 
 # ==================== МУЗЫКА ====================
@@ -123,7 +165,7 @@ func _process(delta):
 func play_sound(sound_name: String, volume_mod: float = 1.0, pitch_mod: float = 1.0):
     var sound = _find_sound(sound_name)
     if not sound:
-        print("Звук не найден: " + sound_name, "SoundManager")
+        # Вместо ошибки просто возвращаемся - заглушки уже есть
         return
     
     var player = _get_free_sfx_player()
@@ -136,7 +178,9 @@ func play_sound(sound_name: String, volume_mod: float = 1.0, pitch_mod: float = 
     player.play()
     
     sound_played.emit(sound_name)
-    print("Звук воспроизведен: " + sound_name, "SoundManager")
+    # Убираем лишний лог для часто вызываемых звуков
+    if not sound_name.begins_with("ui_"):
+        print("Звук воспроизведен: " + sound_name, "SoundManager")
 
 
 func _find_sound(sound_name: String) -> AudioStream:

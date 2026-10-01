@@ -73,12 +73,12 @@ func _clean_invalid_objects(current_time: float):
 	for a in known_anomalies:
 		if not is_instance_valid(a):
 			to_remove.append(a)
-			# Не пытаемся получить ID у невалидного объекта!
-		else:
-			var id = a.get_instance_id()
-			if object_timers.has(id) and current_time - object_timers[id] > memory_duration:
-				to_remove.append(a)
-				threat_lost.emit(a)
+			continue  # Не пытаемся получить ID у невалидного объекта!
+		
+		var id = a.get_instance_id()
+		if object_timers.has(id) and current_time - object_timers[id] > memory_duration:
+			to_remove.append(a)
+			threat_lost.emit(a)
 	
 	for a in to_remove:
 		known_anomalies.erase(a)
@@ -90,11 +90,12 @@ func _clean_invalid_objects(current_time: float):
 	for m in known_mutants:
 		if not is_instance_valid(m):
 			to_remove.append(m)
-		else:
-			var id = m.get_instance_id()
-			if object_timers.has(id) and current_time - object_timers[id] > memory_duration:
-				to_remove.append(m)
-				threat_lost.emit(m)
+			continue
+		
+		var id = m.get_instance_id()
+		if object_timers.has(id) and current_time - object_timers[id] > memory_duration:
+			to_remove.append(m)
+			threat_lost.emit(m)
 	
 	for m in to_remove:
 		known_mutants.erase(m)
@@ -106,16 +107,18 @@ func _clean_invalid_objects(current_time: float):
 	for a in known_artifacts:
 		if not is_instance_valid(a):
 			to_remove.append(a)
-		else:
-			var is_collected = a.get("is_collected") if "is_collected" in a else false
-			if is_collected:
-				to_remove.append(a)
-				artifact_lost.emit(a)
-			else:
-				var id = a.get_instance_id()
-				if object_timers.has(id) and current_time - object_timers[id] > memory_duration:
-					to_remove.append(a)
-					artifact_lost.emit(a)
+			continue
+		
+		var is_collected = a.get("is_collected") if "is_collected" in a else false
+		if is_collected:
+			to_remove.append(a)
+			artifact_lost.emit(a)
+			continue
+		
+		var id = a.get_instance_id()
+		if object_timers.has(id) and current_time - object_timers[id] > memory_duration:
+			to_remove.append(a)
+			artifact_lost.emit(a)
 	
 	for a in to_remove:
 		known_artifacts.erase(a)
@@ -127,10 +130,11 @@ func _clean_invalid_objects(current_time: float):
 	for s in known_stalkers:
 		if not is_instance_valid(s) or s == stalker:
 			to_remove.append(s)
-		else:
-			var id = s.get_instance_id()
-			if object_timers.has(id) and current_time - object_timers[id] > memory_duration:
-				to_remove.append(s)
+			continue
+		
+		var id = s.get_instance_id()
+		if object_timers.has(id) and current_time - object_timers[id] > memory_duration:
+			to_remove.append(s)
 	
 	for s in to_remove:
 		known_stalkers.erase(s)
@@ -220,6 +224,30 @@ func get_nearest_threat() -> Node:
 			min_dist = dist
 			nearest = a
 	
+	for m in known_mutants:
+		if not is_instance_valid(m):
+			continue
+		var dist = pos.distance_to(m.global_position)
+		if dist < min_dist:
+			min_dist = dist
+			nearest = m
+	
+	return nearest
+
+
+func get_nearest_anomaly() -> Node:
+	var nearest = null
+	var min_dist = INF
+	var pos = stalker.global_position
+	
+	for a in known_anomalies:
+		if not is_instance_valid(a):
+			continue
+		var dist = pos.distance_to(a.global_position)
+		if dist < min_dist:
+			min_dist = dist
+			nearest = a
+	
 	return nearest
 
 
@@ -257,49 +285,93 @@ func get_nearest_artifact() -> Node:
 
 func get_all_threats() -> Array[Node]:
 	var result = []
-	result.append_array(known_anomalies)
-	result.append_array(known_mutants)
+	for a in known_anomalies:
+		if is_instance_valid(a):
+			result.append(a)
+	for m in known_mutants:
+		if is_instance_valid(m):
+			result.append(m)
 	return result
 
 
 func get_all_artifacts() -> Array[Node]:
-	return known_artifacts.duplicate()
+	var result = []
+	for a in known_artifacts:
+		if is_instance_valid(a):
+			result.append(a)
+	return result
 
 
 func get_all_mutants() -> Array[Node]:
-	return known_mutants.duplicate()
+	var result = []
+	for m in known_mutants:
+		if is_instance_valid(m):
+			result.append(m)
+	return result
 
 
 func get_all_anomalies() -> Array[Node]:
-	return known_anomalies.duplicate()
+	var result = []
+	for a in known_anomalies:
+		if is_instance_valid(a):
+			result.append(a)
+	return result
 
 
 func get_threat_count() -> int:
-	return known_anomalies.size() + known_mutants.size()
+	var count = 0
+	for a in known_anomalies:
+		if is_instance_valid(a):
+			count += 1
+	for m in known_mutants:
+		if is_instance_valid(m):
+			count += 1
+	return count
 
 
 func get_artifact_count() -> int:
-	return known_artifacts.size()
+	var count = 0
+	for a in known_artifacts:
+		if is_instance_valid(a):
+			count += 1
+	return count
 
 
 func get_mutant_count() -> int:
-	return known_mutants.size()
+	var count = 0
+	for m in known_mutants:
+		if is_instance_valid(m):
+			count += 1
+	return count
 
 
 func get_anomaly_count() -> int:
-	return known_anomalies.size()
+	var count = 0
+	for a in known_anomalies:
+		if is_instance_valid(a):
+			count += 1
+	return count
 
 
 func has_artifacts() -> bool:
-	return not known_artifacts.is_empty()
+	for a in known_artifacts:
+		if is_instance_valid(a):
+			return true
+	return false
 
 
 func has_mutants() -> bool:
-	return not known_mutants.is_empty()
+	for m in known_mutants:
+		if is_instance_valid(m):
+			return true
+	return false
 
 
 func has_anomalies() -> bool:
-	return not known_anomalies.is_empty()
+	for a in known_anomalies:
+		if is_instance_valid(a):
+			return true
+	return false
 
 
 func has_threats() -> bool:
@@ -346,9 +418,9 @@ func get_memory_size() -> int:
 
 func get_memory_stats() -> Dictionary:
 	return {
-		"anomalies": known_anomalies.size(),
-		"mutants": known_mutants.size(),
-		"artifacts": known_artifacts.size(),
+		"anomalies": get_anomaly_count(),
+		"mutants": get_mutant_count(),
+		"artifacts": get_artifact_count(),
 		"stalkers": known_stalkers.size(),
 		"total": get_memory_size()
 	}

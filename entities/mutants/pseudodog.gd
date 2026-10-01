@@ -5,10 +5,16 @@ class_name PseudodogMutant
 @export_enum("Adult", "Grey", "PsyDog") var subspecies: String = "Adult"
 @export var howl_cooldown: float = 15.0
 @export var pack_attack_bonus: float = 1.5
+@export var max_distance_from_monolith: float = 100.0
 
 var can_howl: bool = true
 var howl_timer: Timer
 var pack_count: int = 0
+var _original_speed: float
+var _monolith: Node = null
+var _last_monolith_check: float = 0.0
+var _returning_to_monolith: bool = false
+
 
 func _ready():
 	match subspecies:
@@ -35,6 +41,7 @@ func _ready():
 			biomass_cost = 90.0
 	
 	mutant_type = "pseudodog"
+	_original_speed = speed
 	
 	super._ready()
 	
@@ -48,24 +55,63 @@ func _ready():
 	print("Pseudodog mutant initialized: ", subspecies)
 
 
+func _find_monolith() -> Node:
+	var current_time = Time.get_ticks_msec() / 1000.0
+	if current_time - _last_monolith_check > 2.0 or not is_instance_valid(_monolith):
+		_monolith = get_tree().get_first_node_in_group("monolith")
+		_last_monolith_check = current_time
+	return _monolith
+
+
 func _physics_process(delta):
 	if current_state == State.DEAD:
 		return
 	
-	_update_pack_bonus()
+	# ПРОВЕРКА ВАЛИДНОСТИ ЦЕЛИ - ЭТО ГЛАВНОЕ ИСПРАВЛЕНИЕ
+	if target_stalker and not is_instance_valid(target_stalker):
+		target_stalker = null
+		current_state = State.PATROL
+		if navigation_component:
+			navigation_component.stop()
+	
+	# Проверяем расстояние от монолита
+	var monolith = _find_monolith()
+	if monolith and is_instance_valid(monolith) and not _returning_to_monolith and not target_stalker:
+		var dist_to_monolith = global_position.distance_to(monolith.global_position)
+		if dist_to_monolith > max_distance_from_monolith:
+			# Возвращаемся ближе к монолиту
+			_returning_to_monolith = true
+			var dir_to_monolith = (monolith.global_position - global_position).normalized()
+			var target_pos = monolith.global_position + dir_to_monolith * (max_distance_from_monolith * 0.7)
+			if navigation_component:
+				navigation_component.move_to(target_pos)
+				print("Pseudodog возвращается к монолиту")
+			return
+	
+	# Если мы возвращались и уже достаточно близко - сбрасываем флаг
+	if _returning_to_monolith and monolith and is_instance_valid(monolith):
+		var dist_to_monolith = global_position.distance_to(monolith.global_position)
+		if dist_to_monolith < max_distance_from_monolith * 0.8:
+			_returning_to_monolith = false
+			if navigation_component:
+				navigation_component.stop()
+	
+	# Обновляем стайный бонус
+	pack_count = _count_nearby_pseudodogs()
+	if pack_count > 0:
+		speed = _original_speed * (1.0 + pack_count * 0.1)
+	else:
+		speed = _original_speed
 	
 	if subspecies == "PsyDog" and can_howl and current_state == State.CHASE:
 		_try_psy_howl()
 	
-	super._physics_process(delta)
-
-
-func _update_pack_bonus():
-	pack_count = _count_nearby_pseudodogs()
-	if pack_count > 0:
-		var original_speed = speed
-		speed = original_speed * (1.0 + pack_count * 0.1)
-		# Скорость восстановится в следующем кадре через super._physics_process
+	# Если не возвращаемся к монолиту, работаем как обычно
+	if not _returning_to_monolith:
+		super._physics_process(delta)
+	else:
+		# NavigationComponent обновляется сам, здесь только физика
+		move_and_slide()
 
 
 func _count_nearby_pseudodogs() -> int:
@@ -87,15 +133,19 @@ func _patrol(delta):
 	var nearest_dist = INF
 	
 	for stalker in stalkers:
-		if is_instance_valid(stalker):
-			var dist = global_position.distance_to(stalker.global_position)
-			if dist < detection_radius and dist < nearest_dist:
-				nearest_dist = dist
-				nearest_stalker = stalker
+		if not is_instance_valid(stalker):
+			continue
+		
+		var dist = global_position.distance_to(stalker.global_position)
+		if dist < detection_radius and dist < nearest_dist:
+			nearest_dist = dist
+			nearest_stalker = stalker
 	
 	if nearest_stalker:
 		target_stalker = nearest_stalker
 		current_state = State.CHASE
+		_returning_to_monolith = false
+		print("Pseudodog нашёл цель: ", nearest_stalker.name)
 	
 	super._patrol(delta)
 
@@ -103,16 +153,22 @@ func _patrol(delta):
 func _chase(delta):
 	if not target_stalker or not is_instance_valid(target_stalker):
 		current_state = State.PATROL
+		target_stalker = null
+		if navigation_component:
+			navigation_component.stop()
 		return
 	
-	var direction = (target_stalker.global_position - global_position).normalized()
-	velocity = direction * speed
+	# Используем навигацию для преследования
+	if navigation_component:
+		navigation_component.move_to(target_stalker.global_position)
 	
 	var dist = global_position.distance_to(target_stalker.global_position)
 	if dist < 2.0:
 		current_state = State.ATTACK
 	elif dist < 5.0 and randf() < 0.01:
 		_flank_target()
+	
+	super._chase(delta)
 
 
 func _flank_target():
@@ -126,7 +182,13 @@ func _flank_target():
 		right = -right
 	
 	var flank_dir = (to_target + right * 0.5).normalized()
-	velocity = flank_dir * speed
+	
+	# Временно отключаем навигацию для фланга
+	if navigation_component:
+		navigation_component.stop()
+	
+	velocity.x = flank_dir.x * speed
+	velocity.z = flank_dir.z * speed
 	print("Pseudodog фланкирует!")
 
 
@@ -161,6 +223,7 @@ func _on_howl_cooldown_ended():
 func _attack(delta):
 	if not target_stalker or not is_instance_valid(target_stalker):
 		current_state = State.PATROL
+		target_stalker = null
 		return
 	
 	var dist = global_position.distance_to(target_stalker.global_position)
@@ -175,6 +238,8 @@ func _attack(delta):
 		attacked_stalker.emit(target_stalker)
 		attack_timer.start()
 		print("Pseudodog атакует! Урон: ", total_damage)
+	
+	super._attack(delta)
 
 
 func _setup_label():
@@ -184,6 +249,6 @@ func _setup_label():
 	label.font_size = 24
 	label.outline_size = 2
 	label.outline_modulate = Color.BLACK
-	label.modulate = Color(0.6, 0.4, 0.2)  # коричневый
+	label.modulate = Color(0.6, 0.4, 0.2)
 	label.text = "🐺 ПСЕВДОСОБАКА"
 	add_child(label)

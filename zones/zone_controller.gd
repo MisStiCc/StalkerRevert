@@ -50,6 +50,8 @@ var sound_manager: SoundManager
 # Параметры забега
 var run_params: Dictionary = {}
 var is_initialized: bool = false
+# Забег уже завершается (одноразовый finish_run)
+var is_run_finished: bool = false
 
 
 func _ready():
@@ -64,29 +66,98 @@ func _ready():
 	
 	_setup_managers()
 	_connect_managers()
+	
+	# Ждём появления TerrainGenerator
+	await _wait_for_terrain_generator()
+	
+	# Принудительно загружаем чанки вокруг монолита
+	await _force_initial_chunk_load()
+	
+	# Инициализируем забег
 	_initialize_run()
 	
-	# Подключаемся к HUD после того, как все узлы созданы
-	await get_tree().process_frame  # Ждем один кадр, чтобы HUD успел создаться
-	
-	var hud = get_tree().get_first_node_in_group("hud")
-	if hud:
-		hud.anomaly_requested.connect(_on_hud_anomaly_requested)
-		hud.mutant_requested.connect(_on_hud_mutant_requested)
-		print("HUD подключен к ZoneController")
-	else:
-		print("HUD не найден в группе 'hud' - пробуем еще раз через секунду")
-		await get_tree().create_timer(1.0).timeout
-		hud = get_tree().get_first_node_in_group("hud")
-		if hud:
-			hud.anomaly_requested.connect(_on_hud_anomaly_requested)
-			hud.mutant_requested.connect(_on_hud_mutant_requested)
-			print("HUD подключен к ZoneController (со второй попытки)")
-		else:
-			print("HUD так и не найден!")
+	# Подключаемся к HUD
+	await _connect_to_hud()
 	
 	is_initialized = true
 	print("ZoneController: готов!")
+
+
+func _wait_for_terrain_generator():
+	"""Ждёт появления TerrainGenerator"""
+	print("ZoneController: ожидание TerrainGenerator...")
+	var attempts = 0
+	var max_attempts = 30
+	
+	while not get_tree().get_first_node_in_group("terrain_generator") and attempts < max_attempts:
+		await get_tree().process_frame
+		attempts += 1
+	
+	if get_tree().get_first_node_in_group("terrain_generator"):
+		print("ZoneController: TerrainGenerator НАЙДЕН!")
+	else:
+		print("ZoneController: TerrainGenerator НЕ НАЙДЕН после ", max_attempts, " попыток!")
+
+
+func _force_initial_chunk_load():
+	"""Принудительно загружает чанки вокруг монолита при старте"""
+	var terrain = get_tree().get_first_node_in_group("terrain_generator")
+	if not terrain:
+		print("ZoneController: TerrainGenerator не найден, пропускаем загрузку чанков")
+		return
+	
+	var monolith_node = get_tree().get_first_node_in_group("monolith")
+	if not monolith_node:
+		print("ZoneController: Монолит не найден!")
+		return
+	
+	print("ZoneController: принудительная загрузка чанков вокруг монолита...")
+	
+	# Сохраняем позицию камеры
+	var camera = get_viewport().get_camera_3d()
+	var original_pos = camera.global_position if camera else Vector3.ZERO
+	
+	# Временно перемещаем камеру к монолиту
+	if camera:
+		camera.global_position = monolith_node.global_position + Vector3(0, 50, 0)
+		await get_tree().process_frame
+		await get_tree().process_frame
+	
+	# Принудительно обновляем чанки несколько раз
+	for i in range(3):
+		if terrain.has_method("_update_chunks"):
+			terrain._update_chunks()
+		await get_tree().process_frame
+	
+	# Принудительно перестраиваем навигацию
+	if terrain.has_method("force_rebuild_navigation"):
+		terrain.force_rebuild_navigation()
+	
+	# Возвращаем камеру на место
+	if camera and original_pos != Vector3.ZERO:
+		camera.global_position = original_pos
+	
+	print("ZoneController: начальная загрузка чанков завершена. Загружено чанков: ", 
+		  terrain.get_loaded_chunks_count() if terrain.has_method("get_loaded_chunks_count") else 0)
+
+
+func _connect_to_hud():
+	"""Подключается к HUD после его создания"""
+	var hud = get_tree().get_first_node_in_group("hud")
+	var attempts = 0
+	var max_attempts = 10
+	
+	while not hud and attempts < max_attempts:
+		await get_tree().create_timer(0.5).timeout
+		hud = get_tree().get_first_node_in_group("hud")
+		attempts += 1
+	
+	if hud:
+		hud.anomaly_requested.connect(_on_hud_anomaly_requested)
+		hud.mutant_requested.connect(_on_hud_mutant_requested)
+		print("ZoneController: HUD подключен")
+	else:
+		print("ZoneController: HUD не найден после ", max_attempts, " попыток")
 
 
 func _setup_managers():
@@ -185,6 +256,9 @@ func _initialize_run():
 	
 	# Применяем бонусы из лаборатории
 	_apply_lab_bonuses()
+	
+	# Даем время на полную загрузку навигации
+	await get_tree().create_timer(1.0).timeout
 	
 	spawn_manager.start_spawning()
 	
@@ -440,6 +514,20 @@ func register_stalker(stalker: Node):
 	if spawn_manager:
 		spawn_manager.active_stalkers.append(stalker)
 
+# Прямой метод для добавления биомассы при смерти сталкера
+func on_stalker_died(stalker: Node, biomass_returned: float):
+	if resource_manager:
+		resource_manager.add_biomass(biomass_returned)
+		print("Биомасса добавлена (прямой вызов): " + str(biomass_returned))
+	
+	progression_manager.record_stalker_killed()
+	
+	var stalker_type = "unknown"
+	if stalker.has_method("get_stalker_type"):
+		stalker_type = stalker.get_stalker_type()
+	
+	Signals.stalker_died.emit(stalker, stalker_type, stalker.global_position, biomass_returned)
+
 # Информация
 func get_difficulty() -> float: 
 	return progression_manager.get_current_difficulty() if progression_manager else 1.0
@@ -480,6 +568,11 @@ func get_status() -> Dictionary:
 # ==================== ЗАВЕРШЕНИЕ ЗАБЕГА ====================
 
 func finish_run(success: bool):
+	# Защита от повторного вызова (несколько сталкеров у монолита / game_over)
+	if is_run_finished:
+		return
+	is_run_finished = true
+	
 	print("Завершение забега. Успех: " + str(success))
 	
 	# Останавливаем спавн
@@ -490,7 +583,7 @@ func finish_run(success: bool):
 	var result = _collect_run_result(success)
 	
 	# Передаем в GameManager
-	var gm = Engine.get_singleton("GameManager")
+	var gm = get_tree().get_first_node_in_group("game_manager")
 	if gm and gm.has_method("process_run_result"):
 		gm.process_run_result(result)
 	
@@ -509,7 +602,7 @@ func _collect_run_result(success: bool) -> Dictionary:
 		"mutants_created": progression_manager.get_mutants_spawned() if progression_manager else 0,
 		"artifacts_stolen": progression_manager.get_artifacts_stolen() if progression_manager else 0,
 		"biomass_earned": resource_manager.accumulated_biomass if resource_manager else 0.0,
-		"biomass_spent": 0  # TODO: отслеживать траты
+		"biomass_spent": 0
 	}
 	
 	return {

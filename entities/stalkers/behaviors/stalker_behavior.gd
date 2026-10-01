@@ -51,8 +51,10 @@ func should_flee_from(threat: Node) -> bool:
 
 
 func should_attack(threat: Node) -> bool:
-    # По умолчанию: атакуем только мутантов
-    return threat.is_in_group("mutants")
+    # По умолчанию атакуем мутантов и аномалии, вставшие на путь к монолиту
+    if not threat:
+        return false
+    return threat.is_in_group("mutants") or threat.is_in_group("anomalies")
 
 
 func prefers_artifacts() -> bool:

@@ -15,6 +15,7 @@ signal spotted_stalker(stalker: Node3D)
 @export var attack_cooldown: float = 1.0
 @export var biomass_cost: float = 50.0
 @export var mutant_type: String = "base"
+@export var gravity: float = 15.0
 
 enum State { PATROL, CHASE, ATTACK, DEAD }
 var current_state: State = State.PATROL
@@ -22,9 +23,12 @@ var target_stalker: Node3D = null
 var patrol_points: Array[Vector3] = []
 var current_patrol_index: int = 0
 
+# Навигационный компонент
+var navigation_component: NavigationComponent
+var zone_controller: Node = null
+
 @onready var detection_area: Area3D = $DetectionArea
 @onready var attack_timer: Timer = $AttackTimer
-var zone_controller: Node = null
 
 
 func _ready():
@@ -35,6 +39,9 @@ func _ready():
 	if not attack_timer:
 		push_error("Mutant: AttackTimer не найден!")
 		return
+	
+	# Создаем навигационный компонент
+	_setup_navigation_component()
 	
 	detection_area.body_entered.connect(_on_stalker_detected)
 	detection_area.body_exited.connect(_on_stalker_lost)
@@ -52,9 +59,32 @@ func _ready():
 	health = max_health
 
 
+func _setup_navigation_component():
+	# Создаем NavigationAgent3D если его нет
+	var nav_agent = get_node_or_null("NavigationAgent3D")
+	if not nav_agent:
+		nav_agent = NavigationAgent3D.new()
+		nav_agent.name = "NavigationAgent3D"
+		add_child(nav_agent)
+	
+	# Создаем компонент навигации
+	navigation_component = NavigationComponent.new()
+	navigation_component.entity = self
+	navigation_component.nav_agent = nav_agent
+	navigation_component.move_speed = speed
+	add_child(navigation_component)
+	print("NavigationComponent добавлен для мутанта")
+
+
 func _physics_process(delta):
 	if current_state == State.DEAD:
 		return
+	
+	# Добавляем гравитацию
+	if not is_on_floor():
+		velocity.y -= gravity * delta
+	
+	# NavigationComponent обновляется сам в своём _physics_process
 	
 	match current_state:
 		State.PATROL:
@@ -69,14 +99,22 @@ func _physics_process(delta):
 
 func _patrol(delta):
 	if patrol_points.is_empty():
+		# Если нет точек патруля, просто стоим
+		if navigation_component and not navigation_component.is_navigating():
+			# Ищем сталкеров
+			_find_best_target()
 		return
 	
 	var target_pos = patrol_points[current_patrol_index]
-	var direction = (target_pos - global_position).normalized()
-	velocity = direction * speed
 	
-	if global_position.distance_to(target_pos) < 1.0:
+	# Используем навигацию для движения к точке патруля
+	if navigation_component and not navigation_component.is_navigating():
+		navigation_component.move_to(target_pos)
+	
+	if global_position.distance_to(target_pos) < 2.0:
 		current_patrol_index = (current_patrol_index + 1) % patrol_points.size()
+		if navigation_component:
+			navigation_component.move_to(patrol_points[current_patrol_index])
 	
 	# В патруле тоже ищем цели
 	_find_best_target()
@@ -88,10 +126,13 @@ func _chase(delta):
 		if not target_stalker:
 			current_state = State.PATROL
 			target_stalker = null
+			if navigation_component:
+				navigation_component.stop()
 		return
 	
-	var direction = (target_stalker.global_position - global_position).normalized()
-	velocity = direction * speed
+	# Используем навигацию для движения к цели
+	if navigation_component:
+		navigation_component.move_to(target_stalker.global_position)
 	
 	var dist = global_position.distance_to(target_stalker.global_position)
 	if dist < 2.0:
@@ -101,12 +142,16 @@ func _chase(delta):
 		# Потеряли цель
 		target_stalker = null
 		current_state = State.PATROL
+		if navigation_component:
+			navigation_component.stop()
 
 
 func _attack(delta):
 	if not target_stalker or not is_instance_valid(target_stalker):
 		current_state = State.PATROL
 		target_stalker = null
+		if navigation_component:
+			navigation_component.stop()
 		return
 	
 	var dist = global_position.distance_to(target_stalker.global_position)
@@ -115,7 +160,11 @@ func _attack(delta):
 		return
 	
 	# Не двигаемся во время атаки
-	velocity = Vector3.ZERO
+	if navigation_component:
+		navigation_component.stop()
+	
+	velocity.x = 0
+	velocity.z = 0
 	
 	# Пытаемся атаковать
 	_try_attack()
@@ -141,9 +190,13 @@ func _find_best_target():
 		target_stalker = nearest
 		current_state = State.CHASE
 		spotted_stalker.emit(nearest)
+		print("Мутант нашёл цель: ", nearest.name)
 
 
 func _on_stalker_detected(body: Node3D):
+	if not is_instance_valid(body):
+		return
+		
 	if body.has_method("take_damage") and body.is_in_group("stalkers"):
 		# Если у сталкера есть артефакт - сразу в приоритет
 		if body.has_method("has_artifact") and body.has_artifact():

@@ -2,7 +2,7 @@
 extends Node
 class_name NavigationComponent
 
-## Компонент навигации - управляет движением к цели
+## Компонент навигации - управляет движением к цели с улучшенной отладкой
 
 signal target_reached
 signal target_updated(new_target: Vector3)
@@ -19,9 +19,16 @@ var nav_agent: NavigationAgent3D = null:
 		if nav_agent:
 			nav_agent.velocity_computed.connect(_on_velocity_computed)
 			nav_agent.navigation_finished.connect(_on_navigation_finished)
-			nav_agent.target_desired_distance = 2.0
-			nav_agent.path_desired_distance = 1.0
-			print("NavigationAgent3D подключен")
+			# Origin тела сталкера висит на 1.8 над навмешем (капсула со смещением -0.9),
+			# а точки пути лежат на навмеше. Пороги - 3D-дистанции, поэтому должны быть
+			# больше вертикального смещения, иначе агент никогда не перейдёт к следующей
+			# точке пути и не засчитает прибытие.
+			nav_agent.path_desired_distance = 2.5
+			nav_agent.target_desired_distance = 2.5
+			# Привязываем к карте навигации
+			if entity:
+				nav_agent.set_navigation_map(entity.get_world_3d().navigation_map)
+			print("NavigationComponent: NavigationAgent3D подключен")
 
 # Параметры
 var move_speed: float = 5.0:
@@ -43,46 +50,91 @@ var patrol_loop: bool = true
 # Внутреннее состояние
 var _last_entity_pos: Vector3 = Vector3.ZERO
 var _stuck_timer: float = 0.0
-var _stuck_threshold: float = 5.0  # Увеличил до 5 секунд
-var _stuck_distance: float = 1.0    # Увеличил до 1 метра
+var _stuck_threshold: float = 5.0
+var _stuck_distance: float = 1.0
 var _last_target: Vector3 = Vector3.ZERO
 var _move_start_time: float = 0.0
+var _retry_count: int = 0
+var _max_retries: int = 3
+var _log_timer: float = 0.0
+var _debug_enabled: bool = true  # Включим отладку для поиска проблем
 
 
 func _ready():
 	if not nav_agent and entity:
 		nav_agent = entity.get_node_or_null("NavigationAgent3D")
 		if nav_agent:
-			nav_agent.velocity_computed.connect(_on_velocity_computed)
-			nav_agent.navigation_finished.connect(_on_navigation_finished)
-			nav_agent.target_desired_distance = 2.0
-			nav_agent.path_desired_distance = 1.0
+			self.nav_agent = nav_agent
+			print("NavigationComponent: NavigationAgent3D найден у entity")
+		else:
+			print("NavigationComponent: NavigationAgent3D НЕ НАЙДЕН у entity!")
 	
 	set_process(true)
 	set_physics_process(true)
 	
-	print("NavigationComponent инициализирован")
+	print("NavigationComponent инициализирован для ", entity.name)
 
 
 func _process(delta):
 	if not is_moving or not nav_agent:
 		return
 	
-	# Проверка на застревание - только если прошло достаточно времени
+	_log_timer += delta
+	_move_start_time += delta
+	
+	# === УЛУЧШЕННАЯ ПРОВЕРКА НА ЗАСТРЕВАНИЕ ===
+	# _stuck_distance трактуется как порог скорости (м/с): за кадр entity должна
+	# проходить больше чем _stuck_distance * delta, иначе считаем застрявшей
 	if _move_start_time > 2.0:
-		if _last_entity_pos.distance_to(entity.global_position) < _stuck_distance:
+		var distance_moved = _last_entity_pos.distance_to(entity.global_position)
+		if distance_moved < _stuck_distance * delta:
 			_stuck_timer += delta
 			if _stuck_timer >= _stuck_threshold:
-				print("Застревание обнаружено, ищу новый путь")
+				print("NavigationComponent: застревание обнаружено! Позиция: ", entity.global_position, " Цель: ", target_position)
 				path_blocked.emit()
-				# Пробуем переустановить цель
+				
+				# Проверяем, достижима ли цель
 				if _last_target != Vector3.ZERO:
-					nav_agent.target_position = _last_target
+					var is_reachable = _check_target_reachable(_last_target)
+					if not is_reachable:
+						print("NavigationComponent: цель НЕДОСТИЖИМА!")
+						navigation_failed.emit()
+					elif _retry_count < _max_retries:
+						_retry_count += 1
+						var random_offset = Vector3(randf_range(-5, 5), 0, randf_range(-5, 5))
+						print("NavigationComponent: повторная попытка ", _retry_count, " со смещением ", random_offset)
+						nav_agent.target_position = _last_target + random_offset
 				_stuck_timer = 0.0
 		else:
 			_stuck_timer = 0.0
+			_retry_count = 0
 	
 	_last_entity_pos = entity.global_position
+	
+	# === ОТЛАДКА КАЖДЫЕ 2 СЕКУНДЫ ===
+	if _debug_enabled and _log_timer > 2.0:
+		_log_timer = 0.0
+		var next = nav_agent.get_next_path_position()
+		var dist_to_target = entity.global_position.distance_to(target_position) if target_position != Vector3.ZERO else 0
+		var path_size = nav_agent.get_current_navigation_path().size()
+		print("Navigation: entity=", entity.name, 
+			  " moving=", is_moving,
+			  " pos=", Vector3(entity.global_position.x, 0, entity.global_position.z),
+			  " target=", Vector3(target_position.x, 0, target_position.z),
+			  " dist=", dist_to_target,
+			  " next=", Vector3(next.x, 0, next.z),
+			  " path_len=", path_size)
+
+
+func _check_target_reachable(target: Vector3) -> bool:
+	"""Проверяет, достижима ли цель"""
+	if not nav_agent:
+		return false
+	
+	var map = nav_agent.get_navigation_map()
+	var closest_point = NavigationServer3D.map_get_closest_point(map, target)
+	# 3.0 с запасом: origin тела на 1.8 выше навмеша, это добавляется к дистанции
+	return closest_point.distance_to(target) < 3.0
 
 
 func _physics_process(_delta):
@@ -97,98 +149,140 @@ func _physics_process(_delta):
 	if next_pos == Vector3.ZERO:
 		return
 	
-	var direction = (next_pos - entity.global_position).normalized()
-	var desired_velocity = direction * move_speed * terrain_multiplier
+	# Направление считаем только по горизонтали: точки пути лежат на навмеше
+	# и всегда ниже origin тела, иначе normalized даст вектор в землю
+	var direction = next_pos - entity.global_position
+	direction.y = 0.0
+	if direction.length_squared() < 0.0001:
+		return
+	direction = direction.normalized()
 	
+	var desired_velocity = direction * move_speed * terrain_multiplier
+	desired_velocity.y = 0
+	
+	# Используем избегание препятствий если включено
 	if nav_agent.avoidance_enabled:
 		nav_agent.velocity = desired_velocity
 	else:
-		entity.velocity = desired_velocity
-		entity.move_and_slide()
+		entity.velocity.x = desired_velocity.x
+		entity.velocity.z = desired_velocity.z
 
 
 func _on_velocity_computed(safe_velocity: Vector3):
-	entity.velocity = safe_velocity
-	entity.move_and_slide()
+	entity.velocity.x = safe_velocity.x
+	entity.velocity.z = safe_velocity.z
 
 
 func _on_navigation_finished():
+	if not is_moving:
+		# Уже обработано (physics и сигнал navigation_finished срабатывают оба)
+		return
 	is_moving = false
+	_retry_count = 0
+	print("NavigationComponent: цель достигнута! Позиция: ", entity.global_position)
 	target_reached.emit()
 	
 	if is_patrolling and patrol_points.size() > 0:
 		_advance_patrol()
-	
-	print("Навигация завершена")
 
 
 func _advance_patrol():
 	current_patrol_index = (current_patrol_index + 1) % patrol_points.size()
+	print("NavigationComponent: переход к следующей точке патруля")
 	move_to(patrol_points[current_patrol_index])
-	print("Переход к следующей точке патруля: " + str(current_patrol_index))
 
 
 # ==================== ПУБЛИЧНОЕ API ====================
 
 func move_to(position: Vector3):
 	if not nav_agent:
-		print("NavigationAgent3D не назначен")
+		print("NavigationComponent: NavigationAgent3D не назначен!")
 		navigation_failed.emit()
 		return
 	
+	if _last_target.distance_to(position) < 1.0 and is_moving:
+		print("NavigationComponent: уже двигаюсь к этой цели")
+		return
+	
+	# Проверяем, находится ли цель на навмеше
+	var map = nav_agent.get_navigation_map()
+	var closest_point = NavigationServer3D.map_get_closest_point(map, position)
+	var distance_to_navmesh = closest_point.distance_to(position)
+	
+	if distance_to_navmesh > 5.0:
+		# НЕ подменяем цель ближайшей точкой: при пустом или неполном навмеше
+		# ближайшая точка - это край карты, и сталкеры уйдут туда вместо цели.
+		# State machine периодически повторяет move_to, так что цель заработает,
+		# когда навмеш достроится.
+		print("NavigationComponent: цель далеко от навмеша! Цель: ", position,
+			  " Ближайшая точка: ", closest_point, " Дистанция: ", distance_to_navmesh)
+	
+	print("NavigationComponent: двигаюсь к цели ", position)
 	_last_target = position
 	target_position = position
 	nav_agent.target_position = position
 	is_moving = true
 	is_patrolling = false
 	_stuck_timer = 0.0
+	_retry_count = 0
 	_move_start_time = 0.0
 	_last_entity_pos = entity.global_position
 	target_updated.emit(position)
-	
-	print("Движение к цели: " + str(position))
 
 
 func set_patrol_points(points: Array[Vector3], start_index: int = 0, loop: bool = true):
-	patrol_points = points
-	current_patrol_index = clamp(start_index, 0, points.size() - 1) if points.size() > 0 else 0
+	# Фильтруем точки, проверяя их на навмеше
+	patrol_points.clear()
+	for p in points:
+		var map = nav_agent.get_navigation_map() if nav_agent else RID()
+		if map != RID():
+			var closest = NavigationServer3D.map_get_closest_point(map, p)
+			if closest.distance_to(p) < 2.0:
+				patrol_points.append(p)
+			else:
+				print("NavigationComponent: точка патруля ", p, " не на навмеше, пропускаем")
+		else:
+			patrol_points.append(p)
+	
+	current_patrol_index = clamp(start_index, 0, patrol_points.size() - 1) if patrol_points.size() > 0 else 0
 	patrol_loop = loop
 	is_patrolling = true
 	
-	if points.size() > 0:
-		move_to(points[current_patrol_index])
-		print("Патруль установлен, точек: " + str(points.size()))
+	if patrol_points.size() > 0:
+		print("NavigationComponent: установлен патруль из ", patrol_points.size(), " точек")
+		move_to(patrol_points[current_patrol_index])
 	else:
-		print("Патруль без точек")
+		print("NavigationComponent: патруль без точек")
 
 
 func stop():
 	is_moving = false
 	is_patrolling = false
+	_retry_count = 0
 	if nav_agent:
 		nav_agent.target_position = entity.global_position
-	print("Движение остановлено")
+	print("NavigationComponent: движение остановлено")
 
 
 func pause():
 	is_moving = false
-	print("Движение приостановлено")
+	print("NavigationComponent: движение приостановлено")
 
 
 func resume():
 	if target_position != Vector3.ZERO:
 		move_to(target_position)
-		print("Движение возобновлено")
+		print("NavigationComponent: движение возобновлено")
 
 
 func set_speed(speed: float):
 	move_speed = speed
-	print("Скорость изменена на " + str(speed))
+	print("NavigationComponent: скорость изменена на ", speed)
 
 
 func set_terrain_multiplier(mult: float):
 	terrain_multiplier = mult
-	print("Множитель местности изменен на " + str(mult))
+	print("NavigationComponent: множитель местности изменен на ", mult)
 
 
 func get_distance_to_target() -> float:
@@ -200,11 +294,7 @@ func get_distance_to_target() -> float:
 func has_valid_path() -> bool:
 	if not nav_agent:
 		return false
-	return not nav_agent.is_navigation_finished()
-
-
-func get_target() -> Vector3:
-	return target_position
+	return not nav_agent.is_navigation_finished() and nav_agent.get_current_navigation_path().size() > 1
 
 
 func is_navigating() -> bool:
@@ -217,3 +307,7 @@ func get_current_patrol_index() -> int:
 
 func get_patrol_points() -> Array[Vector3]:
 	return patrol_points.duplicate()
+
+
+func enable_debug(enable: bool):
+	_debug_enabled = enable

@@ -72,7 +72,7 @@ func _physics_process(delta):
 
 
 func _try_go_invisible():
-	if not can_go_invisible:
+	if not can_go_invisible or is_invisible:  # Добавлена проверка is_invisible
 		return
 	
 	is_invisible = true
@@ -85,6 +85,9 @@ func _try_go_invisible():
 
 
 func _on_invisibility_ended():
+	if not is_invisible:  # Защита от множественных вызовов
+		return
+		
 	is_invisible = false
 	print("Bloodsucker стал видимым")
 	
@@ -126,7 +129,8 @@ func _chase(delta):
 		return
 	
 	var direction = (target_stalker.global_position - global_position).normalized()
-	velocity = direction * speed
+	velocity.x = direction.x * speed
+	velocity.z = direction.z * speed
 	
 	if is_invisible and is_instance_valid(target_stalker):
 		var dist = global_position.distance_to(target_stalker.global_position)
@@ -146,7 +150,8 @@ func _ambush_attack():
 	invisibility_timer.stop()
 	
 	var direction = (target_stalker.global_position - global_position).normalized()
-	velocity = direction * speed * 2.0
+	velocity.x = direction.x * speed * 2.0
+	velocity.z = direction.z * speed * 2.0
 	velocity.y = 2.0
 	
 	target_stalker.take_damage(leap_damage, self)
