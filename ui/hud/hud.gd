@@ -5,6 +5,7 @@ class_name HUD
 signal anomaly_requested(anomaly_type: String)
 signal mutant_requested(mutant_type: String)
 signal emission_requested
+signal start_run_requested
 
 @onready var energy_value: Label = $Resources/EnergyValue
 @onready var biomass_value: Label = $Resources/BiomassValue
@@ -16,6 +17,8 @@ signal emission_requested
 @onready var emission_button: Button = $EmissionPanel/EmissionButton
 
 @onready var anomaly_panel: Panel = $AnomalyPanel
+@onready var start_panel: Panel = $StartPanel
+@onready var start_run_button: Button = $StartPanel/StartRunButton
 @onready var mutant_panel: Panel = $MutantPanel
 
 # Кнопки аномалий
@@ -101,6 +104,7 @@ func _connect_buttons():
 	zombie_button.pressed.connect(_on_zombie_pressed)
 	
 	emission_button.pressed.connect(_on_emission_pressed)
+	start_run_button.pressed.connect(_on_start_run_pressed)
 
 
 func _setup_sounds():
@@ -176,6 +180,14 @@ func _on_emission_ended():
 	is_emission_active = false
 	emission_label.text = ""
 	emission_timer = emission_cooldown
+
+
+func _on_start_run_pressed():
+	_play_click_sound()
+	start_run_requested.emit()
+	# Кнопка одноразовая: до конца забега панель не нужна
+	start_panel.visible = false
+	print("HUD: старт забега запрошен")
 
 
 func _on_emission_pressed():

@@ -273,3 +273,23 @@ offset_top = 150.0
 offset_right = 90.0
 offset_bottom = 175.0
 text = "Зомби"
+
+[node name="StartPanel" type="Panel" parent="."]
+offset_left = 410.0
+offset_top = 10.0
+offset_right = 650.0
+offset_bottom = 100.0
+
+[node name="StartHint" type="Label" parent="StartPanel"]
+offset_left = 10.0
+offset_top = 5.0
+offset_right = 230.0
+offset_bottom = 25.0
+text = "Фаза подготовки - расставьте защиты"
+
+[node name="StartRunButton" type="Button" parent="StartPanel"]
+offset_left = 10.0
+offset_top = 30.0
+offset_right = 230.0
+offset_bottom = 60.0
+text = "▶ СТАРТ ЗАБЕГА"

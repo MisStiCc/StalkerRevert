@@ -49,6 +49,8 @@ var run_params: Dictionary = {}
 var is_initialized: bool = false
 # Забег уже завершается (одноразовый finish_run)
 var is_run_finished: bool = false
+# Фаза подготовки: сталкеры не спавнятся, пока игрок не нажмёт СТАРТ
+var is_prep_phase: bool = true
 
 
 func _ready():
@@ -138,6 +140,15 @@ func _force_initial_chunk_load():
 		  terrain.get_loaded_chunks_count() if terrain.has_method("get_loaded_chunks_count") else 0)
 
 
+func start_run():
+	"""Запускает спавн сталкеров после фазы подготовки"""
+	if not is_prep_phase:
+		return
+	is_prep_phase = false
+	print("ZoneController: СТАРТ - сталкеры пошли!")
+	spawn_manager.start_spawning()
+
+
 func _connect_to_hud():
 	"""Подключается к HUD после его создания"""
 	var hud = get_tree().get_first_node_in_group("hud")
@@ -152,6 +163,8 @@ func _connect_to_hud():
 	if hud:
 		hud.anomaly_requested.connect(_on_hud_anomaly_requested)
 		hud.mutant_requested.connect(_on_hud_mutant_requested)
+		if hud.has_signal("start_run_requested"):
+			hud.start_run_requested.connect(start_run)
 		print("ZoneController: HUD подключен")
 	else:
 		print("ZoneController: HUD не найден после ", max_attempts, " попыток")
@@ -254,13 +267,9 @@ func _initialize_run():
 	# Применяем бонусы из лаборатории
 	_apply_lab_bonuses()
 	
-	# Даем время на полную загрузку навигации
-	await get_tree().create_timer(1.0).timeout
-	
-	spawn_manager.start_spawning()
-	
+	# Фаза подготовки: спавн сталкеров начнётся по кнопке СТАРТ в HUD
 	Signals.run_started.emit(run_data.run_number, run_data.difficulty, pulses_to_win)
-	print("Забег начат: #" + str(run_data.run_number) + " сложность: " + str(run_data.difficulty))
+	print("Забег #" + str(run_data.run_number) + " в фазе подготовки (сложность: " + str(run_data.difficulty) + "). Расставьте защиты и нажмите СТАРТ.")
 
 
 func _apply_lab_bonuses():
@@ -508,8 +517,9 @@ func spawn_mutant(mutant_type: String, position: Vector3) -> Node:
 
 # Регистрация
 func register_stalker(stalker: Node):
-	if spawn_manager:
-		spawn_manager.active_stalkers.append(stalker)
+	# В spawn_manager.active_stalkers сталкера уже добавил SpawnManager при спавне:
+	# повторный append давал двойной счётчик и «вечных» призраков после смерти
+	pass
 
 # Прямой метод для добавления биомассы при смерти сталкера
 func on_stalker_died(stalker: Node, biomass_returned: float):

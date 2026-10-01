@@ -186,7 +186,7 @@ func get_save_info(slot: int) -> Dictionary:
 
 
 func get_all_saves_info() -> Array[Dictionary]:
-	var info = []
+	var info: Array[Dictionary] = []
 	for i in range(3):
 		info.append(get_save_info(i))
 	return info
