@@ -16,6 +16,9 @@ signal quit_pressed
 @onready var load_screen: Control = $LoadScreen
 @onready var settings_screen: Control = $SettingsScreen
 @onready var save_slots_container: VBoxContainer = $LoadScreen/Panel/VBox/SaveSlots
+@onready var back_button: Button = $SettingsScreen/Panel/BackButton
+@onready var music_slider: HSlider = $SettingsScreen/Panel/MusicSlider
+@onready var sfx_slider: HSlider = $SettingsScreen/Panel/SfxSlider
 
 var game_manager: Node
 
@@ -23,6 +26,7 @@ var game_manager: Node
 func _ready():
 	_setup_buttons()
 	_setup_sounds()
+	_setup_settings()
 	
 	load_screen.visible = false
 	settings_screen.visible = false
@@ -37,6 +41,35 @@ func _setup_buttons():
 	load_button.pressed.connect(_on_load_pressed)
 	settings_button.pressed.connect(_on_settings_pressed)
 	quit_button.pressed.connect(_on_quit_pressed)
+	back_button.pressed.connect(_on_back_pressed)
+
+
+func _setup_settings():
+	"""Слайдеры громкости управляют аудиошинами Music и SFX"""
+	music_slider.value_changed.connect(_on_music_volume_changed)
+	sfx_slider.value_changed.connect(_on_sfx_volume_changed)
+	
+	var music_idx = AudioServer.get_bus_index("Music")
+	var sfx_idx = AudioServer.get_bus_index("SFX")
+	if music_idx >= 0:
+		music_slider.set_value_no_signal(db_to_linear(AudioServer.get_bus_volume_db(music_idx)))
+	if sfx_idx >= 0:
+		sfx_slider.set_value_no_signal(db_to_linear(AudioServer.get_bus_volume_db(sfx_idx)))
+
+
+func _on_music_volume_changed(value: float):
+	_set_bus_volume("Music", value)
+
+
+func _on_sfx_volume_changed(value: float):
+	_set_bus_volume("SFX", value)
+
+
+func _set_bus_volume(bus_name: String, value: float):
+	var idx = AudioServer.get_bus_index(bus_name)
+	if idx >= 0:
+		AudioServer.set_bus_volume_db(idx, linear_to_db(max(value, 0.0001)))
+		AudioServer.set_bus_mute(idx, value <= 0.001)
 
 
 func _setup_sounds():

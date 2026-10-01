@@ -79,7 +79,7 @@ size_flags_vertical = 3
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_stretch_ratio = 0.33
-text = "АНОМАЛИИ"
+text = ""
 
 [node name="StationName" type="Label" parent="VBox/Stations/AnomalyStation" unique_id=769103795]
 layout_mode = 1
@@ -117,7 +117,7 @@ horizontal_alignment = 1
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_stretch_ratio = 0.33
-text = "МУТАНТЫ"
+text = ""
 
 [node name="StationName" type="Label" parent="VBox/Stations/MutantStation" unique_id=1163299845]
 layout_mode = 1
@@ -155,7 +155,7 @@ horizontal_alignment = 1
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_stretch_ratio = 0.33
-text = "МОНОЛИТ"
+text = ""
 
 [node name="StationName" type="Label" parent="VBox/Stations/MonolithStation" unique_id=1262906922]
 layout_mode = 1
