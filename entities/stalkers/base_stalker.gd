@@ -25,7 +25,7 @@ signal target_lost(target: Node)
 @export var detection_radius: float = 20.0
 @export var attack_range: float = 3.0
 @export var attack_cooldown: float = 1.0
-@export var biomass_return: float = 10.0
+@export var biomass_return: float = 20.0
 @export var gravity: float = 15.0
 
 # Компоненты (будут инициализированы в наследниках)

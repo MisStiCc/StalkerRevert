@@ -46,9 +46,9 @@ var mutant_costs: Dictionary = {
 
 # Возврат биомассы за сталкеров
 var stalker_biomass_returns: Dictionary = {
-	"novice": 8.0,
-	"veteran": 15.0,
-	"master": 30.0
+	"novice": 16.0,
+	"veteran": 30.0,
+	"master": 60.0
 }
 
 # Множители из лаборатории
@@ -348,10 +348,7 @@ func _on_stalker_died(stalker: Node):
 	
 	stalker_died.emit(stalker, return_value)
 	print("Сталкер погиб, возвращено биомассы: " + str(return_value))
-	
-	var zc = get_tree().get_first_node_in_group("zone_controller")
-	if zc and zc.has_method("add_biomass"):
-		zc.add_biomass(return_value)
+	# Биомассу начисляет BaseStalker._on_died -> ZoneController.on_stalker_died
 
 
 # ==================== МУТАНТЫ ====================

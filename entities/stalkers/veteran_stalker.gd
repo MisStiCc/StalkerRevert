@@ -25,7 +25,7 @@ func _ready():
 	detection_radius = 25.0
 	attack_range = 3.5
 	attack_cooldown = 0.8
-	biomass_return = 15.0
+	biomass_return = 30.0
 	armor = 5.0
 	_original_speed = speed
 	

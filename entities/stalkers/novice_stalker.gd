@@ -23,7 +23,7 @@ func _ready():
 	detection_radius = 20.0
 	attack_range = 3.0
 	attack_cooldown = 1.0
-	biomass_return = 8.0
+	biomass_return = 16.0
 	armor = 0.0
 	
 	# Инициализация компонентов

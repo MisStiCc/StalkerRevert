@@ -23,7 +23,7 @@ signal critical_biomass_reached(percent: float)
         biomass_changed.emit(current_biomass, max_biomass)
 
 @export var energy_regen_rate: float = 1.0
-@export var critical_threshold: float = 0.8
+@export var critical_threshold: float = 0.4
 
 # Текущие значения
 var current_energy: float:

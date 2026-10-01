@@ -41,7 +41,7 @@ var sound_manager: SoundManager
 
 @export var max_energy: float = 1000.0
 @export var max_biomass: float = 1000.0
-@export var critical_biomass_threshold: float = 0.8
+@export var critical_biomass_threshold: float = 0.4
 @export var pulse_duration: float = 5.0
 # Победа: 3 выброса (от кнопки или от переполнения биомассы) ИЛИ отбить все волны
 @export var pulses_to_win: int = 3
@@ -417,7 +417,8 @@ func _on_wave_ended(wave_number: int, survivors: int):
 
 
 func _on_stalker_died(stalker: Node, biomass_returned: float):
-	resource_manager.add_biomass(biomass_returned)
+	# Биомассу начисляет ТОЛЬКО BaseStalker._on_died -> on_stalker_died:
+	# здесь был второй счёт (плюс третий в SpawnManager) - доход завышался втрое
 	progression_manager.record_stalker_killed()
 	
 	var stalker_type = "unknown"
