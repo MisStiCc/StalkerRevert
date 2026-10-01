@@ -97,9 +97,21 @@ func _spawn_collect_effect():
         await get_tree().create_timer(particles.lifetime).timeout
 
 
-func set_rarity_and_value(new_rarity: GameEnums.Rarity, new_value: int):
-    rarity = new_rarity
-    value = new_value
+func set_rarity_and_value(new_rarity, new_value: float):
+    # Принимает и строку из конфига ("common"/"rare"/"legendary"),
+    # и GameEnums.Rarity; value в Collectible типизирован как int
+    if new_rarity is String:
+        match String(new_rarity).to_lower():
+            "rare":
+                rarity = GameEnums.Rarity.RARE
+            "legendary":
+                rarity = GameEnums.Rarity.LEGENDARY
+            _:
+                rarity = GameEnums.Rarity.COMMON
+    else:
+        rarity = new_rarity as GameEnums.Rarity
+    value = int(new_value)
+    add_to_group("artifacts_" + get_rarity_name())
     _update_visual()
     print("Редкость изменена на " + get_rarity_name() + ", ценность: " + str(value))
 

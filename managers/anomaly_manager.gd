@@ -169,10 +169,6 @@ func create_artifact(artifact_type: String, position: Vector3, rarity: String = 
 	var artifact = scene.instantiate()
 	artifact.position = position
 	
-	# Устанавливаем редкость и ценность
-	if artifact.has_method("set_rarity_and_value"):
-		artifact.set_rarity_and_value(rarity, value)
-	
 	# Подключаем сигналы
 	if artifact.has_signal("stolen"):
 		artifact.stolen.connect(_on_artifact_stolen)
@@ -181,6 +177,12 @@ func create_artifact(artifact_type: String, position: Vector3, rarity: String = 
 	
 	artifact.add_to_group("artifacts")
 	get_tree().current_scene.add_child(artifact)
+	
+	# Редкость и ценность задаём ПОСЛЕ add_child: _ready() артефакта
+	# перетирает их экспортными значениями по умолчанию
+	if artifact.has_method("set_rarity_and_value"):
+		artifact.set_rarity_and_value(rarity, value)
+	
 	active_artifacts.append(artifact)
 	
 	# Запускаем таймер для артефактов на земле
