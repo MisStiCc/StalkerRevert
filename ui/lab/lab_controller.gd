@@ -45,6 +45,8 @@ var game_manager: Node
 func _ready():
 	print("lab_controller: _ready started")
 	
+	_load_cover_art()
+	
 	# Ищем GameManager один раз при старте
 	game_manager = get_tree().get_first_node_in_group("game_manager")
 	
@@ -53,6 +55,20 @@ func _ready():
 	_refresh_ui()
 	
 	print("lab_controller: initialized, GameManager найден: ", game_manager != null)
+
+
+func _load_cover_art():
+	"""Фоновая обложка лаборатории: res://ui/lab/lab_background.svg (опционально).
+	Файла нет - остаётся тёмная подложка Background."""
+	var cover: TextureRect = get_node_or_null("CoverArt")
+	if not cover:
+		return
+	const COVER_PATH := "res://ui/lab/lab_background.svg"
+	if ResourceLoader.exists(COVER_PATH):
+		cover.texture = load(COVER_PATH)
+		print("lab_controller: обложка лаборатории загружена")
+	else:
+		cover.visible = false
 
 
 func _load_data():

@@ -23,6 +23,18 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.1, 0.12, 0.15, 1)
 
+[node name="CoverArt" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = null
+expand_mode = 1
+stretch_mode = 6
+
 [node name="VBox" type="VBoxContainer" parent="." unique_id=1099973283]
 layout_mode = 1
 anchors_preset = 15
