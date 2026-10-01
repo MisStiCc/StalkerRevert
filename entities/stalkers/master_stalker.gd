@@ -22,7 +22,7 @@ func _ready():
 	behavior_type = GameEnums.StalkerBehavior.AGGRESSIVE
 	health = 250.0
 	max_health = 250.0
-	speed = 6.0
+	speed = 4.2
 	damage = 25.0
 	detection_radius = 30.0
 	attack_range = 4.0

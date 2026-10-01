@@ -68,78 +68,64 @@ func _refresh_memory():
 
 
 func _clean_invalid_objects(current_time: float):
+	# Освобождённые объекты нельзя передавать в erase() типизированного массива,
+	# поэтому списки пересобираются фильтрацией, а не чистятся по одному
+	var kept: Array[Node] = []
+	
 	# Аномалии
-	var to_remove = []
 	for a in known_anomalies:
 		if not is_instance_valid(a):
-			to_remove.append(a)
-			continue  # Не пытаемся получить ID у невалидного объекта!
-		
+			continue
 		var id = a.get_instance_id()
 		if object_timers.has(id) and current_time - object_timers[id] > memory_duration:
-			to_remove.append(a)
 			threat_lost.emit(a)
-	
-	for a in to_remove:
-		known_anomalies.erase(a)
-		if is_instance_valid(a):
-			object_timers.erase(a.get_instance_id())
+			object_timers.erase(id)
+			continue
+		kept.append(a)
+	known_anomalies = kept
 	
 	# Мутанты
-	to_remove.clear()
+	kept = []
 	for m in known_mutants:
 		if not is_instance_valid(m):
-			to_remove.append(m)
 			continue
-		
 		var id = m.get_instance_id()
 		if object_timers.has(id) and current_time - object_timers[id] > memory_duration:
-			to_remove.append(m)
 			threat_lost.emit(m)
-	
-	for m in to_remove:
-		known_mutants.erase(m)
-		if is_instance_valid(m):
-			object_timers.erase(m.get_instance_id())
+			object_timers.erase(id)
+			continue
+		kept.append(m)
+	known_mutants = kept
 	
 	# Артефакты
-	to_remove.clear()
+	kept = []
 	for a in known_artifacts:
 		if not is_instance_valid(a):
-			to_remove.append(a)
 			continue
-		
+		var id = a.get_instance_id()
 		var is_collected = a.get("is_collected") if "is_collected" in a else false
 		if is_collected:
-			to_remove.append(a)
 			artifact_lost.emit(a)
+			object_timers.erase(id)
 			continue
-		
-		var id = a.get_instance_id()
 		if object_timers.has(id) and current_time - object_timers[id] > memory_duration:
-			to_remove.append(a)
 			artifact_lost.emit(a)
-	
-	for a in to_remove:
-		known_artifacts.erase(a)
-		if is_instance_valid(a):
-			object_timers.erase(a.get_instance_id())
+			object_timers.erase(id)
+			continue
+		kept.append(a)
+	known_artifacts = kept
 	
 	# Сталкеры
-	to_remove.clear()
-	for s in known_stalkers:
-		if not is_instance_valid(s) or s == stalker:
-			to_remove.append(s)
+	kept = []
+	for sk in known_stalkers:
+		if not is_instance_valid(sk) or sk == stalker:
 			continue
-		
-		var id = s.get_instance_id()
+		var id = sk.get_instance_id()
 		if object_timers.has(id) and current_time - object_timers[id] > memory_duration:
-			to_remove.append(s)
-	
-	for s in to_remove:
-		known_stalkers.erase(s)
-		if is_instance_valid(s):
-			object_timers.erase(s.get_instance_id())
+			object_timers.erase(id)
+			continue
+		kept.append(sk)
+	known_stalkers = kept
 
 
 func _scan_for_anomalies(tree: SceneTree, pos: Vector3, current_time: float):

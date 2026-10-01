@@ -14,8 +14,8 @@ signal stalker_died(stalker: Node, biomass_returned: float)
 @export var spawn_interval: float = 30.0
 @export var min_stalkers_per_wave: int = 3
 @export var max_stalkers_per_wave: int = 6
-@export var spawn_radius: float = 80.0
-@export var min_spawn_distance: float = 60.0
+@export var spawn_radius: float = 150.0
+@export var min_spawn_distance: float = 90.0
 
 # Сцены сталкеров
 var stalker_scenes: Dictionary = {

@@ -18,7 +18,7 @@ func _ready():
 	behavior_type = GameEnums.StalkerBehavior.GREEDY
 	health = 80.0
 	max_health = 80.0
-	speed = 4.0
+	speed = 2.8
 	damage = 8.0
 	detection_radius = 20.0
 	attack_range = 3.0

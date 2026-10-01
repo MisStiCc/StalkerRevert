@@ -19,7 +19,7 @@ signal target_lost(target: Node)
 @export var behavior_type: GameEnums.StalkerBehavior = GameEnums.StalkerBehavior.GREEDY
 @export var health: float = 100.0
 @export var max_health: float = 100.0
-@export var speed: float = 5.0
+@export var speed: float = 3.5
 @export var damage: float = 10.0
 @export var armor: float = 0.0
 @export var detection_radius: float = 20.0

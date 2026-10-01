@@ -5,7 +5,7 @@ class_name TerrainGenerator
 signal chunk_generated(chunk_pos: Vector2i)
 
 @export var chunk_size: int = 32
-@export var load_distance: int = 2
+@export var load_distance: int = 4
 @export var terrain_height: float = 10.0
 @export var noise_scale: float = 0.02
 @export var ground_y: float = 0.0  # Высота земли
@@ -126,6 +126,10 @@ func _update_chunks():
 	
 	var chunks_to_unload = []
 	for chunk_pos in loaded_chunks.keys():
+		# Чанки вокруг монолита всегда загружены: арена спавна сталкеров,
+		# из них не должен исчезать пол при уходе камеры
+		if abs(chunk_pos.x) <= load_distance + 1 and abs(chunk_pos.y) <= load_distance + 1:
+			continue
 		if abs(chunk_pos.x - current_chunk.x) > load_distance + 1 or \
 		   abs(chunk_pos.y - current_chunk.y) > load_distance + 1:
 			chunks_to_unload.append(chunk_pos)

@@ -115,7 +115,7 @@ func _process(delta):
 	if _debug_enabled and _log_timer > 2.0:
 		_log_timer = 0.0
 		var next = nav_agent.get_next_path_position()
-		var dist_to_target = entity.global_position.distance_to(target_position) if target_position != Vector3.ZERO else 0
+		var dist_to_target = entity.global_position.distance_to(target_position) if target_position != Vector3.ZERO else 0.0
 		var path_size = nav_agent.get_current_navigation_path().size()
 		print("Navigation: entity=", entity.name, 
 			  " moving=", is_moving,

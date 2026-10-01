@@ -20,7 +20,7 @@ func _ready():
 	behavior_type = GameEnums.StalkerBehavior.BRAVE
 	health = 150.0
 	max_health = 150.0
-	speed = 5.5
+	speed = 3.8
 	damage = 15.0
 	detection_radius = 25.0
 	attack_range = 3.5
