@@ -23,6 +23,11 @@ var target_stalker: Node3D = null
 var patrol_points: Array[Vector3] = []
 var current_patrol_index: int = 0
 
+# Патруль вокруг точки спавна
+@export var patrol_radius: float = 12.0
+@export var patrol_points_count: int = 5
+var _spawn_position: Vector3 = Vector3.ZERO
+
 # Навигационный компонент
 var navigation_component: NavigationComponent
 var zone_controller: Node = null
@@ -51,6 +56,9 @@ func _ready():
 	attack_timer.timeout.connect(_on_attack_cooldown_ended)
 	
 	add_to_group("mutants")
+	
+	# Генерируем точки патруля вокруг места появления
+	_generate_patrol_points()
 	
 	zone_controller = get_tree().get_first_node_in_group("zone_controller")
 	if zone_controller and zone_controller.has_method("register_mutant"):
@@ -95,6 +103,17 @@ func _physics_process(delta):
 			_attack(delta)
 	
 	move_and_slide()
+
+
+func _generate_patrol_points():
+	"""Точки патруля в радиусе patrol_radius от точки спавна"""
+	_spawn_position = global_position
+	patrol_points.clear()
+	for i in range(patrol_points_count):
+		var angle = TAU * i / patrol_points_count + randf_range(-0.4, 0.4)
+		var dist = patrol_radius * randf_range(0.4, 1.0)
+		var pos = _spawn_position + Vector3(cos(angle) * dist, 0.0, sin(angle) * dist)
+		patrol_points.append(pos)
 
 
 func _patrol(_delta):

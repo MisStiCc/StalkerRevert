@@ -148,8 +148,10 @@ func _on_upgrade_clicked(upgrade_id: String):
 		lab_data.biomass -= cost
 		lab_data.purchase_upgrade(upgrade_id)
 		
-		var gm = Engine.get_singleton("GameManager")
-		if gm:
+		# Автозагрузки не зарегистрированы как Engine-синглтоны:
+		# GameManager ищем через группу (см. соглашения проекта)
+		var gm = get_tree().get_first_node_in_group("game_manager")
+		if gm and gm.has_method("save_game"):
 			gm.save_game(0)
 		
 		# Обновляем UI

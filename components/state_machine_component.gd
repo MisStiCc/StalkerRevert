@@ -172,9 +172,11 @@ func _process_attack_anomaly(_delta):
 	if target and is_instance_valid(target):
 		var dist = stalker.global_position.distance_to(target.global_position)
 		if dist < 5.0:
-			if target.has_method("take_damage"):
-				# Исправлено: используем stalker.damage вместо health.get_damage()
+			# Атака с кулдауном сталкера: без проверки attack_timer урон
+			# наносился каждый кадр (~480 DPS) и мутанты умирали мгновенно
+			if target.has_method("take_damage") and stalker.attack_timer <= 0.0:
 				target.take_damage(stalker.damage, stalker)
+				stalker.attack_timer = stalker.attack_cooldown
 		elif navigation and (not navigation.is_navigating() or _target_update_timer > 1.0):
 			print("StateMachine: ATTACK_ANOMALY - двигаюсь к аномалии")
 			navigation.move_to(target.global_position)
@@ -186,9 +188,10 @@ func _process_attack_mutant(_delta):
 	if target and is_instance_valid(target):
 		var dist = stalker.global_position.distance_to(target.global_position)
 		if dist < 3.0:
-			if target.has_method("take_damage"):
-				# Исправлено: используем stalker.damage
+			# Атака с кулдауном сталкера (общий attack_timer с _check_attack)
+			if target.has_method("take_damage") and stalker.attack_timer <= 0.0:
 				target.take_damage(stalker.damage, stalker)
+				stalker.attack_timer = stalker.attack_cooldown
 		elif navigation and (not navigation.is_navigating() or _target_update_timer > 1.0):
 			print("StateMachine: ATTACK_MUTANT - двигаюсь к мутанту")
 			navigation.move_to(target.global_position)
