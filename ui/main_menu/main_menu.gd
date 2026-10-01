@@ -16,6 +16,8 @@ signal quit_pressed
 @onready var load_screen: Control = $LoadScreen
 @onready var settings_screen: Control = $SettingsScreen
 @onready var save_slots_container: VBoxContainer = $LoadScreen/Panel/VBox/SaveSlots
+@onready var title_label: Label = $VBox/Title
+@onready var cover_art: TextureRect = $CoverArt
 @onready var back_button: Button = $SettingsScreen/Panel/BackButton
 @onready var music_slider: HSlider = $SettingsScreen/Panel/MusicSlider
 @onready var sfx_slider: HSlider = $SettingsScreen/Panel/SfxSlider
@@ -27,6 +29,7 @@ func _ready():
 	_setup_buttons()
 	_setup_sounds()
 	_setup_settings()
+	_load_cover_art()
 	
 	load_screen.visible = false
 	settings_screen.visible = false
@@ -34,6 +37,16 @@ func _ready():
 	# Ищем GameManager один раз при старте
 	game_manager = get_tree().get_first_node_in_group("game_manager")
 	print("MainMenu: инициализирован, GameManager найден: ", game_manager != null)
+
+
+func _load_cover_art():
+	"""Фон меню - тот же арт, что и в лаборатории: res://ui/lab/lab_background.svg.
+	В арте уже есть заголовок игры, поэтому текстовый Title прячем."""
+	const COVER_PATH := "res://ui/lab/lab_background.svg"
+	if ResourceLoader.exists(COVER_PATH):
+		cover_art.texture = load(COVER_PATH)
+		title_label.visible = false
+		print("MainMenu: фон-обложка загружена")
 
 
 func _setup_buttons():

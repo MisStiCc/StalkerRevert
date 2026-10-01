@@ -29,6 +29,10 @@ signal settings_opened
 # Нижние кнопки
 @onready var menu_button: Button = $VBox/BottomButtons/MenuButton
 @onready var settings_button: Button = $VBox/BottomButtons/SettingsButton
+@onready var settings_screen: Control = $SettingsScreen
+@onready var settings_music_slider: HSlider = $SettingsScreen/Panel/MusicSlider
+@onready var settings_sfx_slider: HSlider = $SettingsScreen/Panel/SfxSlider
+@onready var settings_back_button: Button = $SettingsScreen/Panel/BackButton
 @onready var save_button: Button = $VBox/BottomButtons/SaveButton
 
 # Панели
@@ -90,6 +94,8 @@ func _setup_connections():
 	start_run_button.pressed.connect(_on_start_run_pressed)
 	menu_button.pressed.connect(_on_menu_pressed)
 	settings_button.pressed.connect(_on_settings_pressed)
+	settings_back_button.pressed.connect(_on_settings_back_pressed)
+	_setup_settings_sliders()
 	save_button.pressed.connect(_on_save_pressed)
 	artifact_storage_button.pressed.connect(_on_storage_pressed)
 	
@@ -206,10 +212,37 @@ func _on_menu_pressed():
 		get_tree().change_scene_to_file("res://scenes/ui/main_menu.tscn")
 
 
+func _setup_settings_sliders():
+	"""Слайдеры громкости лаборатории - те же аудиошины Music/SFX,
+	что и в главном меню (значения глобальные)"""
+	settings_music_slider.value_changed.connect(
+		func(v): _set_bus_volume("Music", v))
+	settings_sfx_slider.value_changed.connect(
+		func(v): _set_bus_volume("SFX", v))
+	var music_idx = AudioServer.get_bus_index("Music")
+	var sfx_idx = AudioServer.get_bus_index("SFX")
+	if music_idx >= 0:
+		settings_music_slider.set_value_no_signal(db_to_linear(AudioServer.get_bus_volume_db(music_idx)))
+	if sfx_idx >= 0:
+		settings_sfx_slider.set_value_no_signal(db_to_linear(AudioServer.get_bus_volume_db(sfx_idx)))
+
+
+func _set_bus_volume(bus_name: String, value: float):
+	var idx = AudioServer.get_bus_index(bus_name)
+	if idx >= 0:
+		AudioServer.set_bus_volume_db(idx, linear_to_db(max(value, 0.0001)))
+		AudioServer.set_bus_mute(idx, value <= 0.001)
+
+
+func _on_settings_back_pressed():
+	_play_click_sound()
+	settings_screen.visible = false
+
+
 func _on_settings_pressed():
 	_play_click_sound()
 	settings_opened.emit()
-	# TODO: открыть настройки
+	settings_screen.visible = true
 
 
 func _on_save_pressed():
