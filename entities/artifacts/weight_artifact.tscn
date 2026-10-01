@@ -1,7 +1,7 @@
 [gd_scene load_steps=4 format=3 uid="uid://weight_artifact"]
 
-[ext_resource type="Script" path="res://scripts/artifacts/weight_artifact.gd" id="1"]
-[ext_resource type="PackedScene" path="res://scenes/artifacts/base_artifact.tscn" id="2"]
+[ext_resource type="Script" path="res://entities/artifacts/weight_artifact.gd" id="1"]
+[ext_resource type="PackedScene" path="res://entities/artifacts/base_artifact.tscn" id="2"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_weight"]
 size = Vector3(0.4, 0.4, 0.4)
@@ -20,5 +20,5 @@ mesh = SubResource("BoxMesh_weight")
 material_override = SubResource("Material_weight")
 
 [node name="OmniLight3D" parent="." index="1"]
-light_color = Color(0.2, 0.2, 0.3)
+light_color = Color(0.2, 0.2, 0.3, 1)
 light_energy = 1.5

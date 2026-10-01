@@ -1,14 +1,14 @@
 [gd_scene load_steps=4 format=3]
 
-[ext_resource type="Script" path="res://scripts/artifacts/common_artifact.gd" id="1"]
-[ext_resource type="PackedScene" path="res://scenes/artifacts/base_artifact.tscn" id="2"]
+[ext_resource type="Script" path="res://entities/artifacts/common_artifact.gd" id="1"]
+[ext_resource type="PackedScene" path="res://entities/artifacts/base_artifact.tscn" id="2"]
 
 [sub_resource type="SphereMesh" id="SphereMesh_common"]
 radius = 0.25
 height = 0.5
 
 [sub_resource type="StandardMaterial3D" id="Material_common"]
-albedo_color = Color(0.7, 0.7, 0.7)
+albedo_color = Color(0.7, 0.7, 0.7, 1)
 metallic = 0.2
 roughness = 0.5
 

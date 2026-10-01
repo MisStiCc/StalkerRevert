@@ -1,7 +1,7 @@
 [gd_scene load_steps=4 format=3 uid="uid://acid_drop_artifact"]
 
-[ext_resource type="Script" path="res://scripts/artifacts/acid_drop_artifact.gd" id="1"]
-[ext_resource type="PackedScene" path="res://scenes/artifacts/base_artifact.tscn" id="2"]
+[ext_resource type="Script" path="res://entities/artifacts/acid_drop_artifact.gd" id="1"]
+[ext_resource type="PackedScene" path="res://entities/artifacts/base_artifact.tscn" id="2"]
 
 [sub_resource type="SphereMesh" id="SphereMesh_acid"]
 radius = 0.25
@@ -21,5 +21,5 @@ mesh = SubResource("SphereMesh_acid")
 material_override = SubResource("Material_acid")
 
 [node name="OmniLight3D" parent="." index="1"]
-light_color = Color(0.7, 1, 0)
+light_color = Color(0.7, 1, 0, 1)
 light_energy = 2.0

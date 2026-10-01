@@ -1,7 +1,7 @@
 [gd_scene load_steps=4 format=3 uid="uid://clock_artifact"]
 
-[ext_resource type="Script" path="res://scripts/artifacts/clock_artifact.gd" id="1"]
-[ext_resource type="PackedScene" path="res://scenes/artifacts/base_artifact.tscn" id="2"]
+[ext_resource type="Script" path="res://entities/artifacts/clock_artifact.gd" id="1"]
+[ext_resource type="PackedScene" path="res://entities/artifacts/base_artifact.tscn" id="2"]
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_clock"]
 top_radius = 0.25
@@ -22,5 +22,5 @@ mesh = SubResource("CylinderMesh_clock")
 material_override = SubResource("Material_clock")
 
 [node name="OmniLight3D" parent="." index="1"]
-light_color = Color(0.6, 0.3, 0.8)
+light_color = Color(0.6, 0.3, 0.8, 1)
 light_energy = 2.0
