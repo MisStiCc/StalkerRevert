@@ -327,7 +327,7 @@ func _on_hud_anomaly_requested(anomaly_type: String):
 
 func _on_hud_mutant_requested(mutant_type: String):
 	print("Запрос мутанта: " + mutant_type)
-	var pos = _get_spawn_position_from_camera()
+	var pos = _get_spawn_position_from_camera() + Vector3.UP * 1.0
 	var mutant = spawn_mutant(mutant_type, pos)
 	if mutant:
 		print("Мутант создан: " + mutant_type)
@@ -337,9 +337,24 @@ func _on_hud_mutant_requested(mutant_type: String):
 
 func _get_spawn_position_from_camera() -> Vector3:
 	var camera = get_viewport().get_camera_3d()
-	if camera:
-		return camera.global_position + camera.global_transform.basis.z * -10 + Vector3.UP * 2
-	return Vector3.ZERO
+	if not camera:
+		return Vector3.ZERO
+	
+	# Берём точку перед камерой и проецируем её лучом вниз на рельеф:
+	# на какой бы высоте ни висела камера, аномалия ставится на землю
+	var point = camera.global_position + camera.global_transform.basis.z * -10.0
+	
+	var space = get_viewport().get_world_3d().direct_space_state
+	var query = PhysicsRayQueryParameters3D.new()
+	query.from = Vector3(point.x, point.y + 50.0, point.z)
+	query.to = Vector3(point.x, point.y - 200.0, point.z)
+	query.collision_mask = 1
+	var result = space.intersect_ray(query)
+	if result:
+		return result.position
+	
+	# Рельеф не найден (чанк не загружен) - fallback на плоскость земли
+	return Vector3(point.x, 0.0, point.z)
 
 
 # ==================== ОБРАБОТЧИКИ МЕНЕДЖЕРОВ ====================
