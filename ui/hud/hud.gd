@@ -52,6 +52,8 @@ signal start_run_requested
 
 var zone_controller: Node
 var emission_cooldown: float = 60.0
+var _break_time_left: float = 0.0
+var _break_next_wave: int = 0
 var emission_timer: float = 0.0
 var is_emission_active: bool = false
 
@@ -66,6 +68,8 @@ func _ready():
 		zone_controller.radiation_pulse_started.connect(_on_emission_started)
 		zone_controller.radiation_pulse_ended.connect(_on_emission_ended)
 		zone_controller.wave_started.connect(_on_wave_started)
+		if zone_controller.has_signal("wave_break_started"):
+			zone_controller.wave_break_started.connect(_on_break_started)
 	
 	_connect_buttons()
 	_setup_sounds()
@@ -144,6 +148,12 @@ func _process(delta):
 	else:
 		emission_timer_label.visible = false
 	
+	if _break_time_left > 0.0:
+		_break_time_left -= delta
+		wave_label.visible = true
+		wave_label.modulate = Color(1, 0.8, 0.2)
+		wave_label.text = "⏳ Волна %d/%d через %dс" % [_break_next_wave, _get_max_waves(), int(ceil(_break_time_left))]
+	
 	if zone_controller:
 		var status = zone_controller.get_status()
 		stalker_count_label.text = "👥 Сталкеров: %d" % status.get("stalkers", 0)
@@ -157,8 +167,20 @@ func _on_biomass_changed(current: float, max_val: float):
 	biomass_value.text = "%d / %d" % [int(current), int(max_val)]
 
 
+func _on_break_started(wave_number: int, break_duration: float):
+	_break_next_wave = wave_number + 1
+	_break_time_left = break_duration
+
+
+func _get_max_waves() -> int:
+	if zone_controller and zone_controller.get("spawn_manager"):
+		return zone_controller.spawn_manager.max_waves
+	return 3
+
+
 func _on_wave_started(wave_number: int, _count: int):
-	wave_label.text = "🌊 ВОЛНА %d" % wave_number
+	_break_time_left = 0.0
+	wave_label.text = "🌊 ВОЛНА %d/%d" % [wave_number, _get_max_waves()]
 	wave_label.modulate = Color.YELLOW
 	wave_label.visible = true
 	

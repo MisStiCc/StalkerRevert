@@ -11,6 +11,7 @@ signal radiation_pulse_started(level: int)
 signal radiation_pulse_ended
 signal wave_started(wave_number: int, count: int)
 signal wave_ended(wave_number: int, survivors: int)
+signal wave_break_started(wave_number: int, break_duration: float)
 signal game_over
 signal game_won(run_number: int, reward: float)
 
@@ -149,6 +150,18 @@ func start_run():
 	spawn_manager.start_spawning()
 
 
+func _on_wave_break_started(wave_number: int, break_duration: float):
+	wave_break_started.emit(wave_number, break_duration)
+
+
+func _on_all_waves_cleared():
+	"""Все 3 волны отбиты, сталкеров не осталось - победа"""
+	if is_run_finished:
+		return
+	print("ПОБЕДА: все волны отбиты!")
+	finish_run(true)
+
+
 func _connect_to_hud():
 	"""Подключается к HUD после его создания"""
 	var hud = get_tree().get_first_node_in_group("hud")
@@ -242,6 +255,8 @@ func _connect_managers():
 	# SpawnManager
 	spawn_manager.wave_started.connect(_on_wave_started)
 	spawn_manager.wave_ended.connect(_on_wave_ended)
+	spawn_manager.break_started.connect(_on_wave_break_started)
+	spawn_manager.all_waves_cleared.connect(_on_all_waves_cleared)
 	spawn_manager.stalker_died.connect(_on_stalker_died)
 	spawn_manager.mutant_spawned.connect(_on_mutant_spawned)
 	

@@ -6,12 +6,15 @@ class_name SpawnManager
 
 signal wave_started(wave_number: int, count: int)
 signal wave_ended(wave_number: int, survivors: int)
+signal break_started(wave_number: int, break_duration: float)
+signal all_waves_cleared
 signal stalker_spawned(stalker: Node, stalker_type: String)
 signal mutant_spawned(mutant: Node, mutant_type: String)
 signal stalker_died(stalker: Node, biomass_returned: float)
 
 # Параметры спавна
-@export var spawn_interval: float = 30.0
+@export var max_waves: int = 3
+@export var wave_break: float = 45.0
 @export var min_stalkers_per_wave: int = 3
 @export var max_stalkers_per_wave: int = 6
 @export var spawn_radius: float = 150.0
@@ -62,7 +65,6 @@ var current_wave: int = 0
 var is_spawning: bool = false
 var is_active: bool = true
 var _difficulty: float = 1.0
-var _wave_timer: Timer
 
 # Статистика
 var _stalkers_killed: int = 0
@@ -86,7 +88,6 @@ const SPAWN_HEIGHT: float = 1.8
 
 func _ready():
 	add_to_group("spawn_manager")
-	_setup_timer()
 	
 	# Заполняем сцены мутантов
 	mutant_scenes = {
@@ -105,13 +106,6 @@ func _ready():
 	print("SpawnManager инициализирован")
 
 
-func _setup_timer():
-	_wave_timer = Timer.new()
-	_wave_timer.wait_time = spawn_interval
-	_wave_timer.timeout.connect(_start_wave)
-	add_child(_wave_timer)
-
-
 func _get_monolith() -> Node:
 	var current_time = Time.get_ticks_msec() / 1000.0
 	if current_time - _last_monolith_check > MONOLITH_CACHE_TIME or not is_instance_valid(_cached_monolith):
@@ -125,14 +119,14 @@ func _get_monolith() -> Node:
 func start_spawning():
 	is_active = true
 	await get_tree().create_timer(1.0).timeout
-	_wave_timer.start()
+	if not is_active:
+		return
 	_start_wave()
 	print("Спавн сталкеров запущен")
 
 
 func stop_spawning():
 	is_active = false
-	_wave_timer.stop()
 	print("Спавн сталкеров остановлен")
 
 
@@ -152,6 +146,9 @@ func _start_wave():
 	if is_spawning or not is_active:
 		return
 	
+	if current_wave >= max_waves:
+		return
+	
 	is_spawning = true
 	current_wave += 1
 	
@@ -168,6 +165,32 @@ func _start_wave():
 	is_spawning = false
 	wave_ended.emit(current_wave, spawned)
 	print("Волна " + str(current_wave) + " завершена, создано: " + str(spawned))
+	
+	if current_wave >= max_waves:
+		_watch_field_clear()
+	else:
+		_schedule_next_wave()
+
+
+func _schedule_next_wave():
+	"""Пауза между волнами, затем следующая волна"""
+	if not is_active:
+		return
+	break_started.emit(current_wave, wave_break)
+	print("Пауза между волнами: " + str(wave_break) + " с. Следующая волна: " + str(current_wave + 1))
+	await get_tree().create_timer(wave_break).timeout
+	if not is_active:
+		return
+	_start_wave()
+
+
+func _watch_field_clear():
+	"""Последняя волна заспавнена: победа, когда игрок перебьёт всех сталкеров"""
+	while is_active and get_stalker_count() > 0:
+		await get_tree().create_timer(1.0).timeout
+	if is_active:
+		print("Все волны отбиты, сталкеров не осталось!")
+		all_waves_cleared.emit()
 
 
 func _calculate_stalker_count() -> int:
