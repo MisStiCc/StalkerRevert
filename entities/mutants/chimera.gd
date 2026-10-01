@@ -67,7 +67,7 @@ func _patrol(delta):
 	super._patrol(delta)
 
 
-func _chase(delta):
+func _chase(_delta):
 	if not target_stalker or not is_instance_valid(target_stalker):
 		_find_new_target()
 		if not target_stalker:
@@ -134,7 +134,7 @@ func _on_leap_cooldown_ended():
 	can_leap = true
 
 
-func _attack(delta):
+func _attack(_delta):
 	if not target_stalker or not is_instance_valid(target_stalker):
 		current_state = State.PATROL
 		return

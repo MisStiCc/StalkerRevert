@@ -11,20 +11,20 @@ func _init(stalker_node: BaseStalker):
     stalker = stalker_node
 
 
-static func create(behavior_type: GameEnums.StalkerBehavior, stalker: BaseStalker) -> StalkerBehaviorStrategy:
+static func create(behavior_type: GameEnums.StalkerBehavior, stalker_node: BaseStalker) -> StalkerBehaviorStrategy:
     match behavior_type:
         GameEnums.StalkerBehavior.GREEDY:
-            return load("res://entities/stalkers/behaviors/greedy_behavior.gd").new(stalker)
+            return load("res://entities/stalkers/behaviors/greedy_behavior.gd").new(stalker_node)
         GameEnums.StalkerBehavior.BRAVE:
-            return load("res://entities/stalkers/behaviors/brave_behavior.gd").new(stalker)
+            return load("res://entities/stalkers/behaviors/brave_behavior.gd").new(stalker_node)
         GameEnums.StalkerBehavior.CAUTIOUS:
-            return load("res://entities/stalkers/behaviors/cautious_behavior.gd").new(stalker)
+            return load("res://entities/stalkers/behaviors/cautious_behavior.gd").new(stalker_node)
         GameEnums.StalkerBehavior.AGGRESSIVE:
-            return load("res://entities/stalkers/behaviors/aggressive_behavior.gd").new(stalker)
+            return load("res://entities/stalkers/behaviors/aggressive_behavior.gd").new(stalker_node)
         GameEnums.StalkerBehavior.STEALTHY:
-            return load("res://entities/stalkers/behaviors/stealthy_behavior.gd").new(stalker)
+            return load("res://entities/stalkers/behaviors/stealthy_behavior.gd").new(stalker_node)
     
-    return StalkerBehaviorStrategy.new(stalker)
+    return StalkerBehaviorStrategy.new(stalker_node)
 
 
 # Методы для оценки ситуации - переопределяются в наследниках

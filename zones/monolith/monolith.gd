@@ -5,10 +5,7 @@ class_name Monolith
 ## Центр игры. Сталкеры пытаются его коснуться (GAME OVER)
 ## Источник энергии и прогрессии
 
-signal level_up(new_level: int)
 signal energy_changed(current: float, max_energy: float)
-signal radiation_pulse_started(level: int)
-signal radiation_pulse_ended
 signal game_over
 
 # Радиусы защиты (настраиваются в редакторе)

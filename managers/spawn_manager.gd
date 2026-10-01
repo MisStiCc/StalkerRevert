@@ -333,7 +333,7 @@ func _on_stalker_died(stalker: Node):
 
 # ==================== МУТАНТЫ ====================
 
-func spawn_mutant(mutant_type: String, position: Vector3, biomass_cost: float) -> Node:
+func spawn_mutant(mutant_type: String, position: Vector3, _biomass_cost: float) -> Node:
 	if not mutant_scenes.has(mutant_type):
 		print("Неизвестный тип мутанта: " + mutant_type)
 		return null

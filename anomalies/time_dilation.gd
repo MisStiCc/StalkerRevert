@@ -34,7 +34,7 @@ func _update_color():
 		mesh.material_override.emission = dilation_color
 
 
-func _physics_process(delta):
+func _physics_process(_delta):
 	for stalker in stalkers_in_zone:
 		if is_instance_valid(stalker) and stalker.has_method("apply_time_dilation"):
 			stalker.apply_time_dilation(time_scale)

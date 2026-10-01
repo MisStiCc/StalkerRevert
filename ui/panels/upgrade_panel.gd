@@ -4,7 +4,6 @@ class_name UpgradePanel
 
 ## Панель улучшений станции
 
-signal upgrade_purchased(upgrade_type: String)
 
 @onready var title_label: Label = $Panel/Margin/VBox/Title
 @onready var upgrades_container: VBoxContainer = $Panel/Margin/VBox/UpgradesContainer

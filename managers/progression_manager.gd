@@ -47,7 +47,7 @@ func _ready():
 func start_new_run() -> Dictionary:
     current_run = total_runs + 1
     current_difficulty = base_difficulty + (current_run - 1) * difficulty_increase_per_run
-    pulses_to_win = pulses_to_win_base + int((current_run - 1) / 2)
+    pulses_to_win = pulses_to_win_base + int((current_run - 1) / 2.0)
     _current_biomass = 0.0
     
     print("Забег #" + str(current_run) + " | Сложность: " + str(current_difficulty) + " | Цель: " + str(pulses_to_win) + " выбросов", "ProgressionManager")

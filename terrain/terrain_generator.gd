@@ -19,7 +19,7 @@ var camera: Camera3D
 var navigation_region: NavigationRegion3D
 var navigation_source: NavigationMeshSourceGeometryData3D
 var has_navigation_geometry: bool = false
-# Реестр геометрии чанков: Vector2i -> {mesh: Mesh, transform: Transform3D}
+# Реестр геометрии чанков: Vector2i -> {faces: PackedVector3Array, transform: Transform3D}
 # Единственный источник геометрии для навмеша: NavigationMeshSourceGeometryData3D
 # не умеет удалять отдельные меши, поэтому при любом изменении чанков
 # source собирается заново из реестра
@@ -73,7 +73,7 @@ func _rebuild_navigation_source():
 	navigation_source.clear()
 	for chunk_pos in _chunk_geometry:
 		var entry: Dictionary = _chunk_geometry[chunk_pos]
-		navigation_source.add_mesh(entry.mesh, entry.transform)
+		navigation_source.add_faces(entry.faces, entry.transform)
 	has_navigation_geometry = _chunk_geometry.size() > 0
 
 
@@ -81,8 +81,10 @@ func _bake_navigation_mesh():
 	var nav_mesh = NavigationMesh.new()
 	nav_mesh.cell_size = 0.3
 	nav_mesh.cell_height = 0.25  # Должен совпадать с cell_height карты (0.25 по умолчанию)
-	nav_mesh.agent_height = 1.8
-	nav_mesh.agent_radius = 0.5
+	# Значения выровнены по сетке (кратны cell_size/cell_height), иначе Godot
+	# при бейке округляет их и пишет warning о потере точности
+	nav_mesh.agent_height = 2.0
+	nav_mesh.agent_radius = 0.6
 	nav_mesh.agent_max_climb = 0.5
 	nav_mesh.agent_max_slope = 45.0
 	
@@ -165,18 +167,26 @@ func _load_chunk(chunk_pos: Vector2i):
 	# Добавляем коллизию НА ТОЙ ЖЕ ВЫСОТЕ
 	_add_collision(chunk, chunk_pos)
 	
-	# Регистрируем геометрию чанка для навигации (навмеш пересобирается из реестра)
+	# Регистрируем геометрию чанка для навигации (навмеш пересобирается из реестра).
+	# Квад собираем процедурно через add_faces: add_mesh forced парсит визуальный меш
+	# из RenderingServer (GPU->CPU) и пишет warning о производительности
+	var half = chunk_size / 2.0
+	var a := Vector3(-half, 0.0, -half)
+	var b := Vector3(half, 0.0, -half)
+	var c := Vector3(half, 0.0, half)
+	var d := Vector3(-half, 0.0, half)
+	var faces := PackedVector3Array([a, b, c, a, c, d])
 	var mesh_transform = Transform3D.IDENTITY
 	mesh_transform.origin = mesh_instance.position + chunk.position
 	mesh_transform.origin.y = NAVMESH_HEIGHT
-	_chunk_geometry[chunk_pos] = {"mesh": plane, "transform": mesh_transform}
+	_chunk_geometry[chunk_pos] = {"faces": faces, "transform": mesh_transform}
 	
 	add_child(chunk)
 	loaded_chunks[chunk_pos] = chunk
 	chunk_generated.emit(chunk_pos)
 
 
-func _add_collision(chunk: Node3D, chunk_pos: Vector2i):
+func _add_collision(chunk: Node3D, _chunk_pos: Vector2i):
 	var static_body = StaticBody3D.new()
 	# Коллизия на высоте GROUND_HEIGHT
 	static_body.position = Vector3(chunk_size / 2.0, GROUND_HEIGHT - 0.5, chunk_size / 2.0)
@@ -201,7 +211,7 @@ func _unload_chunk(chunk_pos: Vector2i):
 	_chunk_geometry.erase(chunk_pos)
 
 
-func get_height_at(position: Vector3) -> float:
+func get_height_at(_position: Vector3) -> float:
 	return GROUND_HEIGHT
 
 

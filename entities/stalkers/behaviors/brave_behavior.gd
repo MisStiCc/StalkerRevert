@@ -5,7 +5,7 @@ class_name StalkerBehaviorBrave
 ## Храброе поведение - всегда идет к монолиту, игнорируя опасности
 
 
-func evaluate(state_machine) -> GameEnums.StalkerState:
+func evaluate(_state_machine) -> GameEnums.StalkerState:
     # 1. Если есть артефакт - несем его (но можем игнорировать)
     if stalker.has_artifact():
         return GameEnums.StalkerState.CARRY_ARTIFACT

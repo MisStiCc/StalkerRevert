@@ -62,7 +62,7 @@ func _patrol(delta):
 	super._patrol(delta)
 
 
-func _chase(delta):
+func _chase(_delta):
 	if not target_stalker or not is_instance_valid(target_stalker):
 		current_state = State.PATROL
 		return
@@ -118,7 +118,7 @@ func _on_control_ended():
 		current_state = State.PATROL
 
 
-func _attack(delta):
+func _attack(_delta):
 	if is_controlling:
 		velocity = Vector3.ZERO
 		return

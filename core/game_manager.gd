@@ -173,7 +173,7 @@ func get_save_info(slot: int) -> Dictionary:
 			"slot": slot,
 			"save_time": save.save_time,
 			"run_number": save.lab_data.run_number if save.lab_data else 1,
-			"biomass": save.lab_data.biomass if save.lab_data else 0,
+			"biomass": save.lab_data.biomass if save.lab_data else 0.0,
 			"wins": save.statistics.wins if save.statistics else 0,
 			"losses": save.statistics.losses if save.statistics else 0,
 			"total_runs": save.statistics.total_runs if save.statistics else 0,

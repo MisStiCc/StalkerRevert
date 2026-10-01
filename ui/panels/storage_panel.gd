@@ -4,7 +4,6 @@ class_name StoragePanel
 
 ## Панель хранилища артефактов
 
-signal artifact_exchanged
 
 @onready var title_label: Label = $Panel/Margin/VBox/Title
 @onready var tabs: TabContainer = $Panel/Margin/VBox/Tabs

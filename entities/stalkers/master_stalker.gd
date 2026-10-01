@@ -4,7 +4,6 @@ class_name MasterStalker
 
 ## Мастер - элитный сталкер с агрессивным поведением
 
-var _log_timer: float = 0.0
 var _monolith_check_timer: float = 0.0
 var _nav_check_timer: float = 0.0
 var _scan_timer: float = 0.0

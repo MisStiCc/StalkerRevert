@@ -144,7 +144,7 @@ func _attack_target(target: Node):
 		print("BaseStalker: атака по ", target.name)
 
 
-func _on_died(source: Node):
+func _on_died(_source: Node):
 	"""Вызывается при смерти."""
 	died.emit(self)
 	
@@ -158,7 +158,7 @@ func _on_died(source: Node):
 	queue_free()
 
 
-func _on_damaged(amount: float, source: Node, critical: bool):
+func _on_damaged(_amount: float, _source: Node, _critical: bool):
 	"""Визуальная реакция на получение урона."""
 	if visuals:
 		# Мигание красным
@@ -231,12 +231,12 @@ func apply_slow(factor: float):
 	print("Stalker замедлен, фактор ", factor)
 
 
-func apply_time_dilation(scale: float):
+func apply_time_dilation(time_scale: float):
 	"""Изменение скорости времени для сталкера"""
-	time_dilation = scale
+	time_dilation = time_scale
 	if navigation_component:
 		navigation_component.set_speed(speed * time_dilation)
-	print("Stalker: дилатация времени ", scale)
+	print("Stalker: дилатация времени ", time_scale)
 
 
 func reset_effects():

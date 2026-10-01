@@ -66,7 +66,7 @@ func _patrol(delta):
 	super._patrol(delta)
 
 
-func _chase(delta):
+func _chase(_delta):
 	if not target_stalker or not is_instance_valid(target_stalker):
 		current_state = State.PATROL
 		return
@@ -95,7 +95,7 @@ func _start_charge():
 	charge_timer.start()
 
 
-func _handle_charge(delta):
+func _handle_charge(_delta):
 	if is_instance_valid(target_stalker):
 		charge_target = target_stalker.global_position
 	
@@ -132,7 +132,7 @@ func _on_charge_cooldown_ended():
 	can_charge = true
 
 
-func _attack(delta):
+func _attack(_delta):
 	if not target_stalker or not is_instance_valid(target_stalker):
 		current_state = State.PATROL
 		return

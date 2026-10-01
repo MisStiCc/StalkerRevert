@@ -98,7 +98,7 @@ func _apply_damage():
 			energy_consumed.emit(damage_per_second)
 
 
-func take_damage(amount: float, attacker = null):
+func take_damage(amount: float, _attacker = null):
 	if _is_dying:
 		return
 	

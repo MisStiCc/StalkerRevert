@@ -5,7 +5,7 @@ class_name StalkerBehaviorAggressive
 ## Агрессивное поведение - атакует мутантов в первую очередь
 
 
-func evaluate(state_machine) -> GameEnums.StalkerState:
+func evaluate(_state_machine) -> GameEnums.StalkerState:
     # 1. Если есть артефакт - несем его
     if stalker.has_artifact():
         return GameEnums.StalkerState.CARRY_ARTIFACT

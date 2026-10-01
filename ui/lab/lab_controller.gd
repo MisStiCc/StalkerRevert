@@ -135,10 +135,10 @@ func _refresh_ui():
 		]
 
 
-func _update_station_button(station: Button, name: String, total_levels: int):
+func _update_station_button(station: Button, station_name: String, total_levels: int):
 	var name_label = station.get_node_or_null("StationName")
 	if name_label and name_label is Label:
-		name_label.text = name
+		name_label.text = station_name
 	
 	var level_label = station.get_node_or_null("StationLevel")
 	if level_label and level_label is Label:
@@ -244,7 +244,7 @@ func _open_upgrade_station(station_type: String):
 		_show_message("Панель улучшений не найдена", 1.0)
 
 
-func _on_upgrade_purchased(upgrade_type: String):
+func _on_upgrade_purchased(_upgrade_type: String):
 	if not game_manager:
 		game_manager = get_tree().get_first_node_in_group("game_manager")
 	

@@ -5,7 +5,7 @@ class_name StalkerBehaviorStealthy
 ## Скрытное поведение - избегает любых контактов
 
 
-func evaluate(state_machine) -> GameEnums.StalkerState:
+func evaluate(_state_machine) -> GameEnums.StalkerState:
     # 1. Если есть артефакт - несем его (быстро и скрытно)
     if stalker.has_artifact():
         return GameEnums.StalkerState.CARRY_ARTIFACT

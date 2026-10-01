@@ -61,7 +61,7 @@ func _ready():
 
 # ==================== АНОМАЛИИ ====================
 
-func create_anomaly(anomaly_type: String, position: Vector3, difficulty: int, energy_cost: float) -> Node:
+func create_anomaly(anomaly_type: String, position: Vector3, difficulty: int, _energy_cost: float) -> Node:
     if not anomaly_scenes.has(anomaly_type):
         print("Неизвестный тип аномалии: " + anomaly_type)
         return null

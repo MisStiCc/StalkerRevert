@@ -98,8 +98,8 @@ func take_damage(amount: float, source: Node = null) -> float:
     current_health -= final_damage
     
     # Критичность урона (для визуальных эффектов)
-    var is_critical = final_damage > amount * 0.8
-    damaged.emit(final_damage, source, is_critical)
+    var is_critical_hit = final_damage > amount * 0.8
+    damaged.emit(final_damage, source, is_critical_hit)
     
     print("Получен урон: " + str(final_damage) + " (исходный: " + str(amount) + ") от " + str(source), "HealthComponent")
     

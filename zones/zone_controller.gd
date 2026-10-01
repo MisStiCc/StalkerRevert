@@ -15,9 +15,6 @@ signal game_over
 signal game_won(run_number: int, reward: float)
 
 # Сигналы от HUD
-signal anomaly_requested(anomaly_type: String)
-signal mutant_requested(mutant_type: String)
-
 # Менеджеры
 var resource_manager: ResourceManager
 var anomaly_manager: AnomalyManager
@@ -389,12 +386,12 @@ func _on_stalker_died(stalker: Node, biomass_returned: float):
 	print("Сталкер погиб: " + stalker_type + ", возвращено биомассы: " + str(biomass_returned))
 
 
-func _on_mutant_spawned(mutant: Node, mutant_type: String):
+func _on_mutant_spawned(_mutant: Node, mutant_type: String):
 	progression_manager.record_mutant_spawned()
 	print("Мутант заспавнен: " + mutant_type)
 
 
-func _on_anomaly_created(anomaly: Node, anomaly_type: String, difficulty: int):
+func _on_anomaly_created(anomaly: Node, anomaly_type: String, _difficulty: int):
 	if particle_manager:
 		particle_manager.spawn_anomaly_effects(anomaly.global_position, anomaly_type)
 	if sound_manager:
@@ -419,7 +416,7 @@ func _on_anomaly_destroyed(anomaly_type: String, position: Vector3, difficulty: 
 	print("Аномалия уничтожена, создан артефакт: " + artifact_type)
 
 
-func _on_artifact_created(artifact: Node, artifact_type: String, position: Vector3):
+func _on_artifact_created(_artifact: Node, artifact_type: String, position: Vector3):
 	if particle_manager:
 		particle_manager.spawn_particles_at(position, "spark", 0.5)
 	

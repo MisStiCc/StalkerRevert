@@ -97,7 +97,7 @@ func _physics_process(delta):
 	move_and_slide()
 
 
-func _patrol(delta):
+func _patrol(_delta):
 	if patrol_points.is_empty():
 		# Если нет точек патруля, просто стоим
 		if navigation_component and not navigation_component.is_navigating():
@@ -120,7 +120,7 @@ func _patrol(delta):
 	_find_best_target()
 
 
-func _chase(delta):
+func _chase(_delta):
 	if not target_stalker or not is_instance_valid(target_stalker):
 		_find_best_target()
 		if not target_stalker:
@@ -146,7 +146,7 @@ func _chase(delta):
 			navigation_component.stop()
 
 
-func _attack(delta):
+func _attack(_delta):
 	if not target_stalker or not is_instance_valid(target_stalker):
 		current_state = State.PATROL
 		target_stalker = null
@@ -242,7 +242,7 @@ func _on_attack_cooldown_ended():
 	pass
 
 
-func take_damage(dmg: float, source = null):
+func take_damage(dmg: float, _source = null):
 	var actual_damage = max(dmg - armor, 1.0)
 	health -= actual_damage
 	

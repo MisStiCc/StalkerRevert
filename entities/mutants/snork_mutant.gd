@@ -66,7 +66,7 @@ func _patrol(delta):
 	super._patrol(delta)
 
 
-func _chase(delta):
+func _chase(_delta):
 	if not target_stalker or not is_instance_valid(target_stalker):
 		current_state = State.PATROL
 		return
@@ -97,7 +97,7 @@ func _try_jump():
 	jump_timer.start()
 
 
-func _handle_jump(delta):
+func _handle_jump(_delta):
 	var jump_progress = min(1.0, (Time.get_ticks_msec() / 1000.0 - _jump_start_time) / _jump_duration)
 	
 	if is_instance_valid(target_stalker):
@@ -148,7 +148,7 @@ func _on_jump_cooldown_ended():
 	can_jump = true
 
 
-func _attack(delta):
+func _attack(_delta):
 	if not target_stalker or not is_instance_valid(target_stalker):
 		current_state = State.PATROL
 		return

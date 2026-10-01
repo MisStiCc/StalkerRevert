@@ -66,7 +66,7 @@ func _patrol(delta):
 	super._patrol(delta)
 
 
-func _chase(delta):
+func _chase(_delta):
 	if not target_stalker or not is_instance_valid(target_stalker):
 		current_state = State.PATROL
 		return
@@ -79,7 +79,7 @@ func _chase(delta):
 		current_state = State.ATTACK
 
 
-func _attack(delta):
+func _attack(_delta):
 	if not target_stalker or not is_instance_valid(target_stalker):
 		current_state = State.PATROL
 		return

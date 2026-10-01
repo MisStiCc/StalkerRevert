@@ -153,7 +153,7 @@ func _on_biomass_changed(current: float, max_val: float):
 	biomass_value.text = "%d / %d" % [int(current), int(max_val)]
 
 
-func _on_wave_started(wave_number: int, count: int):
+func _on_wave_started(wave_number: int, _count: int):
 	wave_label.text = "🌊 ВОЛНА %d" % wave_number
 	wave_label.modulate = Color.YELLOW
 	wave_label.visible = true
@@ -163,7 +163,7 @@ func _on_wave_started(wave_number: int, count: int):
 	tween.tween_callback(func(): wave_label.visible = false)
 
 
-func _on_emission_started(level: int):
+func _on_emission_started(_level: int):
 	is_emission_active = true
 	emission_button.disabled = true
 	emission_label.text = "⚠️ ВЫБРОС! ⚠️"
@@ -293,9 +293,9 @@ func _on_zombie_pressed():
 	mutant_requested.emit("zombie")
 
 
-func show_anomaly_panel(visible: bool):
-	anomaly_panel.visible = visible
+func show_anomaly_panel(shown: bool):
+	anomaly_panel.visible = shown
 
 
-func show_mutant_panel(visible: bool):
-	mutant_panel.visible = visible
+func show_mutant_panel(shown: bool):
+	mutant_panel.visible = shown

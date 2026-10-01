@@ -4,7 +4,6 @@ class_name NoviceStalker
 
 ## Новичок - базовый сталкер с жадным поведением
 
-var _log_timer: float = 0.0
 var _monolith_check_timer: float = 0.0
 var _nav_check_timer: float = 0.0
 
