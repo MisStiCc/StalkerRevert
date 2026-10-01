@@ -18,6 +18,7 @@ signal start_run_requested
 
 @onready var anomaly_panel: Panel = $AnomalyPanel
 @onready var start_panel: Panel = $StartPanel
+@onready var minimap_art: TextureRect = $Minimap/MapArt
 @onready var start_run_button: Button = $StartPanel/StartRunButton
 @onready var mutant_panel: Panel = $MutantPanel
 
@@ -73,8 +74,19 @@ func _ready():
 	
 	_connect_buttons()
 	_setup_sounds()
+	_load_minimap()
 	
 	print("HUD инициализирован")
+
+
+func _load_minimap():
+	"""SVG-карта сектора: res://ui/lab/minimap.svg (опционально).
+	Нет файла - точки рисуются на голой панели."""
+	const MAP_PATH := "res://ui/lab/minimap.svg"
+	if ResourceLoader.exists(MAP_PATH):
+		minimap_art.texture = load(MAP_PATH)
+	else:
+		minimap_art.visible = false
 
 
 func _connect_buttons():

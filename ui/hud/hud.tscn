@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://ui/hud/hud.gd" id="1"]
+[ext_resource type="Script" path="res://ui/hud/minimap_dots.gd" id="2"]
 
 [node name="HUD" type="CanvasLayer"]
 layer = 1
@@ -293,3 +294,35 @@ offset_top = 30.0
 offset_right = 230.0
 offset_bottom = 60.0
 text = "▶ СТАРТ ЗАБЕГА"
+
+[node name="Minimap" type="Panel" parent="."]
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -262.0
+offset_top = -262.0
+offset_right = -12.0
+offset_bottom = -12.0
+mouse_filter = 2
+
+[node name="MapArt" type="TextureRect" parent="Minimap"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Dots" type="Control" parent="Minimap"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("2")
