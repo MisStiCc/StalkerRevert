@@ -15,8 +15,8 @@ signal stalker_died(stalker: Node, biomass_returned: float)
 # Параметры спавна
 @export var max_waves: int = 3
 @export var wave_break: float = 45.0
-@export var min_stalkers_per_wave: int = 3
-@export var max_stalkers_per_wave: int = 6
+@export var min_stalkers_per_wave: int = 6
+@export var max_stalkers_per_wave: int = 12
 @export var spawn_radius: float = 150.0
 @export var min_spawn_distance: float = 90.0
 
