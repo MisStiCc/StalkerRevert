@@ -120,8 +120,13 @@ func _update_upgrade_item(container: HBoxContainer, upgrade_id: String):
 	var cost = lab_data.get_upgrade_cost(upgrade_id)
 	var can_upgrade = lab_data.can_upgrade(upgrade_id) and lab_data.biomass >= cost
 	
-	var level_label = container.get_node("LevelLabel")
-	var upgrade_button = container.get_node("UpgradeButton")
+	# LevelLabel лежит внутри info_vbox, поэтому поиск рекурсивный;
+	# owned=false, т.к. узлы созданы кодом и не имеют owner
+	var level_label = container.find_child("LevelLabel", true, false)
+	var upgrade_button = container.find_child("UpgradeButton", true, false)
+	if not level_label or not upgrade_button:
+		print("UpgradePanel: в элементе апгрейда нет LevelLabel/UpgradeButton")
+		return
 	
 	level_label.text = "Уровень %d/%d" % [level, max_level]
 	
