@@ -12,6 +12,11 @@ func _ready():
     Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
     mouse_captured = true
 
+
+func _exit_tree():
+    # При выходе из забега (лаборатория/меню - UI-сцены) курсор должен вернуться
+    Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+
 func _input(event):
     if event is InputEventMouseMotion and mouse_captured:
         rotation_y -= event.relative.x * look_speed

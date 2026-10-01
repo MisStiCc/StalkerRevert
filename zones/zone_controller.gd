@@ -353,8 +353,10 @@ func _on_biomass_changed(current: float, max_val: float):
 	Signals.biomass_changed.emit(current, max_val, current / max_val if max_val > 0 else 0.0)
 
 
-func _on_critical_biomass():
-	print("Критический уровень биомассы!")
+func _on_critical_biomass(_percent: float):
+	# Аргумент обязателен: сигнал critical_biomass_reached передаёт процент,
+	# и вызов без параметра отклонялся Godot - выброс никогда не запускался
+	print("Критический уровень биомассы! Запускаю выброс.")
 	event_manager.start_radiation_pulse()
 
 
@@ -531,7 +533,7 @@ func spawn_mutant(mutant_type: String, position: Vector3) -> Node:
 	return spawn_manager.spawn_mutant(mutant_type, position, cost)
 
 # Регистрация
-func register_stalker(stalker: Node):
+func register_stalker(_stalker: Node):
 	# В spawn_manager.active_stalkers сталкера уже добавил SpawnManager при спавне:
 	# повторный append давал двойной счётчик и «вечных» призраков после смерти
 	pass

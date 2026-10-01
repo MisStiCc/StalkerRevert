@@ -115,10 +115,20 @@ func get_biomass_percent() -> float:
     return current_biomass / max_biomass if max_biomass > 0 else 0.0
 
 
+var _critical_biomass_latched: bool = false
+
+
 func _check_critical_biomass():
+    # Одноразовый срабатыватель: пока биомасса не упадёт заметно ниже порога,
+    # повторные добавления не запускают новые выбросы
     if current_biomass >= max_biomass * critical_threshold:
+        if _critical_biomass_latched:
+            return
+        _critical_biomass_latched = true
         critical_biomass_reached.emit(get_biomass_percent())
         print("Критический уровень биомассы: " + str(get_biomass_percent() * 100) + "%", "ResourceManager")
+    elif _critical_biomass_latched and current_biomass < max_biomass * critical_threshold * 0.5:
+        _critical_biomass_latched = false
 
 
 # ==================== УТИЛИТЫ ====================
