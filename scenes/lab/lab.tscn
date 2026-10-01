@@ -33,7 +33,7 @@ grow_vertical = 2
 mouse_filter = 2
 texture = null
 expand_mode = 1
-stretch_mode = 6
+stretch_mode = 5
 
 [node name="VBox" type="VBoxContainer" parent="." unique_id=1099973283]
 layout_mode = 1
