@@ -127,7 +127,7 @@ func _check_critical_biomass():
         _critical_biomass_latched = true
         critical_biomass_reached.emit(get_biomass_percent())
         print("Критический уровень биомассы: " + str(get_biomass_percent() * 100) + "%", "ResourceManager")
-    elif _critical_biomass_latched and current_biomass < max_biomass * critical_threshold * 0.5:
+    elif _critical_biomass_latched and current_biomass < max_biomass * critical_threshold:
         _critical_biomass_latched = false
 
 

@@ -72,7 +72,7 @@ offset_left = 10.0
 offset_top = 60.0
 offset_right = 160.0
 offset_bottom = 85.0
-text = "🔥 ВЫБРОС"
+text = "🔥 ВЫБРОС ⚡200"
 
 [node name="AnomalyPanel" type="Panel" parent="."]
 offset_left = 10.0
@@ -286,7 +286,7 @@ offset_left = 10.0
 offset_top = 5.0
 offset_right = 230.0
 offset_bottom = 25.0
-text = "Фаза подготовки - расставьте защиты"
+text = "Расставьте защиты. Выброс: 200⚡ кнопкой или 400🧬 автоматом"
 
 [node name="StartRunButton" type="Button" parent="StartPanel"]
 offset_left = 10.0

@@ -369,6 +369,14 @@ func _on_biomass_changed(current: float, max_val: float):
 	Signals.biomass_changed.emit(current, max_val, current / max_val if max_val > 0 else 0.0)
 
 
+func can_start_pulse() -> bool:
+	return event_manager.can_start_pulse() if event_manager else false
+
+
+func start_radiation_pulse() -> bool:
+	return event_manager.start_radiation_pulse() if event_manager else false
+
+
 func _on_critical_biomass(_percent: float):
 	# Аргумент обязателен: сигнал critical_biomass_reached передаёт процент,
 	# и вызов без параметра отклонялся Godot - выброс никогда не запускался
@@ -377,9 +385,7 @@ func _on_critical_biomass(_percent: float):
 
 
 func _on_radiation_pulse_started(level: int):
-	# Сбрасываем биомассу до безопасного уровня
-	var safe_level = max_biomass * 0.3
-	resource_manager.current_biomass = safe_level
+	pass
 	
 	progression_manager.increase_difficulty()
 	event_manager.set_difficulty(progression_manager.get_current_difficulty())
@@ -397,6 +403,11 @@ func _on_radiation_pulse_started(level: int):
 
 
 func _on_radiation_pulse_ended():
+	# Сброс биомассы в КОНЦЕ выброса (раньше сбрасывали на старте и
+	# защёлка критического уровня никогда не снималась - второй
+	# авто-выброс не приходил никогда)
+	var safe_level = max_biomass * 0.3
+	resource_manager.current_biomass = safe_level
 	radiation_pulse_ended.emit()
 	Signals.radiation_pulse_ended.emit()
 	print("Выброс закончился")

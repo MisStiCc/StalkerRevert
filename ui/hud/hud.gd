@@ -159,6 +159,9 @@ func _process(delta):
 		emission_timer_label.visible = true
 	else:
 		emission_timer_label.visible = false
+		# Кнопка оставалась disabled навсегда после первого выброса
+		if not is_emission_active:
+			emission_button.disabled = false
 	
 	if _break_time_left > 0.0:
 		_break_time_left -= delta
@@ -226,11 +229,30 @@ func _on_start_run_pressed():
 
 func _on_emission_pressed():
 	_play_click_sound()
-	emission_requested.emit()
 	
-	if zone_controller and zone_controller.has_method("start_radiation_pulse"):
-		if zone_controller.spend_energy(200):
-			zone_controller.start_radiation_pulse()
+	# has_method("start_radiation_pulse") у ZoneController был ВСЕГДА false
+	# (метод живёт в EventManager) - кнопка никогда не срабатывала
+	if not zone_controller or not zone_controller.can_start_pulse():
+		_show_emission_note("Выброс уже идёт!")
+		return
+	
+	if zone_controller.spend_energy(200):
+		emission_requested.emit()
+		zone_controller.start_radiation_pulse()
+	else:
+		_show_emission_note("Нужно 200 энергии!")
+
+
+var _note_timer: SceneTreeTimer = null
+
+func _show_emission_note(text: String):
+	emission_label.text = text
+	emission_label.modulate = Color(1, 0.5, 0.3)
+	_note_timer = get_tree().create_timer(2.0)
+	_note_timer.timeout.connect(func():
+		if not is_emission_active:
+			emission_label.text = ""
+			emission_label.modulate = Color.WHITE)
 
 
 # ==================== АНОМАЛИИ ====================

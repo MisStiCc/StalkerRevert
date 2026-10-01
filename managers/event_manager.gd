@@ -16,6 +16,8 @@ signal game_won(run_number: int, reward: float)
 
 # Состояние
 var is_radiating: bool = false
+# Забег уже завершён (победа/поражение) - выбросы больше не запускаются
+var _run_over: bool = false
 var pulse_count: int = 0
 var current_difficulty: float = 1.0
 var run_number: int = 1
@@ -37,8 +39,13 @@ func _ready():
 
 # ==================== ВЫБРОСЫ ====================
 
+func can_start_pulse() -> bool:
+    # Можно ли запустить выброс прямо сейчас
+    return not is_radiating and not _run_over
+
+
 func start_radiation_pulse() -> bool:
-    if is_radiating:
+    if is_radiating or _run_over:
         return false
     
     is_radiating = true
@@ -58,7 +65,14 @@ func start_radiation_pulse() -> bool:
     # Перемешиваем аномалии
     _shuffle_all_anomalies()
     
-    # Завершаем выброс через duration
+    # Завершаем выброс через duration (отдельной корутиной, чтобы
+    # сам запуск оставался синхронным - его зовут HUD и биомасса)
+    _end_pulse_later()
+    
+    return true
+
+
+func _end_pulse_later() -> void:
     await get_tree().create_timer(pulse_duration).timeout
     
     is_radiating = false
@@ -68,8 +82,6 @@ func start_radiation_pulse() -> bool:
     # Проверка на победу
     if pulse_count >= pulses_to_win:
         _win_game()
-    
-    return true
 
 
 func _drop_all_artifacts():
@@ -178,12 +190,17 @@ func check_stalker_touch_monolith(stalker: Node) -> bool:
 
 
 func trigger_game_over():
+    if _run_over:
+        return
+    _run_over = true
     print("GAME OVER - Сталкер коснулся Монолита!", "EventManager")
     game_over.emit()
-    get_tree().paused = true
 
 
 func _win_game():
+    if _run_over:
+        return
+    _run_over = true
     var reward = _calculate_reward()
     print("ПОБЕДА! Забег #" + str(run_number) + " | Награда: " + str(reward), "EventManager")
     game_won.emit(run_number, reward)

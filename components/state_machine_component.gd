@@ -43,6 +43,9 @@ var _target_update_timer: float = 0.0
 var _log_timer: float = 0.0
 # Одноразовый триггер прибытия к монолиту
 var _monolith_reached: bool = false
+# Антизастревание: стоим на месте слишком долго - обходим с смещением
+var _stuck_pos: Vector3 = Vector3.ZERO
+var _stuck_time: float = 0.0
 
 
 func _ready():
@@ -137,7 +140,7 @@ func _process_seek_artifact(_delta):
 		navigation.stop()
 
 
-func _process_seek_monolith(_delta):
+func _process_seek_monolith(delta):
 	if _monolith_reached:
 		return
 	if monolith and is_instance_valid(monolith):
@@ -154,6 +157,17 @@ func _process_seek_monolith(_delta):
 			print("StateMachine: SEEK_MONOLITH - двигаюсь к монолиту ", monolith.global_position)
 			navigation.move_to(monolith.global_position)
 			_target_update_timer = 0.0
+		# Антизастревание: 6 секунд почти без движения - пробуем обходную точку
+		_stuck_time += delta
+		if stalker.global_position.distance_to(_stuck_pos) < 1.5:
+			if _stuck_time > 6.0 and navigation:
+				var off = Vector3(randf_range(-12, 12), 0.0, randf_range(-12, 12))
+				print("StateMachine: антизастревание - обходная точка ", off)
+				navigation.move_to(monolith.global_position + off)
+				_stuck_time = 0.0
+		else:
+			_stuck_pos = stalker.global_position
+			_stuck_time = 0.0
 
 
 func _process_flee(_delta):
