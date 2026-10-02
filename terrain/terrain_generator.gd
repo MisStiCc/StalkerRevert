@@ -3,8 +3,9 @@ extends Node3D
 class_name TerrainGenerator
 
 ## Чанковый генератор рельефа Зоны: холмы и лощины по шуму, плоская арена
-## вокруг монолита, болотные низины, мёртвые деревья. Навмеш печётся из
-## реальных треугольников рельефа.
+## вокруг монолита, болотные низины, мёртвые деревья. У КАЖДОГО чанка свой
+## навмеш (печётся один раз при загрузке) - никакой глобальной перепечки,
+## которая давала подлагивания при движении камеры.
 
 signal chunk_generated(chunk_pos: Vector2i)
 
@@ -25,16 +26,6 @@ var noise_patch: FastNoiseLite
 var loaded_chunks: Dictionary = {}
 var camera: Camera3D
 
-# НАВИГАЦИЯ
-var navigation_region: NavigationRegion3D
-var navigation_source: NavigationMeshSourceGeometryData3D
-var has_navigation_geometry: bool = false
-# Реестр геометрии чанков: Vector2i -> {faces: PackedVector3Array, transform: Transform3D}
-# Единственный источник геометрии для навмеша: NavigationMeshSourceGeometryData3D
-# не умеет удалять отдельные меши, поэтому при любом изменении чанков
-# source собирается заново из реестра
-var _chunk_geometry: Dictionary = {}
-
 # Материалы и меши декора (создаются лениво, общие для всех чанков)
 var _terrain_mat: StandardMaterial3D
 var _bark_mat: StandardMaterial3D
@@ -48,7 +39,6 @@ const STALKER_HEIGHT: float = 1.8
 func _ready():
 	print("TerrainGenerator: _ready() START")
 	_setup_noise()
-	_setup_navigation()
 	add_to_group("terrain_generator")
 
 	await get_tree().process_frame
@@ -155,25 +145,7 @@ func _build_chunk_mesh(chunk_pos: Vector2i) -> ArrayMesh:
 	return mesh
 
 
-func _setup_navigation():
-	navigation_region = NavigationRegion3D.new()
-	navigation_region.name = "GlobalNavigationRegion"
-	add_child(navigation_region)
-
-	navigation_source = NavigationMeshSourceGeometryData3D.new()
-	_bake_navigation_mesh()
-
-
-func _rebuild_navigation_source():
-	"""Собирает source-геометрию навмеша заново из реестра чанков"""
-	navigation_source.clear()
-	for chunk_pos in _chunk_geometry:
-		var entry: Dictionary = _chunk_geometry[chunk_pos]
-		navigation_source.add_faces(entry.faces, entry.transform)
-	has_navigation_geometry = _chunk_geometry.size() > 0
-
-
-func _bake_navigation_mesh():
+func _make_nav_mesh() -> NavigationMesh:
 	var nav_mesh = NavigationMesh.new()
 	nav_mesh.cell_size = 0.3
 	nav_mesh.cell_height = 0.25  # Должен совпадать с cell_height карты (0.25 по умолчанию)
@@ -183,17 +155,7 @@ func _bake_navigation_mesh():
 	nav_mesh.agent_radius = 0.6
 	nav_mesh.agent_max_climb = 0.5
 	nav_mesh.agent_max_slope = 45.0
-
-	if has_navigation_geometry:
-		NavigationServer3D.bake_from_source_geometry_data(nav_mesh, navigation_source)
-
-	navigation_region.navigation_mesh = nav_mesh
-
-	var poly_count = nav_mesh.get_polygon_count()
-	if poly_count > 0:
-		print("TerrainGenerator: навмеш испечён, полигонов: ", poly_count)
-	elif has_navigation_geometry:
-		print("TerrainGenerator: ОШИБКА - навмеш ПУСТ при наличии геометрии чанков!")
+	return nav_mesh
 
 
 func _process(_delta):
@@ -215,10 +177,8 @@ func _update_chunks():
 			if not loaded_chunks.has(chunk_pos):
 				chunks_to_load.append(chunk_pos)
 
-	var navigation_updated = false
 	for chunk_pos in chunks_to_load:
 		_load_chunk(chunk_pos)
-		navigation_updated = true
 
 	var chunks_to_unload = []
 	for chunk_pos in loaded_chunks.keys():
@@ -232,11 +192,6 @@ func _update_chunks():
 
 	for chunk_pos in chunks_to_unload:
 		_unload_chunk(chunk_pos)
-		navigation_updated = true
-
-	if navigation_updated:
-		_rebuild_navigation_source()
-		_bake_navigation_mesh()
 
 
 func _world_to_chunk(world_pos: Vector3) -> Vector2i:
@@ -259,13 +214,26 @@ func _load_chunk(chunk_pos: Vector2i):
 	chunk.add_child(mesh_instance)
 
 	_add_collision(chunk, mesh)
+	_bake_chunk_navigation(chunk, mesh)
 	_add_props(chunk, chunk_pos)
 
 	add_child(chunk)
 	loaded_chunks[chunk_pos] = chunk
-	# Рельеф уже в мировых координатах
-	_chunk_geometry[chunk_pos] = {"faces": mesh.get_faces(), "transform": Transform3D.IDENTITY}
 	chunk_generated.emit(chunk_pos)
+
+
+func _bake_chunk_navigation(chunk: Node3D, mesh: ArrayMesh):
+	"""Навмеш чанка печётся ОДИН раз при загрузке (мелкий, ~2мс).
+	Каждый чанк - своя NavigationRegion3D: загрузка/выгрузка чанка
+	просто добавляет/убирает регион с карты, без глобальной перепечки."""
+	var region = NavigationRegion3D.new()
+	region.name = "ChunkNav"
+	var source = NavigationMeshSourceGeometryData3D.new()
+	source.add_faces(mesh.get_faces(), Transform3D.IDENTITY)
+	var nav_mesh = _make_nav_mesh()
+	NavigationServer3D.bake_from_source_geometry_data(nav_mesh, source)
+	region.navigation_mesh = nav_mesh
+	chunk.add_child(region)
 
 
 func _add_collision(chunk: Node3D, mesh: ArrayMesh):
@@ -348,15 +316,25 @@ func _unload_chunk(chunk_pos: Vector2i):
 		var chunk = loaded_chunks[chunk_pos]
 		chunk.queue_free()
 		loaded_chunks.erase(chunk_pos)
-	_chunk_geometry.erase(chunk_pos)
 
 
-func get_height_at(position: Vector3) -> float:
-	return get_terrain_height(position.x, position.z)
+func get_height_at(at: Vector3) -> float:
+	return get_terrain_height(at.x, at.z)
 
 
 func get_loaded_chunks_count() -> int:
 	return loaded_chunks.size()
+
+
+func get_nav_polygons_total() -> int:
+	"""Суммарное число полигонов навмеша по всем загруженным чанкам"""
+	var total = 0
+	for chunk in loaded_chunks.values():
+		if is_instance_valid(chunk):
+			var region = chunk.get_node_or_null("ChunkNav")
+			if region and region.navigation_mesh:
+				total += region.navigation_mesh.get_polygon_count()
+	return total
 
 
 func clear_all_chunks():
@@ -364,14 +342,9 @@ func clear_all_chunks():
 		if is_instance_valid(chunk):
 			chunk.queue_free()
 	loaded_chunks.clear()
-	_chunk_geometry.clear()
-
-	_rebuild_navigation_source()
-	_bake_navigation_mesh()
 
 
 func force_rebuild_navigation():
-	_rebuild_navigation_source()
-	_bake_navigation_mesh()
-	print("TerrainGenerator: навигация перестроена. Чанков с геометрией: ", _chunk_geometry.size(),
-		  ", полигонов навмеша: ", navigation_region.navigation_mesh.get_polygon_count())
+	"""Совместимость: у чанков свои навмеши, пересборка не нужна"""
+	print("TerrainGenerator: навигация на чанковых навмешах, чанков: ", loaded_chunks.size(),
+		  ", полигонов: ", get_nav_polygons_total())

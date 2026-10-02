@@ -77,6 +77,13 @@ func _setup_run_params(params: Dictionary):
 	var bonuses = {}
 	if current_save_data and current_save_data.lab_data:
 		bonuses = current_save_data.lab_data.get_bonuses()
+	
+	# Стартовая биомасса в бою: остаток лаборатории + 300 базы.
+	# Остаток СПИСЫВАЕТСЯ из лаборатории (перенос припасов на фронт)
+	params["start_biomass"] = 300.0
+	if current_save_data and current_save_data.lab_data:
+		params["start_biomass"] += current_save_data.lab_data.biomass
+		current_save_data.lab_data.biomass = 0.0
 		
 		if params.has("bonuses"):
 			for key in bonuses:

@@ -283,6 +283,10 @@ func _initialize_run():
 	# Применяем бонусы из лаборатории
 	_apply_lab_bonuses()
 	
+	# Стартовая биомасса забега (остаток лаборатории + 300)
+	resource_manager.current_biomass = clamp(
+		run_params.get("start_biomass", 300.0), 0.0, max_biomass)
+	
 	# Фаза подготовки: спавн сталкеров начнётся по кнопке СТАРТ в HUD
 	Signals.run_started.emit(run_data.run_number, run_data.difficulty, pulses_to_win)
 	print("Забег #" + str(run_data.run_number) + " в фазе подготовки (сложность: " + str(run_data.difficulty) + "). Расставьте защиты и нажмите СТАРТ.")
