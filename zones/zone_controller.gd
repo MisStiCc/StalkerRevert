@@ -380,8 +380,8 @@ func start_radiation_pulse() -> bool:
 func _on_critical_biomass(_percent: float):
 	# Аргумент обязателен: сигнал critical_biomass_reached передаёт процент,
 	# и вызов без параметра отклонялся Godot - выброс никогда не запускался
-	print("Критический уровень биомассы! Запускаю выброс.")
-	event_manager.start_radiation_pulse()
+	# Канон: выброс запускается ТОЛЬКО кнопкой за 1000 энергии
+	print("Критический уровень биомассы! (Выброс - только за 1000 энергии)")
 
 
 func _on_radiation_pulse_started(level: int):
