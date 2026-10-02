@@ -26,6 +26,10 @@ emission_enabled = true
 emission = Color(0.5, 0.5, 0.8, 1)
 emission_energy_multiplier = 5.0
 
+[sub_resource type="TorusMesh" id="TorusMesh_glow"]
+inner_radius = 2.8
+outer_radius = 3.7
+
 [node name="Monolith" type="Node3D"]
 script = ExtResource("1")
 
@@ -46,8 +50,8 @@ omni_range = 30.0
 omni_attenuation = 0.5
 
 [node name="GlowRing" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
-mesh = SubResource("CylinderMesh_monolith")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
+mesh = SubResource("TorusMesh_glow")
 material_override = SubResource("Material_glow")
 
 [node name="Label3D" type="Label3D" parent="."]

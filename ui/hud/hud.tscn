@@ -48,10 +48,10 @@ text = "👥 Сталкеров: 0"
 visible = true
 
 [node name="EmissionPanel" type="Panel" parent="."]
-offset_left = 220.0
+offset_left = 260.0
 offset_top = 10.0
-offset_right = 400.0
-offset_bottom = 100.0
+offset_right = 440.0
+offset_bottom = 115.0
 color = Color(0.1, 0.1, 0.1, 0.8)
 
 [node name="EmissionLabel" type="Label" parent="EmissionPanel"]
@@ -76,9 +76,9 @@ text = "🔥 ВЫБРОС ⚡1000"
 
 [node name="AnomalyPanel" type="Panel" parent="."]
 offset_left = 10.0
-offset_top = 110.0
+offset_top = 125.0
 offset_right = 300.0
-offset_bottom = 300.0
+offset_bottom = 315.0
 color = Color(0.1, 0.1, 0.1, 0.8)
 
 [node name="Title" type="Label" parent="AnomalyPanel"]
@@ -201,9 +201,9 @@ text = "Жг.пух"
 
 [node name="MutantPanel" type="Panel" parent="."]
 offset_left = 310.0
-offset_top = 110.0
+offset_top = 125.0
 offset_right = 500.0
-offset_bottom = 250.0
+offset_bottom = 315.0
 color = Color(0.1, 0.1, 0.1, 0.8)
 
 [node name="Title" type="Label" parent="MutantPanel"]
@@ -276,10 +276,10 @@ offset_bottom = 175.0
 text = "Зомби"
 
 [node name="StartPanel" type="Panel" parent="."]
-offset_left = 410.0
+offset_left = 450.0
 offset_top = 10.0
-offset_right = 650.0
-offset_bottom = 100.0
+offset_right = 690.0
+offset_bottom = 115.0
 
 [node name="StartHint" type="Label" parent="StartPanel"]
 offset_left = 10.0

@@ -53,3 +53,10 @@ func _process(delta):
     if input_dir.length() > 0:
         input_dir = input_dir.normalized()
         global_position += input_dir * move_speed * delta
+        # Не ныряем под рельеф: осмотр снизу ломает картинку (задние грани)
+        var terrain = get_tree().get_first_node_in_group("terrain_generator")
+        var min_y := 2.0
+        if terrain:
+            min_y = terrain.get_terrain_height(global_position.x, global_position.z) + 3.0
+        if global_position.y < min_y:
+            global_position.y = min_y
