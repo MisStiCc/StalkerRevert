@@ -146,6 +146,10 @@ func _attack_target(target: Node):
 
 func _on_died(_source: Node):
 	"""Вызывается при смерти."""
+	# Носимый артефакт (поднятый с убитой аномалии) выпадает на месте смерти.
+	# Не нёс - остаётся только биомасса.
+	if carry_component and carry_component.has_artifact():
+		carry_component.drop_artifact()
 	died.emit(self)
 	
 	# Возвращаем биомассу через ZoneController
