@@ -236,11 +236,11 @@ func _on_emission_pressed():
 		_show_emission_note("Выброс уже идёт!")
 		return
 	
-	if zone_controller.spend_energy(200):
+	if zone_controller.spend_energy(1000):
 		emission_requested.emit()
 		zone_controller.start_radiation_pulse()
 	else:
-		_show_emission_note("Нужно 200 энергии!")
+		_show_emission_note("Нужно 1000 энергии (полная шкала)!")
 
 
 var _note_timer: SceneTreeTimer = null

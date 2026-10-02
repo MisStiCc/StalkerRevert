@@ -68,11 +68,16 @@ func create_anomaly(anomaly_type: String, position: Vector3, difficulty: int, _e
 	
 	var scene = anomaly_scenes[anomaly_type]
 	var anomaly = scene.instantiate()
-	anomaly.position = position
 	
-	# Устанавливаем сложность
-	if anomaly.has_method("set_difficulty"):
-		anomaly.set_difficulty(difficulty)
+	# Проекция на рельеф: аномалия всегда стоит на земле, а не в воздухе
+	var space = get_viewport().get_world_3d().direct_space_state
+	var ray = PhysicsRayQueryParameters3D.new()
+	ray.from = Vector3(position.x, position.y + 40.0, position.z)
+	ray.to = Vector3(position.x, position.y - 60.0, position.z)
+	ray.collision_mask = 1
+	var hit = space.intersect_ray(ray)
+	position.y = hit.position.y if hit else 0.0
+	anomaly.position = position
 	
 	# Применяем множители из лаборатории
 	if anomaly.has_method("set_damage_multiplier"):
@@ -86,6 +91,12 @@ func create_anomaly(anomaly_type: String, position: Vector3, difficulty: int, _e
 	
 	anomaly.add_to_group("anomalies")
 	get_tree().current_scene.add_child(anomaly)
+	
+	# Сложность задаем ПОСЛЕ add_child: _ready() подклассов сбрасывает
+	# difficulty_level на 1 (аналогично артефактам)
+	if anomaly.has_method("set_difficulty"):
+		anomaly.set_difficulty(difficulty)
+	
 	active_anomalies.append(anomaly)
 	
 	anomaly_created.emit(anomaly, anomaly_type, difficulty)

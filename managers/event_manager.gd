@@ -44,9 +44,21 @@ func can_start_pulse() -> bool:
     return not is_radiating and not _run_over
 
 
+func _resolve_refs():
+    """Ссылки на монолит/менеджеры ленивые: EventManager рождается раньше их"""
+    if not _monolith:
+        _monolith = get_tree().get_first_node_in_group("monolith")
+    if not _anomaly_manager:
+        _anomaly_manager = get_tree().get_first_node_in_group("anomaly_manager")
+    if not _spawn_manager:
+        _spawn_manager = get_tree().get_first_node_in_group("spawn_manager")
+
+
 func start_radiation_pulse() -> bool:
     if is_radiating or _run_over:
         return false
+    
+    _resolve_refs()
     
     is_radiating = true
     pulse_count += 1
@@ -62,7 +74,10 @@ func start_radiation_pulse() -> bool:
     # Сбрасываем артефакты у сталкеров
     _drop_all_artifacts()
     
-    # Перемешиваем аномалии
+    # ВЫБРОС УБИВАЕТ ВСЕХ СТАЛКЕРОВ НА ПОВЕРХНОСТИ
+    _kill_all_stalkers()
+    
+    # Аномалии перемешиваются: слабые дальше от монолита, сильные ближе
     _shuffle_all_anomalies()
     
     # Завершаем выброс через duration (отдельной корутиной, чтобы
@@ -85,6 +100,7 @@ func _end_pulse_later() -> void:
 
 
 func _drop_all_artifacts():
+    _resolve_refs()
     if not _spawn_manager:
         return
     
@@ -100,7 +116,18 @@ func _drop_all_artifacts():
     print("Сброшено артефактов во время выброса: " + str(dropped), "EventManager")
 
 
+func _kill_all_stalkers():
+    """Выброс выжигает всех сталкеров на поверхности"""
+    var killed = 0
+    for s in get_tree().get_nodes_in_group("stalkers"):
+        if is_instance_valid(s) and s.has_method("take_damage"):
+            s.take_damage(999999.0, null)
+            killed += 1
+    print("Выброс выжег сталкеров: " + str(killed), "EventManager")
+
+
 func _shuffle_all_anomalies():
+    _resolve_refs()
     if not _monolith or not _anomaly_manager:
         return
     
@@ -132,9 +159,10 @@ func _get_random_position_for_level(level: int) -> Vector3:
     if not _monolith:
         return Vector3.ZERO
     
-    var inner = _monolith.get("inner_radius") if _monolith.has_method("get_inner_radius") else 20.0
-    var middle = _monolith.get("middle_radius") if _monolith.has_method("get_middle_radius") else 40.0
-    var outer = _monolith.get("outer_radius") if _monolith.has_method("get_outer_radius") else 60.0
+    # Кольца Зоны: арена монолита плоская до 35м, дальше рельеф до периметра ~160м
+    var inner = 75.0   # сильные аномалии: 40-75м от монолита
+    var middle = 110.0 # средние: 75-110м
+    var outer = 160.0  # слабые: 110-160м
     
     var min_r = 0.0
     var max_r = 0.0
@@ -146,8 +174,8 @@ func _get_random_position_for_level(level: int) -> Vector3:
         2:  # средние
             min_r = inner
             max_r = middle
-        3:  # сильные - ближний
-            min_r = 0.0
+        3:  # сильные - ближний к монолиту
+            min_r = 40.0
             max_r = inner
         _: return Vector3.ZERO
     
