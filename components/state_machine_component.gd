@@ -153,8 +153,9 @@ func _process_seek_monolith(delta):
 			var zc = get_tree().get_first_node_in_group("zone_controller")
 			if zc:
 				zc.finish_run(false)
-		elif navigation and (not navigation.is_navigating() or _target_update_timer > 2.0):
-			print("StateMachine: SEEK_MONOLITH - двигаюсь к монолиту ", monolith.global_position)
+		elif navigation and not navigation.is_navigating():
+			# Цель статична: перезапускаем путь только когда он потерян -
+			# перезапуск каждые 2с дёргал сталкеров на полпути
 			navigation.move_to(monolith.global_position)
 			_target_update_timer = 0.0
 		# Антизастревание: 6 секунд почти без движения - пробуем обходную точку
@@ -162,8 +163,14 @@ func _process_seek_monolith(delta):
 		if stalker.global_position.distance_to(_stuck_pos) < 1.5:
 			if _stuck_time > 6.0 and navigation:
 				var off = Vector3(randf_range(-12, 12), 0.0, randf_range(-12, 12))
-				print("StateMachine: антизастревание - обходная точка ", off)
-				navigation.move_to(monolith.global_position + off)
+				var detour = monolith.global_position + off
+				# Обходная точка не дальше периметра (за 150м кончается земля)
+				var flat = Vector2(detour.x, detour.z)
+				if flat.length() > 145.0:
+					flat = flat.normalized() * 145.0
+					detour = Vector3(flat.x, detour.y, flat.z)
+				print("StateMachine: антизастревание - обходная точка ", detour)
+				navigation.move_to(detour)
 				_stuck_time = 0.0
 		else:
 			_stuck_pos = stalker.global_position
@@ -261,7 +268,13 @@ func _check_transitions():
 						set_state(GameEnums.StalkerState.FLEE)
 						if navigation:
 							var flee_dir = (stalker.global_position - nearest_threat.global_position).normalized()
-							navigation.move_to(stalker.global_position + flee_dir * 30)
+							var flee_target = stalker.global_position + flee_dir * 30
+							# Не убегаем за периметр (за 150м кончается земля)
+							var flat_f = Vector2(flee_target.x, flee_target.z)
+							if flat_f.length() > 145.0:
+								flat_f = flat_f.normalized() * 145.0
+								flee_target = Vector3(flat_f.x, flee_target.y, flat_f.z)
+							navigation.move_to(flee_target)
 					return
 				elif behavior_strategy and behavior_strategy.should_attack(nearest_threat):
 					var target_state = GameEnums.StalkerState.ATTACK_ANOMALY
