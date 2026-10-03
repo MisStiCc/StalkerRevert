@@ -46,6 +46,8 @@ var _monolith_reached: bool = false
 # Антизастревание: стоим на месте слишком долго - обходим с смещением
 var _stuck_pos: Vector3 = Vector3.ZERO
 var _stuck_time: float = 0.0
+# Прямой ход при потере пути (дыры в навмеше на стыках чанков)
+var _lost_path_time: float = 0.0
 
 
 func _ready():
@@ -154,10 +156,21 @@ func _process_seek_monolith(delta):
 			if zc:
 				zc.finish_run(false)
 		elif navigation and not navigation.is_navigating():
-			# Цель статична: перезапускаем путь только когда он потерян -
-			# перезапуск каждые 2с дёргал сталкеров на полпути
-			navigation.move_to(monolith.global_position)
-			_target_update_timer = 0.0
+			# Путь потерян (например, дыра в навмеше на стыке чанков):
+			# идём к монолиту напрямую по рельефу, периодически пробуя
+			# вернуть навигацию
+			_lost_path_time += delta
+			var to_monolith = monolith.global_position - stalker.global_position
+			to_monolith.y = 0.0
+			if to_monolith.length() > 1.0:
+				to_monolith = to_monolith.normalized()
+				stalker.velocity.x = to_monolith.x * stalker.speed
+				stalker.velocity.z = to_monolith.z * stalker.speed
+			if _lost_path_time > 1.0:
+				_lost_path_time = 0.0
+				navigation.move_to(monolith.global_position)
+		else:
+			_lost_path_time = 0.0
 		# Антизастревание: 6 секунд почти без движения - пробуем обходную точку
 		_stuck_time += delta
 		if stalker.global_position.distance_to(_stuck_pos) < 1.5:

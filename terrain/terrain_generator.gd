@@ -214,7 +214,7 @@ func _load_chunk(chunk_pos: Vector2i):
 	chunk.add_child(mesh_instance)
 
 	_add_collision(chunk, mesh)
-	_bake_chunk_navigation(chunk, mesh)
+	_bake_chunk_navigation(chunk, chunk_pos)
 	_add_props(chunk, chunk_pos)
 
 	add_child(chunk)
@@ -222,14 +222,42 @@ func _load_chunk(chunk_pos: Vector2i):
 	chunk_generated.emit(chunk_pos)
 
 
-func _bake_chunk_navigation(chunk: Node3D, mesh: ArrayMesh):
+func _build_nav_faces(chunk_pos: Vector2i) -> PackedVector3Array:
+	"""Треугольники навмеша чанка с НАХЛЁСТОМ на шаг за границы:
+	соседние навмеши перекрываются, и на швах между чанками не остаётся
+	дыр (иначе сталкеры залипали на стыках, ходя 3-5м туда-сюда)"""
+	var origin = Vector3(chunk_pos.x * chunk_size, 0.0, chunk_pos.y * chunk_size)
+	var step = float(chunk_size) / NAV_SEGMENTS
+	var n = NAV_SEGMENTS + 3  # точек на сторону: от -1 до NAV_SEGMENTS+1
+	var verts := PackedVector3Array()
+	var indices := PackedInt32Array()
+	for iz in n:
+		for ix in n:
+			var wx = origin.x + (ix - 1) * step
+			var wz = origin.z + (iz - 1) * step
+			verts.append(Vector3(wx, get_terrain_height(wx, wz), wz))
+	for iz in n - 1:
+		for ix in n - 1:
+			var a = iz * n + ix
+			var b = a + 1
+			var c = a + n
+			var d = c + 1
+			indices.append_array([a, b, d, a, d, c])
+	var faces := PackedVector3Array()
+	faces.resize(indices.size())
+	for i in range(indices.size()):
+		faces[i] = verts[indices[i]]
+	return faces
+
+
+func _bake_chunk_navigation(chunk: Node3D, chunk_pos: Vector2i):
 	"""Навмеш чанка печётся ОДИН раз при загрузке (мелкий, ~2мс).
 	Каждый чанк - своя NavigationRegion3D: загрузка/выгрузка чанка
 	просто добавляет/убирает регион с карты, без глобальной перепечки."""
 	var region = NavigationRegion3D.new()
 	region.name = "ChunkNav"
 	var source = NavigationMeshSourceGeometryData3D.new()
-	source.add_faces(mesh.get_faces(), Transform3D.IDENTITY)
+	source.add_faces(_build_nav_faces(chunk_pos), Transform3D.IDENTITY)
 	var nav_mesh = _make_nav_mesh()
 	NavigationServer3D.bake_from_source_geometry_data(nav_mesh, source)
 	region.navigation_mesh = nav_mesh
