@@ -267,6 +267,21 @@ func get_state_name() -> String:
 	return "no_state_machine"
 
 
+func apply_campaign_scaling(hp_mult: float, damage_mult: float, speed_mult: float):
+	"""Масштабирование статов параметрами кампании.
+	Вызывается SpawnManager'ом ПОСЛЕ add_child - статы уже заданы _ready() ранга."""
+	max_health = max_health * hp_mult
+	health = max_health
+	damage = damage * damage_mult
+	speed = speed * speed_mult
+
+	if health_component:
+		health_component.max_health = max_health
+		health_component.current_health = health
+	if navigation_component:
+		navigation_component.move_speed = speed
+
+
 func take_damage(amount: float, source: Node = null):
 	"""Получение урона"""
 	if health_component:

@@ -12,17 +12,30 @@ var is_in_lab: bool = true
 var is_loading: bool = false
 var current_scene_name: String = ""
 
+# Уровень кампании, выбранный в лаборатории для следующего забега.
+# 0 = идти на текущий рубеж (campaign_level сейва)
+var selected_campaign_level: int = 0
+
 # Константы
 const SAVE_DIR = "user://saves/"
 const SAVE_FILE_PREFIX = "save_"
 const SAVE_FILE_EXT = ".tres"
+# Настройки клиента (вне сейвов): активный слот сохранения
+const SETTINGS_PATH = "user://settings.cfg"
+const AUTOSAVE_SLOT = 0
+const MANUAL_SLOTS = 3
+
+# Активный слот: 0 - автосейв, 1..3 - ручные слоты. Выбирается в настройках,
+# привязывается при загрузке слота через главное меню
+var active_save_slot: int = 0
 
 
 func _ready():
 	add_to_group("game_manager")
 	print("GameManager: инициализирован")
 	_create_save_directory()
-	_load_autosave_if_exists()
+	_load_settings()
+	_load_boot_save()
 	Signals.game_started.emit()
 
 
@@ -33,15 +46,53 @@ func _create_save_directory():
 	print("Директория сохранений создана")
 
 
-func _load_autosave_if_exists():
-	var path = SAVE_DIR + SAVE_FILE_PREFIX + "0" + SAVE_FILE_EXT
+# ==================== НАСТРОЙКИ КЛИЕНТА ====================
+
+func _load_settings():
+	var cfg = ConfigFile.new()
+	if cfg.load(SETTINGS_PATH) == OK:
+		active_save_slot = clampi(int(cfg.get_value("game", "active_save_slot", AUTOSAVE_SLOT)), AUTOSAVE_SLOT, MANUAL_SLOTS)
+	print("Активный слот сохранения: " + ("автосейв" if active_save_slot == AUTOSAVE_SLOT else str(active_save_slot)))
+
+
+func _save_settings():
+	var cfg = ConfigFile.new()
+	cfg.set_value("game", "active_save_slot", active_save_slot)
+	var error = cfg.save(SETTINGS_PATH)
+	if error != OK:
+		print("Не удалось сохранить настройки: код " + str(error))
+
+
+func get_active_save_slot() -> int:
+	return active_save_slot
+
+
+func set_active_save_slot(slot: int) -> bool:
+	if slot < AUTOSAVE_SLOT or slot > MANUAL_SLOTS:
+		return false
+	active_save_slot = slot
+	_save_settings()
+	return true
+
+
+## Сохранить прогресс в активный слот (автосейвы и UI-кнопки)
+func save_to_active_slot() -> bool:
+	return save_game(active_save_slot)
+
+
+func _load_boot_save():
+	# При старте подхватываем сохранение активного слота: автосейв или ручной
+	var path = SAVE_DIR + SAVE_FILE_PREFIX + str(active_save_slot) + SAVE_FILE_EXT
 	if FileAccess.file_exists(path):
 		var save = load(path)
 		if save and save is SaveData:
 			current_save_data = save
-			print("Автосохранение загружено")
+			_migrate_campaign_progress(save)
+			print("Сохранение активного слота загружено: " + str(active_save_slot))
+		else:
+			print("Файл сохранения активного слота поврежден: " + path)
 	else:
-		print("Автосохранение не найдено")
+		print("Сохранение активного слота не найдено: " + path)
 
 
 func change_scene(scene_name: String, params: Dictionary = {}):
@@ -77,7 +128,16 @@ func _setup_run_params(params: Dictionary):
 	var bonuses = {}
 	if current_save_data and current_save_data.lab_data:
 		bonuses = current_save_data.lab_data.get_bonuses()
-	
+
+	# Кампания: уровень выбран в лаборатории (или текущий рубеж), параметры - из CampaignData
+	var campaign_level := get_selected_or_frontier_level()
+	var campaign_mode := get_campaign_mode()
+	params["campaign_level"] = campaign_level
+	params["campaign_mode"] = campaign_mode
+	params["campaign_params"] = CampaignData.get_level_params(campaign_level, campaign_mode)
+	# Переигрывание пройденного уровня: награда урезана, рубеж не двигается
+	params["campaign_replay"] = campaign_level < get_campaign_level()
+
 	# Стартовая биомасса в бою: остаток лаборатории + 300 базы.
 	# Остаток СПИСЫВАЕТСЯ из лаборатории (перенос припасов на фронт)
 	params["start_biomass"] = 300.0
@@ -139,9 +199,13 @@ func load_game(slot: int) -> bool:
 	var save = load(path)
 	if save and save is SaveData:
 		current_save_data = save
+		_migrate_campaign_progress(save)
+		# Загруженный слот становится активным: весь дальнейший прогресс пишется сюда
+		active_save_slot = clampi(slot, AUTOSAVE_SLOT, MANUAL_SLOTS)
+		_save_settings()
 		game_loaded.emit(save)
 		Signals.game_loaded.emit(slot, save)
-		print("Игра загружена из слота " + str(slot))
+		print("Игра загружена из слота " + str(slot) + ", слот активирован")
 		return true
 	
 	print("Файл сохранения поврежден: " + path)
@@ -193,8 +257,10 @@ func get_save_info(slot: int) -> Dictionary:
 
 
 func get_all_saves_info() -> Array[Dictionary]:
+	# Ручные слоты 1..3; автосейв (0) в список загрузки не входит -
+	# он подхватывается сам при старте, если активен
 	var info: Array[Dictionary] = []
-	for i in range(3):
+	for i in range(1, MANUAL_SLOTS + 1):
 		info.append(get_save_info(i))
 	return info
 
@@ -204,8 +270,9 @@ func start_new_game():
 	current_save_data = SaveData.new()
 	current_save_data.lab_data = LabData.new()
 	current_save_data.statistics = GameStatistics.new()
-	
-	if save_game(0):
+	selected_campaign_level = 0
+
+	if save_to_active_slot():
 		change_scene("lab")
 	else:
 		print("Не удалось создать новую игру")
@@ -237,15 +304,76 @@ func get_statistics():
 	return current_save_data.statistics
 
 
+# ==================== КАМПАНИЯ ====================
+
+## Сейвы до введения кампании: рубеж восстановления - от числа забегов
+func _migrate_campaign_progress(save: SaveData):
+	if save.campaign_level <= 1 and save.lab_data and save.lab_data.run_number > 1:
+		save.campaign_level = clampi(save.lab_data.run_number, 1, CampaignData.TOTAL_LEVELS)
+		print("Кампания восстановлена по числу забегов: уровень " + str(save.campaign_level))
+
+
+func get_campaign_level() -> int:
+	if current_save_data:
+		return clampi(current_save_data.campaign_level, 1, CampaignData.TOTAL_LEVELS)
+	return 1
+
+
+func get_campaign_mode() -> String:
+	if current_save_data and CampaignData.MODE_MULTIPLIERS.has(current_save_data.campaign_mode):
+		return current_save_data.campaign_mode
+	return CampaignData.MODE_NORMAL
+
+
+func set_campaign_mode(mode: String):
+	if current_save_data and CampaignData.MODE_MULTIPLIERS.has(mode):
+		current_save_data.campaign_mode = mode
+		save_to_active_slot()
+
+
+## Уровень для следующего забега: выбранный в лаборатории или текущий рубеж
+func get_selected_or_frontier_level() -> int:
+	var frontier := get_campaign_level()
+	if selected_campaign_level >= 1 and selected_campaign_level <= frontier:
+		return selected_campaign_level
+	return frontier
+
+
+func is_campaign_completed() -> bool:
+	return current_save_data != null and current_save_data.campaign_completed
+
+
+## Победа в забеге: сдвигаем рубеж кампании, если пройден frontier-уровень
+func _apply_campaign_result(result: Dictionary):
+	var success: bool = result.get("success", false)
+	var level: int = result.get("campaign_level", 0)
+	if not success or level <= 0:
+		return
+
+	if current_save_data.campaign_completed:
+		return
+
+	if level >= CampaignData.TOTAL_LEVELS:
+		current_save_data.campaign_completed = true
+		print("КАМПАНИЯ ПРОЙДЕНА! Все 100 колец Зоны за спиной.")
+		return
+
+	if level >= current_save_data.campaign_level:
+		current_save_data.campaign_level = mini(level + 1, CampaignData.TOTAL_LEVELS)
+		print("Кампания: открыт уровень " + str(current_save_data.campaign_level))
+
+
 func process_run_result(result: Dictionary):
 	print("Обработка результатов забега: " + str(result))
-	
+
 	var lab = get_lab_data()
 	var stats = get_statistics()
-	
+
 	var reward = result.get("reward", 0.0)
 	lab.biomass += reward
 	print("Добавлено биомассы: " + str(reward))
+
+	_apply_campaign_result(result)
 	
 	stats.total_runs += 1
 	var success = result.get("success", false)
@@ -274,14 +402,20 @@ func process_run_result(result: Dictionary):
 	lab.run_number += 1
 	print("Номер забега: " + str(lab.run_number))
 	
-	save_game(0)
+	save_to_active_slot()
 	
 	Signals.run_ended.emit(lab.run_number - 1, success, reward)
 
 
 func purchase_upgrade(upgrade_type: String, cost: float) -> bool:
 	var lab = get_lab_data()
-	
+
+	# Расширенные тиры открываются прогрессом кампании
+	if not lab.is_next_level_unlocked(upgrade_type, get_campaign_level()):
+		print("Улучшение %s откроется на уровне кампании %d" % [
+			upgrade_type, lab.get_next_unlock_campaign_level(upgrade_type)])
+		return false
+
 	if lab.biomass < cost:
 		print("Недостаточно биомассы для " + upgrade_type + " (нужно: " + str(cost) + ", есть: " + str(lab.biomass) + ")")
 		return false
@@ -291,7 +425,7 @@ func purchase_upgrade(upgrade_type: String, cost: float) -> bool:
 	
 	print("Куплено улучшение: " + upgrade_type + " за " + str(cost))
 	
-	save_game(0)
+	save_to_active_slot()
 	
 	return true
 
@@ -302,7 +436,7 @@ func exchange_artifact(artifact_type: String, value: int) -> bool:
 	if lab.remove_artifact(artifact_type):
 		lab.biomass += value
 		print("Обменян артефакт " + artifact_type + " на " + str(value) + " биомассы")
-		save_game(0)
+		save_to_active_slot()
 		return true
 	
 	print("Не удалось обменять артефакт " + artifact_type)
@@ -316,7 +450,7 @@ func exchange_all_artifacts(rarity: String) -> int:
 	if total > 0:
 		lab.biomass += total
 		print("Обменяны все артефакты редкости " + rarity + " на " + str(total) + " биомассы")
-		save_game(0)
+		save_to_active_slot()
 	else:
 		print("Нет артефактов редкости " + rarity + " для обмена")
 	

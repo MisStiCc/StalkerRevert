@@ -276,20 +276,49 @@ func _connect_managers():
 
 func _initialize_run():
 	var run_data = progression_manager.start_new_run()
-	event_manager.set_pulses_to_win(pulses_to_win)
-	event_manager.set_run_number(run_data.run_number)
-	event_manager.set_difficulty(run_data.difficulty)
-	
+	var run_number: int = run_data.run_number
+	var run_difficulty: float = run_data.difficulty
+	var pulses: int = pulses_to_win
+
+	# Кампания: параметры уровня перекрывают дефолтную прогрессию забегов
+	if run_params.has("campaign_params"):
+		var campaign: Dictionary = run_params["campaign_params"]
+		run_number = int(run_params.get("campaign_level", run_data.run_number))
+		run_difficulty = float(campaign.get("hp_mult", 1.0))
+		pulses = int(campaign.get("pulses_to_win", pulses_to_win))
+
+		progression_manager.current_run = run_number
+		progression_manager.current_difficulty = run_difficulty
+
+		spawn_manager.max_waves = int(campaign.get("waves", spawn_manager.max_waves))
+		spawn_manager.min_stalkers_per_wave = int(campaign.get("count_min", spawn_manager.min_stalkers_per_wave))
+		spawn_manager.max_stalkers_per_wave = int(campaign.get("count_max", spawn_manager.max_stalkers_per_wave))
+		spawn_manager.wave_break = float(campaign.get("wave_break", spawn_manager.wave_break))
+		# Количество сталкеров задаёт уровень кампании, а не множитель сложности
+		spawn_manager.set_difficulty(1.0)
+		spawn_manager.set_rank_weights(campaign.get("mix", [90, 10, 0]))
+		spawn_manager.set_campaign_scaling(
+			float(campaign.get("hp_mult", 1.0)),
+			float(campaign.get("damage_mult", 1.0)),
+			float(campaign.get("speed_mult", 1.0)))
+
+	event_manager.set_pulses_to_win(pulses)
+	event_manager.set_run_number(run_number)
+	event_manager.set_difficulty(run_difficulty)
+
 	# Применяем бонусы из лаборатории
 	_apply_lab_bonuses()
-	
+
 	# Стартовая биомасса забега (остаток лаборатории + 300)
 	resource_manager.current_biomass = clamp(
 		run_params.get("start_biomass", 300.0), 0.0, max_biomass)
-	
+
 	# Фаза подготовки: спавн сталкеров начнётся по кнопке СТАРТ в HUD
-	Signals.run_started.emit(run_data.run_number, run_data.difficulty, pulses_to_win)
-	print("Забег #" + str(run_data.run_number) + " в фазе подготовки (сложность: " + str(run_data.difficulty) + "). Расставьте защиты и нажмите СТАРТ.")
+	var run_label: String = "Забег #" + str(run_number)
+	if run_params.has("campaign_params"):
+		run_label = "Кампания: «" + str(run_params["campaign_params"].get("title", "Уровень")) + "»"
+	Signals.run_started.emit(run_number, run_difficulty, pulses)
+	print(run_label + " в фазе подготовки (множитель врагов: " + str(run_difficulty) + "). Расставьте защиты и нажмите СТАРТ.")
 
 
 func _apply_lab_bonuses():
@@ -389,20 +418,20 @@ func _on_critical_biomass(_percent: float):
 
 
 func _on_radiation_pulse_started(level: int):
-	pass
-	
-	progression_manager.increase_difficulty()
-	event_manager.set_difficulty(progression_manager.get_current_difficulty())
-	
+	# В кампании эскалация живёт на уровнях кампании, выброс сложность не крутит
+	if not run_params.has("campaign_params"):
+		progression_manager.increase_difficulty()
+		event_manager.set_difficulty(progression_manager.get_current_difficulty())
+
 	radiation_pulse_started.emit(level)
 	Signals.radiation_pulse_started.emit(level, pulse_duration)
-	
+
 	# Визуальные/звуковые эффекты
 	if particle_manager:
 		particle_manager.spawn_pulse_effect()
 	if sound_manager:
 		sound_manager.play_pulse_warning()
-	
+
 	print("ВЫБРОС начался! Уровень: " + str(level))
 
 
@@ -502,7 +531,10 @@ func _on_game_over():
 
 
 func _on_game_won(run_number: int, reward: float):
-	resource_manager.add_biomass(reward)
+	# В кампании награда считается в _collect_run_result (боевой доход + бонус уровня);
+	# дефолтная формула event_manager (100 x забег x сложность) в кампанию не течёт
+	if not run_params.has("campaign_params"):
+		resource_manager.add_biomass(reward)
 	game_won.emit(run_number, reward)
 	Signals.game_won.emit(run_number, reward)
 	
@@ -651,7 +683,15 @@ func finish_run(success: bool):
 func _collect_run_result(success: bool) -> Dictionary:
 	var run_number = progression_manager.get_current_run() if progression_manager else 1
 	var reward = resource_manager.accumulated_biomass if resource_manager else 0.0
-	
+
+	# Кампания: бонус за уровень поверх боевого дохода; реплей пройденного - 30% бонуса
+	if success and run_params.has("campaign_params"):
+		var campaign: Dictionary = run_params["campaign_params"]
+		var bonus: float = float(campaign.get("reward_bonus", 0.0))
+		if bool(run_params.get("campaign_replay", false)):
+			bonus *= CampaignData.REPLAY_REWARD_FACTOR
+		reward += bonus
+
 	var stats = {
 		"stalkers_killed": progression_manager.get_stalkers_killed() if progression_manager else 0,
 		"anomalies_created": progression_manager.get_anomalies_created() if progression_manager else 0,
@@ -660,10 +700,11 @@ func _collect_run_result(success: bool) -> Dictionary:
 		"biomass_earned": resource_manager.accumulated_biomass if resource_manager else 0.0,
 		"biomass_spent": 0
 	}
-	
+
 	return {
 		"success": success,
 		"run_number": run_number,
+		"campaign_level": int(run_params.get("campaign_level", 0)),
 		"reward": reward,
 		"statistics": stats,
 		"artifacts_collected": _collect_artifacts()

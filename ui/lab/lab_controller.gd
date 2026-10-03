@@ -45,6 +45,13 @@ var lab_data: LabData
 var statistics: GameStatistics
 var game_manager: Node
 
+# Кампания: выбранный уровень и элементы селектора (строятся кодом в Header)
+var _campaign_level: int = 1
+var _campaign_prev_button: Button
+var _campaign_next_button: Button
+var _campaign_mode_button: Button
+var _campaign_label: Label
+
 
 func _ready():
 	print("lab_controller: _ready started")
@@ -57,6 +64,8 @@ func _ready():
 	_load_data()
 	_setup_connections()
 	_refresh_ui()
+	_setup_campaign_selector()
+	_refresh_campaign_ui()
 	
 	print("lab_controller: initialized, GameManager найден: ", game_manager != null)
 
@@ -82,6 +91,8 @@ func _load_data():
 		print("GameManager НАЙДЕН!")
 		lab_data = game_manager.get_lab_data()
 		statistics = game_manager.get_statistics()
+		# Рубеж кампании для проверки разблокировки расширенных тиров
+		lab_data.campaign_level_reached = game_manager.get_campaign_level()
 	else:
 		print("GameManager НЕ НАЙДЕН! Создаем временные данные")
 		lab_data = LabData.new()
@@ -96,6 +107,7 @@ func _setup_connections():
 	settings_button.pressed.connect(_on_settings_pressed)
 	settings_back_button.pressed.connect(_on_settings_back_pressed)
 	_setup_settings_sliders()
+	_setup_save_slot_selector()
 	save_button.pressed.connect(_on_save_pressed)
 	artifact_storage_button.pressed.connect(_on_storage_pressed)
 	
@@ -181,6 +193,96 @@ func _format_number(value: float) -> String:
 	return result
 
 
+# ==================== КАМПАНИЯ ====================
+
+func _setup_campaign_selector():
+	"""Селектор уровня кампании в шапке лаборатории: ◀ уровень ▶ и режим сложности"""
+	var header: HBoxContainer = get_node_or_null("VBox/Header")
+	if not header:
+		print("lab_controller: Header не найден, селектор кампании не построен")
+		return
+
+	var row := HBoxContainer.new()
+	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.alignment = BoxContainer.ALIGNMENT_END
+	row.add_theme_constant_override("separation", 8)
+
+	_campaign_label = Label.new()
+	_campaign_label.add_theme_font_size_override("font_size", 16)
+
+	_campaign_prev_button = Button.new()
+	_campaign_prev_button.text = "◀"
+	_campaign_next_button = Button.new()
+	_campaign_next_button.text = "▶"
+	_campaign_mode_button = Button.new()
+
+	row.add_child(_campaign_prev_button)
+	row.add_child(_campaign_label)
+	row.add_child(_campaign_next_button)
+	row.add_child(_campaign_mode_button)
+	header.add_child(row)
+
+	_campaign_prev_button.pressed.connect(_on_campaign_prev_pressed)
+	_campaign_next_button.pressed.connect(_on_campaign_next_pressed)
+	_campaign_mode_button.pressed.connect(_on_campaign_mode_pressed)
+	for btn in [_campaign_prev_button, _campaign_next_button, _campaign_mode_button]:
+		btn.mouse_entered.connect(_play_hover_sound)
+
+
+func _refresh_campaign_ui():
+	if not game_manager or not _campaign_label:
+		return
+
+	var frontier: int = game_manager.get_campaign_level()
+	_campaign_level = clampi(_campaign_level, 1, frontier)
+
+	var params: Dictionary = CampaignData.get_level_params(_campaign_level, game_manager.get_campaign_mode())
+	var text: String
+	if params.get("is_boss", false):
+		text = "КАРАВАН %d/100: «%s»" % [_campaign_level, params.get("title", "")]
+	else:
+		text = "Уровень %d/100 - %s" % [_campaign_level, params.get("chapter_title", "")]
+	if _campaign_level < frontier:
+		text += " (пройден)"
+	if game_manager.is_campaign_completed() and _campaign_level >= CampaignData.TOTAL_LEVELS:
+		text = "КАМПАНИЯ ПРОЙДЕНА! Финальный уровень: 100/100"
+	_campaign_label.text = text
+
+	_campaign_prev_button.disabled = _campaign_level <= 1
+	_campaign_next_button.disabled = _campaign_level >= frontier
+	_campaign_mode_button.text = "Сложность: %s" % CampaignData.get_mode_name(game_manager.get_campaign_mode())
+
+
+func _on_campaign_prev_pressed():
+	_play_click_sound()
+	_campaign_level = maxi(1, _campaign_level - 1)
+	_refresh_campaign_ui()
+
+
+func _on_campaign_next_pressed():
+	_play_click_sound()
+	var frontier: int = game_manager.get_campaign_level() if game_manager else 1
+	_campaign_level = mini(frontier, _campaign_level + 1)
+	_refresh_campaign_ui()
+
+
+func _on_campaign_mode_pressed():
+	"""Цикл режимов сложности: Сталкер -> Ветеран -> Легенда"""
+	_play_click_sound()
+	if not game_manager:
+		return
+
+	var current: String = game_manager.get_campaign_mode()
+	var next_mode: String = CampaignData.MODE_EASY
+	if current == CampaignData.MODE_EASY:
+		next_mode = CampaignData.MODE_NORMAL
+	elif current == CampaignData.MODE_NORMAL:
+		next_mode = CampaignData.MODE_HARD
+
+	game_manager.set_campaign_mode(next_mode)
+	_refresh_campaign_ui()
+
+
 # ==================== ОБРАБОТЧИКИ ====================
 
 func _on_start_run_pressed():
@@ -191,7 +293,9 @@ func _on_start_run_pressed():
 		game_manager = get_tree().get_first_node_in_group("game_manager")
 	
 	if game_manager:
-		print("Запуск забега через GameManager")
+		# Выбранный в селекторе уровень кампании уходит в параметры забега
+		game_manager.selected_campaign_level = _campaign_level
+		print("Запуск забега через GameManager (уровень кампании %d)" % _campaign_level)
 		await get_tree().create_timer(0.2).timeout
 		game_manager.change_scene("run")
 	else:
@@ -227,6 +331,19 @@ func _setup_settings_sliders():
 		settings_sfx_slider.set_value_no_signal(db_to_linear(AudioServer.get_bus_volume_db(sfx_idx)))
 
 
+func _setup_save_slot_selector():
+	"""Выбор активного слота сохранения между слайдерами и кнопкой НАЗАД"""
+	var panel = get_node_or_null("SettingsScreen/Panel")
+	if not panel:
+		print("lab_controller: SettingsScreen/Panel не найден, селектор слота не построен")
+		return
+
+	var selector := SaveSlotSelector.new()
+	selector.position = Vector2(30, 202)
+	selector.size = Vector2(340, 28)
+	panel.add_child(selector)
+
+
 func _set_bus_volume(bus_name: String, value: float):
 	var idx = AudioServer.get_bus_index(bus_name)
 	if idx >= 0:
@@ -247,12 +364,12 @@ func _on_settings_pressed():
 
 func _on_save_pressed():
 	_play_click_sound()
-	
+
 	if not game_manager:
 		game_manager = get_tree().get_first_node_in_group("game_manager")
-	
-	if game_manager:
-		game_manager.save_game(0)
+
+	if game_manager and game_manager.has_method("save_to_active_slot"):
+		game_manager.save_to_active_slot()
 		_show_message("Игра сохранена", 1.0)
 	else:
 		print("GameManager не найден, не могу сохранить")

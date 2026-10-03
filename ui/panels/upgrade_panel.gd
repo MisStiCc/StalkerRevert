@@ -118,7 +118,6 @@ func _update_upgrade_item(container: HBoxContainer, upgrade_id: String):
 	var level = lab_data.get_upgrade_level(upgrade_id)
 	var max_level = lab_data.get_max_level(upgrade_id)
 	var cost = lab_data.get_upgrade_cost(upgrade_id)
-	var can_upgrade = lab_data.can_upgrade(upgrade_id) and lab_data.biomass >= cost
 	
 	# LevelLabel лежит внутри info_vbox, поэтому поиск рекурсивный;
 	# owned=false, т.к. узлы созданы кодом и не имеют owner
@@ -133,9 +132,22 @@ func _update_upgrade_item(container: HBoxContainer, upgrade_id: String):
 	if level >= max_level:
 		upgrade_button.text = "MAX"
 		upgrade_button.disabled = true
-	else:
-		upgrade_button.text = "УЛУЧШИТЬ\n%d биомассы" % int(cost)
-		upgrade_button.disabled = not can_upgrade
+		return
+	
+	# Расширенные тиры открываются прогрессом кампании
+	var unlock_level: int = lab_data.get_next_unlock_campaign_level(upgrade_id)
+	var campaign_level: int = CampaignData.TOTAL_LEVELS
+	var gm = get_tree().get_first_node_in_group("game_manager")
+	if gm and gm.has_method("get_campaign_level"):
+		campaign_level = gm.get_campaign_level()
+	if campaign_level < unlock_level:
+		upgrade_button.text = "ОТКРОЕТСЯ\nна уровне %d" % unlock_level
+		upgrade_button.disabled = true
+		return
+	
+	var can_upgrade = lab_data.biomass >= cost
+	upgrade_button.text = "УЛУЧШИТЬ\n%d биомассы" % int(cost)
+	upgrade_button.disabled = not can_upgrade
 
 
 func _on_upgrade_clicked(upgrade_id: String):
@@ -144,6 +156,11 @@ func _on_upgrade_clicked(upgrade_id: String):
 	
 	var cost = lab_data.get_upgrade_cost(upgrade_id)
 	
+	# can_upgrade проверяет и разблокировку кампанией (внутри purchase_upgrade),
+	# но здесь - ранний выход, чтобы не списать биомассу за закрытый тир
+	if not lab_data.is_next_level_unlocked(upgrade_id, lab_data.campaign_level_reached):
+		return
+	
 	if lab_data.biomass >= cost and lab_data.can_upgrade(upgrade_id):
 		lab_data.biomass -= cost
 		lab_data.purchase_upgrade(upgrade_id)
@@ -151,8 +168,8 @@ func _on_upgrade_clicked(upgrade_id: String):
 		# Автозагрузки не зарегистрированы как Engine-синглтоны:
 		# GameManager ищем через группу (см. соглашения проекта)
 		var gm = get_tree().get_first_node_in_group("game_manager")
-		if gm and gm.has_method("save_game"):
-			gm.save_game(0)
+		if gm and gm.has_method("save_to_active_slot"):
+			gm.save_to_active_slot()
 		
 		# Обновляем UI
 		for child in upgrades_container.get_children():

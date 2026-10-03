@@ -119,10 +119,12 @@ func _on_artifact_clicked(rarity: String, value: int, index: int):
                 lab_data.artifacts_legendary.remove_at(index)
     
     lab_data.biomass += value
-    
-    var gm = Engine.get_singleton("GameManager")
-    if gm:
-        gm.save_game(0)
+
+    # Автозагрузки не зарегистрированы как Engine-синглтоны -
+    # GameManager ищем через группу (Engine.get_singleton здесь всегда падал)
+    var gm = get_tree().get_first_node_in_group("game_manager")
+    if gm and gm.has_method("save_to_active_slot"):
+        gm.save_to_active_slot()
     
     var sm = get_tree().get_first_node_in_group("sound_manager")
     if sm and sm.has_method("play_sound"):

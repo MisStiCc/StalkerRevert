@@ -8,6 +8,12 @@ class_name SaveData
 @export var lab_data: LabData
 @export var statistics: GameStatistics
 
+# Кампания: самый высокий ОТКРЫТЫЙ уровень (1-100)
+@export var campaign_level: int = 1
+@export var campaign_completed: bool = false
+# Режим сложности кампании: easy / normal / hard (CampaignData)
+@export var campaign_mode: String = "normal"
+
 
 func _init():
     lab_data = LabData.new()

@@ -29,6 +29,7 @@ func _ready():
 	_setup_buttons()
 	_setup_sounds()
 	_setup_settings()
+	_setup_save_slot_selector()
 	_load_cover_art()
 	
 	load_screen.visible = false
@@ -72,6 +73,19 @@ func _setup_settings():
 
 func _on_music_volume_changed(value: float):
 	_set_bus_volume("Music", value)
+
+
+func _setup_save_slot_selector():
+	"""Выбор активного слота сохранения между слайдерами и кнопкой НАЗАД"""
+	var panel = get_node_or_null("SettingsScreen/Panel")
+	if not panel:
+		print("MainMenu: SettingsScreen/Panel не найден, селектор слота не построен")
+		return
+
+	var selector := SaveSlotSelector.new()
+	selector.position = Vector2(30, 202)
+	selector.size = Vector2(340, 28)
+	panel.add_child(selector)
 
 
 func _on_sfx_volume_changed(value: float):
@@ -172,36 +186,37 @@ func _refresh_save_slots():
 		return
 	
 	var saves_info = game_manager.get_all_saves_info()
-	
-	for i in range(3):
-		var save_info = saves_info[i]
+
+	# get_all_saves_info возвращает ручные слоты 1..3 (автосейв - отдельный механизм)
+	for save_info in saves_info:
+		var slot_number = int(save_info.get("slot", 1))
 		var slot_container = HBoxContainer.new()
-		
+
 		var info_label = Label.new()
 		if save_info.get("exists", false):
 			info_label.text = "СЛОТ %d | Забег #%d | Биомасса: %d | Побед: %d" % [
-				i + 1,
+				slot_number,
 				save_info.get("run_number", 1),
 				save_info.get("biomass", 0),
 				save_info.get("wins", 0)
 			]
 		else:
-			info_label.text = "СЛОТ %d | ПУСТО" % (i + 1)
-		
+			info_label.text = "СЛОТ %d | ПУСТО" % slot_number
+
 		slot_container.add_child(info_label)
-		
+
 		var load_btn = Button.new()
 		load_btn.text = "ЗАГРУЗИТЬ"
 		load_btn.disabled = not save_info.get("exists", false)
-		load_btn.pressed.connect(_load_slot.bind(i))
+		load_btn.pressed.connect(_load_slot.bind(slot_number))
 		slot_container.add_child(load_btn)
-		
+
 		var delete_btn = Button.new()
 		delete_btn.text = "УДАЛИТЬ"
 		delete_btn.disabled = not save_info.get("exists", false)
-		delete_btn.pressed.connect(_delete_slot.bind(i))
+		delete_btn.pressed.connect(_delete_slot.bind(slot_number))
 		slot_container.add_child(delete_btn)
-		
+
 		save_slots_container.add_child(slot_container)
 
 

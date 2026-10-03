@@ -66,6 +66,14 @@ var is_spawning: bool = false
 var is_active: bool = true
 var _difficulty: float = 1.0
 
+# Кампания: весовой состав рангов [новички, ветераны, мастера] в процентах.
+# Пустой словарь = старое поведение (пороги по _difficulty)
+var rank_weights: Dictionary = {}
+# Кампания: множители статов спавнящихся сталкеров
+var campaign_hp_mult: float = 1.0
+var campaign_damage_mult: float = 1.0
+var campaign_speed_mult: float = 1.0
+
 # Статистика
 var _stalkers_killed: int = 0
 var _artifacts_stolen: int = 0
@@ -213,9 +221,14 @@ func _spawn_stalker() -> bool:
 	
 	var stalker = scene.instantiate()
 	stalker.position = pos
-	
+
 	get_tree().current_scene.add_child(stalker)
-	
+
+	# Масштабирование кампании: после add_child - статы задаёт _ready() ранга
+	if campaign_hp_mult != 1.0 or campaign_damage_mult != 1.0 or campaign_speed_mult != 1.0:
+		if stalker.has_method("apply_campaign_scaling"):
+			stalker.apply_campaign_scaling(campaign_hp_mult, campaign_damage_mult, campaign_speed_mult)
+
 	var monolith = _get_monolith()
 	if monolith:
 		var dir = (monolith.global_position - pos).normalized()
@@ -239,8 +252,12 @@ func _spawn_stalker() -> bool:
 
 
 func _get_stalker_scene_by_difficulty() -> PackedScene:
+	# Кампания: состав рангов задаётся весами уровня, а не порогами сложности
+	if not rank_weights.is_empty():
+		return _get_stalker_scene_by_weights()
+
 	var rand_val = randf()
-	
+
 	if _difficulty < 1.2:
 		if rand_val < 0.6: return stalker_scenes.get("novice")
 		elif rand_val < 0.9: return stalker_scenes.get("veteran")
@@ -257,6 +274,23 @@ func _get_stalker_scene_by_difficulty() -> PackedScene:
 		if rand_val < 0.2: return stalker_scenes.get("novice")
 		elif rand_val < 0.6: return stalker_scenes.get("veteran")
 		else: return stalker_scenes.get("master")
+
+
+func _get_stalker_scene_by_weights() -> PackedScene:
+	var novice: float = float(rank_weights.get("novice", 0.0))
+	var veteran: float = float(rank_weights.get("veteran", 0.0))
+	var master: float = float(rank_weights.get("master", 0.0))
+	var total: float = novice + veteran + master
+
+	if total <= 0.0:
+		return stalker_scenes.get("novice")
+
+	var roll: float = randf() * total
+	if roll < novice:
+		return stalker_scenes.get("novice")
+	elif roll < novice + veteran:
+		return stalker_scenes.get("veteran")
+	return stalker_scenes.get("master")
 
 
 func _get_spawn_position() -> Vector3:
@@ -451,3 +485,26 @@ func set_damage_multiplier(value: float):
 func set_cost_multiplier(value: float):
 	cost_multiplier = value
 	print("Множитель стоимости мутантов: " + str(value))
+
+
+# ==================== ПАРАМЕТРЫ КАМПАНИИ ====================
+
+## Весовой состав рангов из кампании: mix = [новички, ветераны, мастера] в процентах
+func set_rank_weights(mix: Array):
+	if mix.size() < 3:
+		print("set_rank_weights: ожидается массив из 3 процентов, получено: " + str(mix))
+		return
+	rank_weights = {
+		"novice": float(mix[0]),
+		"veteran": float(mix[1]),
+		"master": float(mix[2])
+	}
+	print("Состав рангов: н/в/м = %d/%d/%d%%" % [int(mix[0]), int(mix[1]), int(mix[2])])
+
+
+## Множители статов врагов для текущего уровня кампании
+func set_campaign_scaling(hp_mult: float, damage_mult: float, speed_mult: float):
+	campaign_hp_mult = hp_mult
+	campaign_damage_mult = damage_mult
+	campaign_speed_mult = speed_mult
+	print("Масштаб кампании: HP x%.2f, урон x%.2f, скорость x%.2f" % [hp_mult, damage_mult, speed_mult])

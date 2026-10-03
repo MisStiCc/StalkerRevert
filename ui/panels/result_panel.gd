@@ -65,7 +65,9 @@ func show_result(result: Dictionary):
 
 func _on_continue_pressed():
     close()
-    
-    var gm = Engine.get_singleton("GameManager")
-    if gm:
+
+    # Автозагрузки не зарегистрированы как Engine-синглтоны -
+    # GameManager ищем через группу (Engine.get_singleton здесь всегда падал)
+    var gm = get_tree().get_first_node_in_group("game_manager")
+    if gm and gm.has_method("change_scene"):
         gm.change_scene("lab")

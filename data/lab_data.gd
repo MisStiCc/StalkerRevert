@@ -8,6 +8,10 @@ class_name LabData
 @export var run_number: int = 1
 @export var biomass: float = 0.0
 
+# Рубеж кампании на момент загрузки (runtime-кэш из SaveData.campaign_level,
+# не сохраняется - источник истины кампании в GameManager)
+var campaign_level_reached: int = 1
+
 # Улучшения аномалий
 @export var anomaly_damage_level: int = 0
 @export var anomaly_radius_level: int = 0
@@ -29,8 +33,22 @@ class_name LabData
 @export var artifacts_rare: Array[Dictionary] = []
 @export var artifacts_legendary: Array[Dictionary] = []
 
-# Максимальные уровни
+# Максимальные уровни (базовые тиры + расширенные, открываются кампанией)
 const MAX_LEVELS = {
+    "anomaly_damage": 8,
+    "anomaly_radius": 8,
+    "anomaly_duration": 5,
+    "mutant_health": 8,
+    "mutant_damage": 8,
+    "mutant_speed": 5,
+    "mutant_cost": 5,
+    "monolith_energy": 8,
+    "monolith_regen": 5,
+    "rare_chance": 5
+}
+
+# Базовые тиры: доступны с самого начала, дают полный бонус
+const BASE_MAX_LEVELS = {
     "anomaly_damage": 5,
     "anomaly_radius": 5,
     "anomaly_duration": 3,
@@ -43,18 +61,31 @@ const MAX_LEVELS = {
     "rare_chance": 3
 }
 
-# Стоимости улучшений
+# Уровень кампании, на котором открывается следующий тир улучшения.
+# Для 5-уровневых треков это тиры 6/7/8, для 3-уровневых - тиры 4/5
+const EXTENDED_UNLOCK_CAMPAIGN_LEVELS = {
+    4: 40,
+    5: 70,
+    6: 45,
+    7: 65,
+    8: 85
+}
+
+# Доля полного бонуса за уровни сверх базового тира
+const EXTENDED_BONUS_FACTOR = 0.5
+
+# Стоимости улучшений (последние значения - расширенные тиры из кампании)
 const COSTS = {
-    "anomaly_damage": [100, 200, 400, 800, 1600],
-    "anomaly_radius": [150, 300, 600, 1200, 2400],
-    "anomaly_duration": [200, 400, 800],
-    "mutant_health": [100, 200, 400, 800, 1600],
-    "mutant_damage": [120, 240, 480, 960, 1920],
-    "mutant_speed": [150, 300, 600],
-    "mutant_cost": [200, 400, 800],
-    "monolith_energy": [150, 300, 600, 1200, 2400],
-    "monolith_regen": [200, 400, 800],
-    "rare_chance": [300, 600, 1200]
+    "anomaly_damage": [100, 200, 400, 800, 1600, 3200, 5600, 8400],
+    "anomaly_radius": [150, 300, 600, 1200, 2400, 3200, 5600, 8400],
+    "anomaly_duration": [200, 400, 800, 1600, 4200],
+    "mutant_health": [100, 200, 400, 800, 1600, 3200, 5600, 8400],
+    "mutant_damage": [120, 240, 480, 960, 1920, 3200, 5600, 8400],
+    "mutant_speed": [150, 300, 600, 1600, 4200],
+    "mutant_cost": [200, 400, 800, 1600, 4200],
+    "monolith_energy": [150, 300, 600, 1200, 2400, 3200, 5600, 8400],
+    "monolith_regen": [200, 400, 800, 1600, 4200],
+    "rare_chance": [300, 600, 1200, 1600, 4200]
 }
 
 # Бонусы за уровень
@@ -114,7 +145,11 @@ func get_upgrade_cost(upgrade_type: String) -> float:
 func purchase_upgrade(upgrade_type: String) -> bool:
     if not can_upgrade(upgrade_type):
         return false
-    
+
+    # Расширенные тиры открываются прогрессом кампании
+    if not is_next_level_unlocked(upgrade_type, campaign_level_reached):
+        return false
+
     match upgrade_type:
         "anomaly_damage": anomaly_damage_level += 1
         "anomaly_radius": anomaly_radius_level += 1
@@ -133,11 +168,28 @@ func purchase_upgrade(upgrade_type: String) -> bool:
 func get_bonus(upgrade_type: String) -> float:
     var level = get_upgrade_level(upgrade_type)
     var bonus = BONUS_PER_LEVEL.get(upgrade_type, 0.0)
-    
-    if upgrade_type in ["monolith_energy"]:
-        return level * bonus
-    
-    return 1.0 + (level * bonus)
+
+    # Базовые тиры дают полный бонус, расширенные (открываются кампанией) - половинный
+    var base_max = int(BASE_MAX_LEVELS.get(upgrade_type, 5))
+    var base_levels = mini(level, base_max)
+    var extended_levels = maxi(0, level - base_max)
+
+    if upgrade_type == "monolith_energy":
+        return base_levels * bonus + extended_levels * bonus * EXTENDED_BONUS_FACTOR
+
+    return 1.0 + base_levels * bonus + extended_levels * bonus * EXTENDED_BONUS_FACTOR
+
+
+# ==================== РАЗБЛОЧКА КАМПАНИЕЙ ====================
+
+## Уровень кампании, требуемый для покупки СЛЕДУЮЩЕГО тира улучшения
+func get_next_unlock_campaign_level(upgrade_type: String) -> int:
+    var next_level = get_upgrade_level(upgrade_type) + 1
+    return int(EXTENDED_UNLOCK_CAMPAIGN_LEVELS.get(next_level, 1))
+
+
+func is_next_level_unlocked(upgrade_type: String, campaign_level: int) -> bool:
+    return campaign_level >= get_next_unlock_campaign_level(upgrade_type)
 
 
 # ==================== БОНУСЫ ====================
