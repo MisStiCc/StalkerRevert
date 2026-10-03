@@ -334,32 +334,17 @@ func _find_structure_spot(origin: Vector3, rng: RandomNumberGenerator, placed: A
 	return Vector3.ZERO
 
 
-func _append_box_faces(faces: PackedVector3Array, center: Vector3, size: Vector3, yaw: float) -> void:
-	# Грани бокса в навмеш: агенты обходят строения по навигации
-	var hx = size.x / 2.0
-	var hy = size.y / 2.0
-	var hz = size.z / 2.0
+static func _append_box_faces(faces: PackedVector3Array, center: Vector3, size: Vector3, yaw: float) -> void:
+	# Грани строения в навмеш: берём грани настоящего BoxMesh (гарантированно
+	# правильный winding - самописные грани вертикальных стен не растеризовались
+	# Recast'ом, стены не вырезались из навмеша и сталкеры застревали в домах)
+	var bm = BoxMesh.new()
+	bm.size = size
+	var box_faces = bm.get_faces()
 	var cs = cos(yaw)
 	var sn = sin(yaw)
-	var corners: Array[Vector3] = []
-	for sx in [-1.0, 1.0]:
-		for sy in [-1.0, 1.0]:
-			for sz in [-1.0, 1.0]:
-				var local = Vector3(sx * hx, sy * hy, sz * hz)
-				corners.append(center + Vector3(local.x * cs + local.z * sn, local.y, -local.x * sn + local.z * cs))
-	# 6 граней бокса (индексы углов: sx*4 + sy*2 + sz)
-	var quads = [[4, 5, 7, 6], [1, 0, 2, 3], [2, 3, 7, 6], [0, 1, 5, 4], [1, 3, 7, 5], [0, 2, 6, 4]]
-	for q in quads:
-		var a = q[0]
-		var b = q[1]
-		var c = q[2]
-		var d = q[3]
-		faces.append(corners[a])
-		faces.append(corners[b])
-		faces.append(corners[d])
-		faces.append(corners[a])
-		faces.append(corners[d])
-		faces.append(corners[c])
+	for v in box_faces:
+		faces.append(center + Vector3(v.x * cs + v.z * sn, v.y, -v.x * sn + v.z * cs))
 
 
 func _add_structures(chunk: Node3D, chunk_pos: Vector2i, nav_faces: PackedVector3Array) -> PackedVector3Array:
