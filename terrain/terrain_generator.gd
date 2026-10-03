@@ -31,6 +31,10 @@ var _terrain_mat: StandardMaterial3D
 var _bark_mat: StandardMaterial3D
 var _trunk_mesh: CylinderMesh
 var _branch_mesh: CylinderMesh
+var _concrete_mat: StandardMaterial3D
+var _concrete_dark_mat: StandardMaterial3D
+var _rust_mat: StandardMaterial3D
+var _box_mesh: BoxMesh
 
 const NAV_SEGMENTS: int = 12  # сетка вершин на чанк (12x12 = 288 треугольников)
 const STALKER_HEIGHT: float = 1.8
@@ -214,7 +218,9 @@ func _load_chunk(chunk_pos: Vector2i):
 	chunk.add_child(mesh_instance)
 
 	_add_collision(chunk, mesh)
-	_bake_chunk_navigation(chunk, chunk_pos)
+	var nav_faces := _build_nav_faces(chunk_pos)
+	nav_faces = _add_structures(chunk, chunk_pos, nav_faces)
+	_bake_chunk_navigation(chunk, nav_faces)
 	_add_props(chunk, chunk_pos)
 
 	add_child(chunk)
@@ -250,14 +256,14 @@ func _build_nav_faces(chunk_pos: Vector2i) -> PackedVector3Array:
 	return faces
 
 
-func _bake_chunk_navigation(chunk: Node3D, chunk_pos: Vector2i):
+func _bake_chunk_navigation(chunk: Node3D, nav_faces: PackedVector3Array):
 	"""Навмеш чанка печётся ОДИН раз при загрузке (мелкий, ~2мс).
 	Каждый чанк - своя NavigationRegion3D: загрузка/выгрузка чанка
 	просто добавляет/убирает регион с карты, без глобальной перепечки."""
 	var region = NavigationRegion3D.new()
 	region.name = "ChunkNav"
 	var source = NavigationMeshSourceGeometryData3D.new()
-	source.add_faces(_build_nav_faces(chunk_pos), Transform3D.IDENTITY)
+	source.add_faces(nav_faces, Transform3D.IDENTITY)
 	var nav_mesh = _make_nav_mesh()
 	NavigationServer3D.bake_from_source_geometry_data(nav_mesh, source)
 	region.navigation_mesh = nav_mesh
@@ -277,6 +283,178 @@ func _add_collision(chunk: Node3D, mesh: ArrayMesh):
 	col.shape = shape
 	body.add_child(col)
 	chunk.add_child(body)
+
+
+# ==================== СТРУКТУРЫ ЗОНЫ ====================
+
+func _structure_materials():
+	if _concrete_mat == null:
+		_concrete_mat = StandardMaterial3D.new()
+		_concrete_mat.albedo_color = Color(0.44, 0.44, 0.41)
+		_concrete_mat.roughness = 0.95
+		_concrete_dark_mat = StandardMaterial3D.new()
+		_concrete_dark_mat.albedo_color = Color(0.26, 0.27, 0.26)
+		_concrete_dark_mat.roughness = 1.0
+		_rust_mat = StandardMaterial3D.new()
+		_rust_mat.albedo_color = Color(0.38, 0.22, 0.12)
+		_rust_mat.roughness = 1.0
+		_rust_mat.metallic = 0.4
+		_box_mesh = BoxMesh.new()
+		_box_mesh.size = Vector3.ONE
+
+
+func _add_box_instance(parent: Node3D, mat: StandardMaterial3D, pos: Vector3, size: Vector3, yaw: float) -> MeshInstance3D:
+	var mi = MeshInstance3D.new()
+	mi.mesh = _box_mesh
+	mi.scale = size
+	mi.position = pos
+	mi.rotation.y = yaw
+	mi.material_override = mat
+	parent.add_child(mi)
+	return mi
+
+
+func _find_structure_spot(origin: Vector3, rng: RandomNumberGenerator, placed: Array, min_gap: float) -> Vector3:
+	for attempt in range(8):
+		var px = origin.x + rng.randf() * chunk_size
+		var pz = origin.z + rng.randf() * chunk_size
+		var dist = Vector2(px, pz).length()
+		if dist < monolith_flat_radius + 15.0 or dist > 148.0:
+			continue
+		var h = get_terrain_height(px, pz)
+		if abs(get_terrain_height(px + 2.0, pz) - h) > 1.5:
+			continue
+		var clear = true
+		for p in placed:
+			if Vector2(px - p.x, pz - p.z).length() < min_gap:
+				clear = false
+				break
+		if clear:
+			return Vector3(px, h, pz)
+	return Vector3.ZERO
+
+
+func _append_box_faces(faces: PackedVector3Array, center: Vector3, size: Vector3, yaw: float) -> void:
+	# Грани бокса в навмеш: агенты обходят строения по навигации
+	var hx = size.x / 2.0
+	var hy = size.y / 2.0
+	var hz = size.z / 2.0
+	var cs = cos(yaw)
+	var sn = sin(yaw)
+	var corners: Array[Vector3] = []
+	for sx in [-1.0, 1.0]:
+		for sy in [-1.0, 1.0]:
+			for sz in [-1.0, 1.0]:
+				var local = Vector3(sx * hx, sy * hy, sz * hz)
+				corners.append(center + Vector3(local.x * cs + local.z * sn, local.y, -local.x * sn + local.z * cs))
+	# 6 граней бокса (индексы углов: sx*4 + sy*2 + sz)
+	var quads = [[4, 5, 7, 6], [1, 0, 2, 3], [2, 3, 7, 6], [0, 1, 5, 4], [1, 3, 7, 5], [0, 2, 6, 4]]
+	for q in quads:
+		var a = q[0]
+		var b = q[1]
+		var c = q[2]
+		var d = q[3]
+		faces.append(corners[a])
+		faces.append(corners[b])
+		faces.append(corners[d])
+		faces.append(corners[a])
+		faces.append(corners[d])
+		faces.append(corners[c])
+
+
+func _add_structures(chunk: Node3D, chunk_pos: Vector2i, nav_faces: PackedVector3Array) -> PackedVector3Array:
+	_structure_materials()
+	var origin = Vector3(chunk_pos.x * chunk_size, 0.0, chunk_pos.y * chunk_size)
+	var rng = RandomNumberGenerator.new()
+	rng.seed = hash(chunk_pos) ^ (terrain_seed + 555)
+	var placed: Array = []
+
+	# Руина дома: коробка + проём + обрушенный угол, коллизия и обход по навмешу
+	if rng.randf() < 0.30:
+		var spot = _find_structure_spot(origin, rng, placed, 8.0)
+		if spot != Vector3.ZERO:
+			placed.append(spot)
+			var yaw = rng.randf() * TAU
+			var size = Vector3(rng.randf_range(5.0, 8.0), rng.randf_range(3.0, 4.5), rng.randf_range(4.0, 6.0))
+			var body = StaticBody3D.new()
+			body.position = spot + Vector3(0.0, size.y / 2.0 - 0.3, 0.0)
+			body.rotation.y = yaw
+			var col = CollisionShape3D.new()
+			var shape = BoxShape3D.new()
+			shape.size = size
+			col.shape = shape
+			body.add_child(col)
+			chunk.add_child(body)
+			_add_box_instance(body, _concrete_mat, Vector3.ZERO, size, 0.0)
+			_add_box_instance(body, _concrete_dark_mat, Vector3(0.0, -size.y * 0.15, size.z / 2.0 + 0.06), Vector3(1.2, size.y * 0.5, 0.12), 0.0)
+			_add_box_instance(chunk, _concrete_dark_mat, spot + Vector3(rng.randf_range(-4.5, 4.5), -0.4, rng.randf_range(-4.5, 4.5)), size * 0.4, rng.randf() * TAU)
+			_append_box_faces(nav_faces, body.position, size, yaw)
+
+	# Ржавый гараж
+	if rng.randf() < 0.18:
+		var spot = _find_structure_spot(origin, rng, placed, 6.0)
+		if spot != Vector3.ZERO:
+			placed.append(spot)
+			var yaw = rng.randf() * TAU
+			var size = Vector3(rng.randf_range(3.5, 4.5), rng.randf_range(2.0, 2.8), rng.randf_range(3.0, 4.0))
+			var body = StaticBody3D.new()
+			body.position = spot + Vector3(0.0, size.y / 2.0 - 0.25, 0.0)
+			body.rotation.y = yaw
+			var col = CollisionShape3D.new()
+			var shape = BoxShape3D.new()
+			shape.size = size
+			col.shape = shape
+			body.add_child(col)
+			chunk.add_child(body)
+			_add_box_instance(body, _rust_mat, Vector3.ZERO, size, 0.0)
+			_add_box_instance(body, _concrete_dark_mat, Vector3(0.0, size.y * 0.55, 0.0), size * Vector3(1.05, 0.12, 1.05), 0.0)
+			_append_box_faces(nav_faces, body.position, size, yaw)
+
+	# Полузатопленная труба
+	if rng.randf() < 0.20:
+		var spot = _find_structure_spot(origin, rng, placed, 5.0)
+		if spot != Vector3.ZERO:
+			var pipe = MeshInstance3D.new()
+			var pm = CylinderMesh.new()
+			pm.top_radius = 0.9
+			pm.bottom_radius = 0.9
+			pm.height = rng.randf_range(5.0, 8.0)
+			pipe.mesh = pm
+			pipe.material_override = _rust_mat
+			pipe.rotation = Vector3(0.0, rng.randf() * TAU, PI / 2.0)
+			pipe.position = spot + Vector3(0.0, 0.25, 0.0)
+			chunk.add_child(pipe)
+
+	# Бетонные плиты
+	if rng.randf() < 0.55:
+		for i in range(rng.randi_range(1, 2)):
+			var px = origin.x + rng.randf() * chunk_size
+			var pz = origin.z + rng.randf() * chunk_size
+			if Vector2(px, pz).length() < monolith_flat_radius + 8.0:
+				continue
+			var h = get_terrain_height(px, pz)
+			_add_box_instance(chunk, _concrete_dark_mat, Vector3(px, h - 0.25, pz), Vector3(rng.randf_range(1.2, 2.2), 0.5, rng.randf_range(1.0, 1.8)), rng.randf() * TAU)
+
+	# Ржавые бочки
+	if rng.randf() < 0.35:
+		for i in range(rng.randi_range(1, 2)):
+			var px = origin.x + rng.randf() * chunk_size
+			var pz = origin.z + rng.randf() * chunk_size
+			if Vector2(px, pz).length() < monolith_flat_radius + 8.0:
+				continue
+			var h = get_terrain_height(px, pz)
+			var barrel = MeshInstance3D.new()
+			var bm = CylinderMesh.new()
+			bm.top_radius = 0.35
+			bm.bottom_radius = 0.35
+			bm.height = 0.95
+			barrel.mesh = bm
+			barrel.material_override = _rust_mat
+			barrel.position = Vector3(px, h + 0.35, pz)
+			barrel.rotation = Vector3(rng.randf_range(-0.15, 0.15), rng.randf() * TAU, rng.randf_range(-0.1, 0.1))
+			chunk.add_child(barrel)
+
+	return nav_faces
 
 
 func _add_props(chunk: Node3D, chunk_pos: Vector2i):
