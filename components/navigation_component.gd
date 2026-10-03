@@ -25,6 +25,16 @@ var nav_agent: NavigationAgent3D = null:
 			# точке пути и не засчитает прибытие.
 			nav_agent.path_desired_distance = 2.5
 			nav_agent.target_desired_distance = 2.5
+			
+			# RVO-избегание: агенты расходятся друг от друга заранее, а не
+			# упираются лбами на общем пути к монолиту
+			nav_agent.avoidance_enabled = true
+			nav_agent.radius = 0.5
+			nav_agent.height = 1.8
+			nav_agent.neighbor_distance = 12.0
+			nav_agent.max_neighbors = 8
+			nav_agent.avoidance_layers = 1
+			nav_agent.avoidance_mask = 1
 			# Привязываем к карте навигации
 			if entity:
 				nav_agent.set_navigation_map(entity.get_world_3d().navigation_map)
@@ -159,6 +169,7 @@ func _physics_process(_delta):
 	
 	var desired_velocity = direction * move_speed * terrain_multiplier
 	desired_velocity.y = 0
+	_last_desired = desired_velocity
 	
 	# Используем избегание препятствий если включено
 	if nav_agent.avoidance_enabled:
@@ -168,7 +179,14 @@ func _physics_process(_delta):
 		entity.velocity.z = desired_velocity.z
 
 
+var _last_desired := Vector3.ZERO
+
 func _on_velocity_computed(safe_velocity: Vector3):
+	# RVO-сервер Godot периодически заничивает безопасную скорость при живом
+	# желании двигаться (замороженный агент без соседей) - в этом случае идём
+	# по желаемой напрямую, иначе сталкеры вечно стоят на месте
+	if safe_velocity.length() < 0.1 and _last_desired.length() > 0.1:
+		safe_velocity = _last_desired
 	entity.velocity.x = safe_velocity.x
 	entity.velocity.z = safe_velocity.z
 
