@@ -533,6 +533,10 @@ func _grant_wave_milestone(waves: int):
 	print("=== ВЕХА ВЫЖИВАНИЯ: ", reward.get("label", ""), " ===")
 	if reward.has("mutant"):
 		spawn_manager.queue_reward_mutant(reward["mutant"])
+		# Мутант мог открыться впервые - обновляем замки в HUD
+		var hud = get_tree().get_first_node_in_group("hud")
+		if hud and hud.has_method("refresh_mutant_unlocks"):
+			hud.refresh_mutant_unlocks()
 	_grant_artifact_reward(reward.get("artifact", "common_artifact"), reward.get("label", ""))
 
 
@@ -715,6 +719,13 @@ func create_artifact(artifact_type: String, position: Vector3, rarity: String = 
 # Мутанты
 func spawn_mutant(mutant_type: String, position: Vector3) -> Node:
 	if not spawn_manager:
+		return null
+	
+	# Гейтинг коллекции: не разблокирован кампанией/гачей - в бой не применить.
+	# Наградные мутанты идут мимо (spawn_manager напрямую) - они уже разблокированы.
+	var gm = get_tree().get_first_node_in_group("game_manager")
+	if gm and not gm.is_mutant_unlocked(mutant_type):
+		print("Зона: мутант не разблокирован - откройте его кампанией или гачей: " + mutant_type)
 		return null
 	
 	var cost = spawn_manager.get_mutant_cost(mutant_type)

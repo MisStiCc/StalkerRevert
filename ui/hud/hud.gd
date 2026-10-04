@@ -57,6 +57,7 @@ var _break_time_left: float = 0.0
 var _break_next_wave: int = 0
 var emission_timer: float = 0.0
 var is_emission_active: bool = false
+var _mutant_buttons: Dictionary = {}
 
 
 func _ready():
@@ -112,6 +113,7 @@ func _apply_prices():
 		poltergeist_button: "poltergeist", bloodsucker_button: "bloodsucker",
 		chimera_button: "chimera", zombie_button: "zombie",
 	}
+	_mutant_buttons = mutants
 	for btn in anomalies:
 		var cost: int = int(am.get_anomaly_cost(anomalies[btn])) if am else 0
 		btn.text = btn.text + "
@@ -120,6 +122,19 @@ func _apply_prices():
 		var cost: int = int(sm.get_mutant_cost(mutants[btn])) if sm else 0
 		btn.text = btn.text + "
 🧬" + str(cost)
+	refresh_mutant_unlocks()
+
+
+func refresh_mutant_unlocks():
+	"""Гейтинг коллекции: неразблокированный мутант в бою не применить"""
+	var gm = get_tree().get_first_node_in_group("game_manager")
+	for btn in _mutant_buttons:
+		var type: String = _mutant_buttons[btn]
+		var unlocked: bool = gm.is_mutant_unlocked(type) if gm else true
+		btn.disabled = not unlocked
+		btn.tooltip_text = "Не разблокирован: откройте кампанией или гачей" if not unlocked else ""
+		if not unlocked and not btn.text.begins_with("🔒"):
+			btn.text = "🔒" + btn.text
 
 
 func _connect_buttons():

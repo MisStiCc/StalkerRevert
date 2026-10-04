@@ -9,6 +9,31 @@ class_name GachaData
 
 const CHIMERA_GUARANTEE_LEVEL: int = 50
 
+# ГЕЙТИНГ КОЛЛЕКЦИИ: пока тип не разблокирован, применить его в бою нельзя.
+# На старте доступны только слабейшие; кампания открывает остальных на 1 звезду.
+# Химера вне таблицы - джекпот гачи с гарантией на уровне 50.
+const DEFAULT_UNLOCKED_MUTANTS := ["zombie", "dog_mutant", "flesh"]
+const DEFAULT_UNLOCKED_ARTIFACTS := ["common_artifact", "battery_artifact", "glowstick_artifact"]
+
+# Уровень кампании -> что открывается (мутанты по силе, арты по редкости)
+const UNLOCK_TABLE := {
+	3: {"artifacts": ["slime_artifact", "spark_artifact"]},
+	5: {"mutants": ["snork_mutant"], "artifacts": ["gas_bottle_artifact"]},
+	8: {"mutants": ["pseudodog"]},
+	10: {"artifacts": ["rare_artifact", "energy_artifact"]},
+	15: {"mutants": ["poltergeist"]},
+	20: {"mutants": ["controller_mutant"], "artifacts": ["clock_artifact"]},
+	25: {"mutants": ["bloodsucker"], "artifacts": ["hourglass_artifact"]},
+	30: {"artifacts": ["graviton_artifact"]},
+	35: {"artifacts": ["fireball_artifact"]},
+	40: {"artifacts": ["jumper_artifact", "flesh_artifact"]},
+	45: {"mutants": ["pseudogiant"]},
+	60: {"artifacts": ["void_artifact"]},
+	70: {"artifacts": ["heart_artifact"]},
+	80: {"artifacts": ["storm_artifact"]},
+	90: {"artifacts": ["uranium_artifact"]},
+}
+
 # Пул мутантов: редкость -> [тип, вес]
 # Химера - джекпот: исключена из пула до 30 уровня кампании, дальше её вес растёт
 const MUTANT_POOL := {
@@ -73,6 +98,27 @@ const DISPLAY_NAMES := {
 
 static func display_name(type: String) -> String:
 	return DISPLAY_NAMES.get(type, type)
+
+
+static func get_default_unlocked_mutants() -> Array:
+	return DEFAULT_UNLOCKED_MUTANTS.duplicate()
+
+
+static func get_default_unlocked_artifacts() -> Array:
+	return DEFAULT_UNLOCKED_ARTIFACTS.duplicate()
+
+
+static func get_unlocks_at(campaign_level: int) -> Dictionary:
+	return UNLOCK_TABLE.get(int(campaign_level), {})
+
+
+## Уровень кампании, на котором открывается тип. 0 = доступен с самого начала.
+static func get_unlock_campaign_level(type: String) -> int:
+	for level in UNLOCK_TABLE:
+		var entry: Dictionary = UNLOCK_TABLE[level]
+		if entry.get("mutants", []).has(type) or entry.get("artifacts", []).has(type):
+			return int(level)
+	return 0
 
 
 static func get_shop_mutants() -> Array:

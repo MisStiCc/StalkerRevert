@@ -117,6 +117,9 @@ func buy_shop_mutant(mutant_type: String, price: float) -> bool:
 	if not current_save_data or not current_save_data.lab_data:
 		return false
 	var lab = current_save_data.lab_data
+	if not is_mutant_unlocked(mutant_type):
+		print("Магазин: мутант не разблокирован (кампания): " + mutant_type)
+		return false
 	if lab.biomass < price:
 		print("Магазин: недостаточно биомассы (нужно ", price, ")")
 		return false
@@ -130,6 +133,9 @@ func buy_shop_artifact(artifact_type: String, price: float) -> bool:
 	if not current_save_data or not current_save_data.lab_data:
 		return false
 	var lab = current_save_data.lab_data
+	if not is_artifact_unlocked(artifact_type):
+		print("Магазин: артефакт не разблокирован (кампания): " + artifact_type)
+		return false
 	if lab.biomass < price:
 		print("Магазин: недостаточно биомассы (нужно ", price, ")")
 		return false
@@ -156,6 +162,57 @@ func has_chimera_unlocked() -> bool:
 	if current_save_data and current_save_data.lab_data:
 		return current_save_data.lab_data.unlocked_mutants.has("chimera")
 	return false
+
+
+# ==================== ГЕЙТИНГ КОЛЛЕКЦИИ ====================
+
+func is_mutant_unlocked(mutant_type: String) -> bool:
+	return get_lab_data().unlocked_mutants.has(mutant_type)
+
+
+func is_artifact_unlocked(artifact_type: String) -> bool:
+	return get_lab_data().won_artifacts.has(artifact_type)
+
+
+## Коллекция = слабейшие с самого начала + всё, что открыл уровень кампании.
+## Вызывается при загрузке сейва, новой игре и после победы на уровне:
+## старые сейвы и пропущенные награды подтягиваются автоматически.
+func sync_collection_unlocks():
+	if not current_save_data or not current_save_data.lab_data:
+		return
+	var lab = current_save_data.lab_data
+	var changed := false
+	for type in GachaData.get_default_unlocked_mutants():
+		if not lab.unlocked_mutants.has(type):
+			lab.unlocked_mutants.append(type)
+			changed = true
+	for type in GachaData.get_default_unlocked_artifacts():
+		if not lab.won_artifacts.has(type):
+			lab.won_artifacts.append(type)
+			changed = true
+	var level := get_campaign_level()
+	for l in range(1, level + 1):
+		if _grant_campaign_unlocks(lab, l):
+			changed = true
+	if changed:
+		print("Коллекция синхронизирована с кампанией (уровень ", level, ")")
+
+
+## Открыть всё, что положено на уровне кампании. True - если что-то открылось
+func _grant_campaign_unlocks(lab, level: int) -> bool:
+	var entry: Dictionary = GachaData.get_unlocks_at(level)
+	var changed := false
+	for type in entry.get("mutants", []):
+		if not lab.unlocked_mutants.has(type):
+			lab.unlocked_mutants.append(type)
+			print("КОЛЛЕКЦИЯ: открыт мутант ", type, " (уровень кампании ", level, ")")
+			changed = true
+	for type in entry.get("artifacts", []):
+		if not lab.won_artifacts.has(type):
+			lab.won_artifacts.append(type)
+			print("КОЛЛЕКЦИЯ: открыт артефакт ", type, " (уровень кампании ", level, ")")
+			changed = true
+	return changed
 
 
 func _create_save_directory():
@@ -222,6 +279,7 @@ func _load_boot_save():
 		if save and save is SaveData:
 			current_save_data = save
 			_migrate_campaign_progress(save)
+			sync_collection_unlocks()
 			print("Сохранение активного слота загружено: " + str(active_save_slot))
 		else:
 			print("Файл сохранения активного слота поврежден: " + path)
@@ -345,6 +403,7 @@ func load_game(slot: int) -> bool:
 	if save and save is SaveData:
 		current_save_data = save
 		_migrate_campaign_progress(save)
+		sync_collection_unlocks()
 		# Загруженный слот становится активным: весь дальнейший прогресс пишется сюда
 		active_save_slot = clampi(slot, AUTOSAVE_SLOT, MANUAL_SLOTS)
 		_save_settings()
@@ -416,6 +475,7 @@ func start_new_game():
 	current_save_data.lab_data = LabData.new()
 	current_save_data.statistics = GameStatistics.new()
 	selected_campaign_level = 0
+	sync_collection_unlocks()
 
 	if save_to_active_slot():
 		change_scene("lab")
@@ -506,6 +566,7 @@ func _apply_campaign_result(result: Dictionary):
 	if level >= current_save_data.campaign_level:
 		current_save_data.campaign_level = mini(level + 1, CampaignData.TOTAL_LEVELS)
 		print("Кампания: открыт уровень " + str(current_save_data.campaign_level))
+		_grant_campaign_unlocks(current_save_data.lab_data, current_save_data.campaign_level)
 
 
 func process_run_result(result: Dictionary):

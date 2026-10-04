@@ -438,19 +438,29 @@ func _rebuild_shop():
 		var type: String = entry[0]
 		var price: float = entry[2]
 		var btn := Button.new()
-		btn.text = _shop_item_text(entry[1], type, true) + "
+		if lab_data and not lab_data.unlocked_mutants.has(type):
+			btn.disabled = true
+			btn.text = entry[1] + "
+🔒 уровень " + str(GachaData.get_unlock_campaign_level(type))
+		else:
+			btn.text = _shop_item_text(entry[1], type, true) + "
 🧬" + str(int(price))
+			btn.pressed.connect(_on_shop_buy.bind("mutant", type, price))
 		btn.custom_minimum_size = Vector2(160, 34)
-		btn.pressed.connect(_on_shop_buy.bind("mutant", type, price))
 		mutant_grid.add_child(btn)
 	for entry in GachaData.get_shop_artifacts():
 		var type: String = entry[0]
 		var price: float = entry[2]
 		var btn := Button.new()
-		btn.text = _shop_item_text(entry[1], type, false) + "
+		if lab_data and not lab_data.won_artifacts.has(type):
+			btn.disabled = true
+			btn.text = entry[1] + "
+🔒 уровень " + str(GachaData.get_unlock_campaign_level(type))
+		else:
+			btn.text = _shop_item_text(entry[1], type, false) + "
 🧬" + str(int(price))
+			btn.pressed.connect(_on_shop_buy.bind("artifact", type, price))
 		btn.custom_minimum_size = Vector2(240, 34)
-		btn.pressed.connect(_on_shop_buy.bind("artifact", type, price))
 		artifact_grid.add_child(btn)
 
 
