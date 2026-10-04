@@ -237,17 +237,18 @@ func _process_attack_mutant(_delta):
 
 func _process_carry_artifact(_delta):
 	if carry and carry.has_artifact():
-		var edge_pos = _get_edge_position()
-		if navigation:
-			if not navigation.is_navigating() or _target_update_timer > 2.0:
-				print("StateMachine: CARRY_ARTIFACT - несу артефакт к краю")
-				navigation.move_to(edge_pos)
-				_target_update_timer = 0.0
-		
-		if navigation and navigation.get_distance_to_target() < 5.0:
-			print("StateMachine: CARRY_ARTIFACT - артефакт украден")
+		# Артефакт украден, когда сталкер вынес его за периметр Зоны
+		var dist_from_monolith: float = stalker.global_position.distance_to(
+			monolith.global_position if monolith and is_instance_valid(monolith) else Vector3.ZERO)
+		if dist_from_monolith > 150.0:
+			print("StateMachine: CARRY_ARTIFACT - артефакт украден (вышел за периметр)")
 			carry.steal_artifact()
 			set_state(GameEnums.StalkerState.SEEK_MONOLITH)
+			return
+		if navigation and (not navigation.is_navigating() or _target_update_timer > 2.0):
+			print("StateMachine: CARRY_ARTIFACT - несу артефакт к краю")
+			navigation.move_to(_get_edge_position())
+			_target_update_timer = 0.0
 
 
 # ==================== ЛОГИКА ПЕРЕХОДОВ ====================
@@ -362,10 +363,12 @@ func _get_attack_target() -> Node:
 
 
 func _get_edge_position() -> Vector3:
+	# Точка кражи - У ПЕРИМЕТРА, внутри границ мира (200м были за клампом
+	# и сталкер топтался на границе вечно, не доходя до цели)
 	if monolith and is_instance_valid(monolith):
 		var dir = (stalker.global_position - monolith.global_position).normalized()
-		return monolith.global_position + dir * 200
-	return stalker.global_position + Vector3(100, 0, 0)
+		return monolith.global_position + dir * 150
+	return stalker.global_position + Vector3(120, 0, 0)
 
 
 func _generate_patrol_points(count: int = 3) -> Array[Vector3]:

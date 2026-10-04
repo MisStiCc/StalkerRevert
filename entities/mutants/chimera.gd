@@ -12,8 +12,11 @@ var leap_timer: Timer
 var is_leaping: bool = false
 var leap_target: Vector3
 var leap_time: float = 0.0
+var _leap_from: Vector3 = Vector3.ZERO
 var _leap_vx: float = 0.0
+var _leap_vy: float = 0.0
 var _leap_vz: float = 0.0
+var _leap_t_total: float = 0.0
 
 func _ready():
 	health = 250.0
@@ -98,30 +101,36 @@ func _start_leap():
 	leap_target = target_stalker.global_position
 	leap_time = 0.0
 	
-	# Честная баллистика: горизонтальную скорость фиксируем на весь прыжок,
-	# вертикальную - из времени полёта и гравитации (настоящая парабола)
+	# КИНЕМАТИЧЕСКИЙ прыжок на попадание: позиция - функция времени.
+	# Низкая дуга: T короткий, пик = g*T^2/8; посадка ровно на цель в момент T.
 	var to_target = leap_target - global_position
-	var flight_time = max(to_target.length() / (speed * 2.0), 0.45)
-	_leap_vx = to_target.x / flight_time
-	_leap_vz = to_target.z / flight_time
-	velocity.y = 0.5 * gravity * flight_time + 3.0
+	var flat_dist = Vector2(to_target.x, to_target.z).length()
+	_leap_t_total = max(flat_dist / (speed * 2.0), 0.35)
+	_leap_from = global_position
+	_leap_vx = to_target.x / _leap_t_total
+	_leap_vz = to_target.z / _leap_t_total
+	_leap_vy = (to_target.y - global_position.y) / _leap_t_total + 0.5 * gravity * _leap_t_total
+	velocity = Vector3.ZERO
 	
 	leap_timer.start()
 
 
 func _handle_leap(delta):
 	leap_time += delta
+	var t = min(leap_time, _leap_t_total)
 	
-	# Гравитация - единственная вертикальная сила: траектория - парабола
-	velocity.x = _leap_vx
-	velocity.z = _leap_vz
-	velocity.y -= gravity * delta
+	# Кинематика параболы - физика в полёте не участвует,
+	# траекторию никто не перезапишет:
+	# x(t) = x0 + vx*t; y(t) = y0 + vy0*t - g*t^2/2
+	var pos = _leap_from
+	pos.x += _leap_vx * t
+	pos.z += _leap_vz * t
+	pos.y += _leap_vy * t - 0.5 * gravity * t * t
+	global_position = pos
+	velocity = Vector3.ZERO
 	
-	move_and_slide()
-	
-	if velocity.y < 0.0 and is_on_floor():
-		_land()
-	elif leap_time > 2.0:
+	if leap_time >= _leap_t_total:
+		global_position.y = max(global_position.y, leap_target.y)
 		_land()
 
 
