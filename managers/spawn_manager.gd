@@ -56,6 +56,9 @@ var health_multiplier: float = 1.0
 var damage_multiplier: float = 1.0
 var cost_multiplier: float = 1.0
 
+# Звёздность мутантов (тип -> звёзды 1-5): статы и подпись спавнящихся
+var mutant_stars: Dictionary = {}
+
 # Активные объекты
 var active_stalkers: Array[Node] = []
 var active_mutants: Array[Node] = []
@@ -432,17 +435,26 @@ func spawn_mutant(mutant_type: String, position: Vector3, _biomass_cost: float) 
 	position.z = clampf(position.z, -Helpers.WORLD_LIMIT, Helpers.WORLD_LIMIT)
 	mutant.position = position
 	
-	if mutant.has_method("set_health_multiplier"):
-		mutant.set_health_multiplier(health_multiplier)
-	if mutant.has_method("set_damage_multiplier"):
-		mutant.set_damage_multiplier(damage_multiplier)
+	# Звёздность типа: множитель статов + уровень для подписи
+	var stars := maxi(int(mutant_stars.get(mutant_type, 1)), 1)
+	var star_mult := LabData.get_star_stat_mult(stars)
+	if stars > 1 and mutant.has_method("set_star_level"):
+		mutant.set_star_level(stars)
+	
+	var hp_mult := health_multiplier * star_mult
+	var dmg_mult := damage_multiplier * star_mult
+	if hp_mult != 1.0 and mutant.has_method("set_health_multiplier"):
+		mutant.set_health_multiplier(hp_mult)
+	if dmg_mult != 1.0 and mutant.has_method("set_damage_multiplier"):
+		mutant.set_damage_multiplier(dmg_mult)
 	
 	get_tree().current_scene.add_child(mutant)
 	active_mutants.append(mutant)
 	_mutants_spawned += 1
 	
 	mutant_spawned.emit(mutant, mutant_type)
-	print("Мутант заспавнен: " + mutant_type + " на позиции " + str(position))
+	var star_note := " [%d★ x%.1f]" % [stars, star_mult] if stars > 1 else ""
+	print("Мутант заспавнен: " + mutant_type + " на позиции " + str(position) + star_note)
 	
 	return mutant
 
@@ -517,6 +529,18 @@ func set_damage_multiplier(value: float):
 func set_cost_multiplier(value: float):
 	cost_multiplier = value
 	print("Множитель стоимости мутантов: " + str(value))
+
+
+## Звёздность из коллекции (тип -> звёзды): применяется к спавнящимся мутантам
+func set_mutant_stars(stars: Dictionary):
+	mutant_stars = stars.duplicate()
+	if not mutant_stars.is_empty():
+		var starred := []
+		for type in mutant_stars:
+			if int(mutant_stars[type]) > 1:
+				starred.append("%s:%d★" % [type, int(mutant_stars[type])])
+		if not starred.is_empty():
+			print("Звёздность мутантов: " + ", ".join(starred))
 
 
 # ==================== ПАРАМЕТРЫ КАМПАНИИ ====================

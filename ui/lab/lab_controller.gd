@@ -74,6 +74,7 @@ func _ready():
 	_refresh_ui()
 	_setup_campaign_selector()
 	_refresh_campaign_ui()
+	_build_star_ui()
 	_show_last_run_result()
 
 	print("lab_controller: initialized, GameManager найден: ", game_manager != null)
@@ -437,7 +438,7 @@ func _rebuild_shop():
 		var type: String = entry[0]
 		var price: float = entry[2]
 		var btn := Button.new()
-		btn.text = entry[1] + "
+		btn.text = _shop_item_text(entry[1], type, true) + "
 🧬" + str(int(price))
 		btn.custom_minimum_size = Vector2(160, 34)
 		btn.pressed.connect(_on_shop_buy.bind("mutant", type, price))
@@ -446,11 +447,24 @@ func _rebuild_shop():
 		var type: String = entry[0]
 		var price: float = entry[2]
 		var btn := Button.new()
-		btn.text = entry[1] + "
+		btn.text = _shop_item_text(entry[1], type, false) + "
 🧬" + str(int(price))
 		btn.custom_minimum_size = Vector2(240, 34)
 		btn.pressed.connect(_on_shop_buy.bind("artifact", type, price))
 		artifact_grid.add_child(btn)
+
+
+func _shop_item_text(item_name: String, type: String, is_mutant: bool) -> String:
+	"""Имя + звёзды, если тип уже в коллекции (в бою получит эти звёзды)"""
+	if not lab_data:
+		return item_name
+	var stars: int = lab_data.get_mutant_stars(type) if is_mutant else lab_data.get_artifact_stars(type)
+	var owned: bool = lab_data.unlocked_mutants.has(type) if is_mutant else lab_data.won_artifacts.has(type)
+	if owned and stars > 1:
+		return item_name + " " + "★".repeat(stars)
+	if owned:
+		return item_name + " ★"
+	return item_name
 
 
 func _on_shop_buy(kind: String, item_type: String, price: float):
@@ -464,6 +478,175 @@ func _on_shop_buy(kind: String, item_type: String, price: float):
 		_rebuild_shop()
 	else:
 		_show_message("Недостаточно биомассы в лаборатории", 1.5)
+
+
+# ==================== ЗВЁЗДНОСТЬ ====================
+
+var star_panel: Control
+var star_biomass_label: Label
+var star_list: VBoxContainer
+
+
+func _build_star_ui():
+	"""Кнопка ★ в магазине + панель прокачки звёзд (строится кодом)"""
+	var shop_inner: Panel = shop_panel.get_node_or_null("Panel")
+	if shop_inner:
+		var open_btn := Button.new()
+		open_btn.name = "StarOpenButton"
+		open_btn.text = "★ ЗВЁЗДЫ"
+		open_btn.position = Vector2(390, 8)
+		open_btn.size = Vector2(150, 30)
+		open_btn.pressed.connect(_on_stars_pressed)
+		open_btn.mouse_entered.connect(_play_hover_sound)
+		shop_inner.add_child(open_btn)
+
+	star_panel = Control.new()
+	star_panel.name = "StarPanel"
+	star_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+	star_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	star_panel.visible = false
+	add_child(star_panel)
+
+	var shade := ColorRect.new()
+	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	shade.color = Color(0, 0, 0, 0.6)
+	star_panel.add_child(shade)
+
+	var panel := Panel.new()
+	panel.anchor_left = 0.5
+	panel.anchor_top = 0.5
+	panel.anchor_right = 0.5
+	panel.anchor_bottom = 0.5
+	panel.offset_left = -280.0
+	panel.offset_top = -210.0
+	panel.offset_right = 280.0
+	panel.offset_bottom = 210.0
+	star_panel.add_child(panel)
+
+	var title := Label.new()
+	title.text = "ПРОКАЧКА ЗВЁЗД - дубли гачи дают звезду, звёзды дают статы"
+	title.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	title.position = Vector2(0, 10)
+	title.size = Vector2(560, 25)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	panel.add_child(title)
+
+	star_biomass_label = Label.new()
+	star_biomass_label.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	star_biomass_label.position = Vector2(0, 36)
+	star_biomass_label.size = Vector2(560, 20)
+	star_biomass_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	panel.add_child(star_biomass_label)
+
+	var scroll := ScrollContainer.new()
+	scroll.position = Vector2(20, 64)
+	scroll.size = Vector2(520, 288)
+	panel.add_child(scroll)
+
+	star_list = VBoxContainer.new()
+	star_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	star_list.add_theme_constant_override("separation", 4)
+	scroll.add_child(star_list)
+
+	var close_btn := Button.new()
+	close_btn.text = "НАЗАД"
+	close_btn.position = Vector2(200, 362)
+	close_btn.size = Vector2(160, 35)
+	close_btn.pressed.connect(_on_stars_close_pressed)
+	close_btn.mouse_entered.connect(_play_hover_sound)
+	panel.add_child(close_btn)
+
+
+func _on_stars_pressed():
+	_play_click_sound()
+	shop_panel.visible = false
+	star_panel.visible = true
+	_rebuild_star_panel()
+
+
+func _on_stars_close_pressed():
+	_play_click_sound()
+	star_panel.visible = false
+
+
+func _rebuild_star_panel():
+	"""Строка на каждого питомца коллекции: имя, звёзды, цена следующей звезды"""
+	for child in star_list.get_children():
+		child.queue_free()
+	if not lab_data:
+		return
+	star_biomass_label.text = "Биомасса лаборатории: %d   (цена звезды: 500 → 1000 → 2000 → 4000)" % int(lab_data.biomass)
+
+	var mutants: Array[String] = []
+	for t in lab_data.unlocked_mutants:
+		if not mutants.has(t):
+			mutants.append(t)
+	var artifacts: Array[String] = []
+	for t in lab_data.won_artifacts:
+		if not artifacts.has(t):
+			artifacts.append(t)
+
+	if mutants.is_empty() and artifacts.is_empty():
+		var empty := Label.new()
+		empty.text = "Коллекция пуста.\nВыигрывайте мутантов и артефакты в гаче и за вехи волн:\nдубликат уже имеющегося даёт +1 звезду автоматически."
+		star_list.add_child(empty)
+		return
+
+	if not mutants.is_empty():
+		star_list.add_child(_make_star_section("МУТАНТЫ (+20% HP и урона за звезду)"))
+	for type in mutants:
+		star_list.add_child(_make_star_row("mutant", type))
+	if not artifacts.is_empty():
+		star_list.add_child(_make_star_section("АРТЕФАКТЫ (+20% награды за звезду)"))
+	for type in artifacts:
+		star_list.add_child(_make_star_row("artifact", type))
+
+
+func _make_star_section(text: String) -> Label:
+	var label := Label.new()
+	label.text = text
+	return label
+
+
+func _make_star_row(kind: String, type: String) -> Control:
+	var row := HBoxContainer.new()
+	var stars: int = lab_data.get_mutant_stars(type) if kind == "mutant" else lab_data.get_artifact_stars(type)
+
+	var name_label := Label.new()
+	name_label.text = "%s  %s" % [GachaData.display_name(type), LabData.stars_text(stars)]
+	name_label.tooltip_text = "Множитель статов: x%.1f" % LabData.get_star_stat_mult(stars)
+	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(name_label)
+
+	if stars >= LabData.MAX_STARS:
+		var max_label := Label.new()
+		max_label.text = "МАКС"
+		row.add_child(max_label)
+	else:
+		var cost := lab_data.get_star_upgrade_cost(stars)
+		var btn := Button.new()
+		btn.text = "🧬 " + str(int(cost))
+		btn.pressed.connect(_on_star_upgrade.bind(kind, type))
+		btn.mouse_entered.connect(_play_hover_sound)
+		row.add_child(btn)
+	return row
+
+
+func _on_star_upgrade(kind: String, type: String):
+	_play_click_sound()
+	var ok := false
+	if kind == "mutant":
+		ok = game_manager.upgrade_mutant_star(type)
+	else:
+		ok = game_manager.upgrade_artifact_star(type)
+	if ok:
+		lab_data = game_manager.get_lab_data()
+		_rebuild_star_panel()
+		if shop_panel.visible:
+			_rebuild_shop()
+		_refresh_ui()
+	else:
+		_show_message("Недостаточно биомассы или звёзды максимальны", 1.5)
 
 
 func _on_settings_pressed():

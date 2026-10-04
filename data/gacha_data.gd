@@ -53,6 +53,28 @@ const SHOP_ARTIFACTS := [
 ]
 
 
+# Русские имена всех типов коллекции (панель звёзд, логи)
+const DISPLAY_NAMES := {
+	"zombie": "Зомби", "dog_mutant": "Собака", "flesh": "Плоть",
+	"snork_mutant": "Снорк", "pseudodog": "Псевдопёс", "poltergeist": "Полтергейст",
+	"controller_mutant": "Контролёр", "bloodsucker": "Кровосос",
+	"pseudogiant": "Псевдогигант", "chimera": "Химера",
+	"common_artifact": "Обычный артефакт", "battery_artifact": "Батарейка",
+	"glowstick_artifact": "Светляк", "slime_artifact": "Слизь",
+	"spark_artifact": "Искра", "gas_bottle_artifact": "Газовый баллон",
+	"rare_artifact": "Редкий артефакт", "energy_artifact": "Энергетик",
+	"clock_artifact": "Часы", "hourglass_artifact": "Песочные часы",
+	"graviton_artifact": "Гравитон", "fireball_artifact": "Огненный шар",
+	"jumper_artifact": "Прыгун", "flesh_artifact": "Живая плоть",
+	"void_artifact": "Пустота", "heart_artifact": "Сердце Озера",
+	"storm_artifact": "Гроза", "uranium_artifact": "Уран",
+}
+
+
+static func display_name(type: String) -> String:
+	return DISPLAY_NAMES.get(type, type)
+
+
 static func get_shop_mutants() -> Array:
 	return SHOP_MUTANTS
 

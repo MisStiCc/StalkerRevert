@@ -36,6 +36,12 @@ var campaign_level_reached: int = 1
 @export var monolith_regen_level: int = 0
 @export var rare_chance_level: int = 0
 
+# Звёздность: прокачка отдельных мутантов/артефактов (1-5 звёзд, поверх редкости).
+# Ключ - тип (как в GachaData), значение - число звёзд; отсутствует = 1 звезда.
+# Старые сейвы без этих полей совместимы (по умолчанию пусто).
+@export var mutant_stars: Dictionary = {}
+@export var artifact_stars: Dictionary = {}
+
 # Хранилище артефактов
 @export var artifacts_common: Array[Dictionary] = []
 @export var artifacts_rare: Array[Dictionary] = []
@@ -322,6 +328,55 @@ func get_all_artifacts() -> Dictionary:
     }
 
 
+# ==================== ЗВЁЗДНОСТЬ ====================
+
+const MAX_STARS: int = 5
+const STAR_STAT_BONUS: float = 0.2  # +20% базовых статов за звезду сверх первой
+const STAR_UPGRADE_BASE_COST: float = 500.0  # цена 500 * 2^(звёзды-1)
+
+
+func get_mutant_stars(type: String) -> int:
+    return maxi(int(mutant_stars.get(type, 1)), 1)
+
+
+func get_artifact_stars(type: String) -> int:
+    return maxi(int(artifact_stars.get(type, 1)), 1)
+
+
+func add_mutant_star(type: String) -> bool:
+    """+1 звезда мутанту. False - звёзды уже максимальные."""
+    var stars := get_mutant_stars(type)
+    if stars >= MAX_STARS:
+        return false
+    mutant_stars[type] = stars + 1
+    return true
+
+
+func add_artifact_star(type: String) -> bool:
+    var stars := get_artifact_stars(type)
+    if stars >= MAX_STARS:
+        return false
+    artifact_stars[type] = stars + 1
+    return true
+
+
+func get_star_upgrade_cost(current_stars: int) -> float:
+    return STAR_UPGRADE_BASE_COST * pow(2.0, float(maxi(current_stars, 1) - 1))
+
+
+## Множитель статов для звёзд: 1 звезда = x1.0, 5 звёзд = x2.0
+static func get_star_stat_mult(stars: int) -> float:
+    return 1.0 + float(maxi(stars, 1) - 1) * STAR_STAT_BONUS
+
+
+## "★★★☆☆" для UI
+static func stars_text(stars: int) -> String:
+    var text := ""
+    for i in range(MAX_STARS):
+        text += "★" if i < stars else "☆"
+    return text
+
+
 # ==================== СБРОС ====================
 
 func reset():
@@ -342,3 +397,5 @@ func reset():
     artifacts_common.clear()
     artifacts_rare.clear()
     artifacts_legendary.clear()
+    mutant_stars.clear()
+    artifact_stars.clear()

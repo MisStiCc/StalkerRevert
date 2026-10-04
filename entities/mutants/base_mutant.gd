@@ -28,6 +28,13 @@ var current_patrol_index: int = 0
 @export var patrol_points_count: int = 5
 var _spawn_position: Vector3 = Vector3.ZERO
 
+# Множители статов (лаборатория + звёздность), задаётся до add_child,
+# применяются в _ready() после статов наследника
+var _stat_health_mult: float = 1.0
+var _stat_damage_mult: float = 1.0
+# Звёзды этого типа (1-5): для подписи и эффектов
+var star_level: int = 1
+
 # Навигационный компонент
 var navigation_component: NavigationComponent
 var zone_controller: Node = null
@@ -65,6 +72,41 @@ func _ready():
 		zone_controller.register_mutant(self)
 	
 	health = max_health
+	
+	# Множители применяются последними: наследник уже задал базовые статы
+	if _stat_health_mult != 1.0:
+		max_health *= _stat_health_mult
+		health = max_health
+	if _stat_damage_mult != 1.0:
+		damage *= _stat_damage_mult
+	
+	# Звёзды в подписи - после того как наследник настроит Label3D
+	_apply_star_label.call_deferred()
+
+
+func set_health_multiplier(value: float):
+	_stat_health_mult = value
+
+
+func set_damage_multiplier(value: float):
+	_stat_damage_mult = value
+
+
+func set_star_level(stars: int):
+	star_level = maxi(stars, 1)
+
+
+func _apply_star_label():
+	"""Дописываем звёзды к подписи мутанта (если она есть)"""
+	if star_level <= 1:
+		return
+	var label = get_node_or_null("Label3D")
+	if not label:
+		var found = find_children("*", "Label3D", false, false)
+		if not found.is_empty():
+			label = found[0]
+	if label:
+		label.text += " " + "★".repeat(star_level)
 
 
 func _setup_navigation_component():

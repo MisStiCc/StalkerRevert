@@ -44,23 +44,72 @@ func _ready():
 
 
 func grant_mutant_reward(mutant_type: String, rarity: String) -> String:
-	"""Награда гачи: мутант в коллекцию. Возвращает статус (новый/дубль)"""
+	"""Награда гачи: мутант в коллекцию. Дубль даёт +1 звезду. Возвращает статус"""
 	if not current_save_data or not current_save_data.lab_data:
 		return ""
 	var lab = current_save_data.lab_data
 	if lab.unlocked_mutants.has(mutant_type):
-		return "уже в коллекции"
+		if lab.add_mutant_star(mutant_type):
+			var stars: int = lab.get_mutant_stars(mutant_type)
+			save_game(0)
+			return "ДУБЛЬ: +1 ЗВЕЗДА (%d/%d★)" % [stars, LabData.MAX_STARS]
+		return "ДУБЛЬ: звёзды максимальные (%d★)" % LabData.MAX_STARS
 	lab.unlocked_mutants.append(mutant_type)
 	save_game(0)
 	return "НОВЫЙ МУТАНТ В КОЛЛЕКЦИИ"
 
 
 func grant_artifact_reward(artifact_type: String):
-	"""Награда гачи: артефакт в коллекцию Зоны"""
+	"""Награда гачи: артефакт в коллекцию Зоны. Дубль даёт +1 звезду"""
 	if not current_save_data or not current_save_data.lab_data:
 		return
-	current_save_data.lab_data.won_artifacts.append(artifact_type)
+	var lab = current_save_data.lab_data
+	if lab.won_artifacts.has(artifact_type):
+		lab.add_artifact_star(artifact_type)
+	else:
+		lab.won_artifacts.append(artifact_type)
 	save_game(0)
+
+
+func upgrade_mutant_star(mutant_type: String) -> bool:
+	"""Лаборатория: поднять звезду мутанта за биомассу (500 * 2^(звёзды-1))"""
+	var lab = get_lab_data()
+	if not lab.unlocked_mutants.has(mutant_type):
+		print("Звёзды: мутант не в коллекции: " + mutant_type)
+		return false
+	var stars: int = lab.get_mutant_stars(mutant_type)
+	if stars >= LabData.MAX_STARS:
+		print("Звёзды: у " + mutant_type + " уже максимальные звёзды")
+		return false
+	var cost: float = lab.get_star_upgrade_cost(stars)
+	if lab.biomass < cost:
+		print("Звёзды: недостаточно биомассы (нужно %.0f, есть %.0f)" % [cost, lab.biomass])
+		return false
+	lab.biomass -= cost
+	lab.add_mutant_star(mutant_type)
+	print("Звёзды: %s теперь %d/%d★ (за %.0f биомассы)" % [mutant_type, stars + 1, LabData.MAX_STARS, cost])
+	save_to_active_slot()
+	return true
+
+
+func upgrade_artifact_star(artifact_type: String) -> bool:
+	var lab = get_lab_data()
+	if not lab.won_artifacts.has(artifact_type):
+		print("Звёзды: артефакт не в коллекции: " + artifact_type)
+		return false
+	var stars: int = lab.get_artifact_stars(artifact_type)
+	if stars >= LabData.MAX_STARS:
+		print("Звёзды: у " + artifact_type + " уже максимальные звёзды")
+		return false
+	var cost: float = lab.get_star_upgrade_cost(stars)
+	if lab.biomass < cost:
+		print("Звёзды: недостаточно биомассы (нужно %.0f, есть %.0f)" % [cost, lab.biomass])
+		return false
+	lab.biomass -= cost
+	lab.add_artifact_star(artifact_type)
+	print("Звёзды: %s теперь %d/%d★ (за %.0f биомассы)" % [artifact_type, stars + 1, LabData.MAX_STARS, cost])
+	save_to_active_slot()
+	return true
 
 
 func buy_shop_mutant(mutant_type: String, price: float) -> bool:
@@ -250,6 +299,9 @@ func _setup_run_params(params: Dictionary):
 		params["bonuses"]["monolith_energy_bonus"] = current_save_data.lab_data.get_monolith_energy_bonus()
 		params["bonuses"]["monolith_regen_mult"] = current_save_data.lab_data.get_monolith_regen_mult()
 		params["bonuses"]["rare_chance_bonus"] = current_save_data.lab_data.get_rare_chance_bonus()
+		# Звёздность коллекции: спавнящиеся мутанты получают свои звёзды
+		params["mutant_stars"] = current_save_data.lab_data.mutant_stars.duplicate()
+		params["artifact_stars"] = current_save_data.lab_data.artifact_stars.duplicate()
 	
 	get_tree().root.set_meta("run_params", params)
 	print("Параметры забега установлены: " + str(params))

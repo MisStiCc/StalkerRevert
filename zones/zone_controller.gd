@@ -324,6 +324,10 @@ func _initialize_run():
 	# Применяем бонусы из лаборатории
 	_apply_lab_bonuses()
 
+	# Звёздность коллекции: спавнящиеся мутанты получают свои звёзды
+	if spawn_manager and run_params.has("mutant_stars"):
+		spawn_manager.set_mutant_stars(run_params["mutant_stars"])
+
 	# Стартовая биомасса забега (остаток лаборатории + 300)
 	resource_manager.current_biomass = clamp(
 		run_params.get("start_biomass", 300.0), 0.0, max_biomass)
@@ -533,21 +537,30 @@ func _grant_wave_milestone(waves: int):
 
 
 func _grant_artifact_reward(artifact_type: String, source_label: String):
-	"""Артефакт-награда: спавнится у монолита как реликвия + ресурсный бонус"""
+	"""Артефакт-награда: спавнится у монолита как реликвия + ресурсный бонус.
+	Звёзды типа умножают бонус и ценность реликвии"""
 	var rarity := "common"
 	for r in ["legendary", "rare"]:
 		if GachaData.ARTIFACT_POOL[r].has(artifact_type):
 			rarity = r
 			break
-	var bonus: Array = GachaData.ARTIFACT_BONUS[rarity]
+	# Звёзды артефакта читаем живьём из коллекции (дубли в гаче качают звёзды mid-run)
+	var stars := 1
+	var gm = get_tree().get_first_node_in_group("game_manager")
+	if gm and gm.get_lab_data():
+		stars = gm.get_lab_data().get_artifact_stars(artifact_type)
+	var star_mult := LabData.get_star_stat_mult(stars)
+	var bonus: Array = GachaData.ARTIFACT_BONUS[rarity].duplicate()
+	bonus[0] = bonus[0] * star_mult
+	bonus[1] = bonus[1] * star_mult
 	if resource_manager:
 		resource_manager.add_energy(bonus[0])
 		resource_manager.add_biomass(bonus[1])
 	var monolith = get_tree().get_first_node_in_group("monolith")
 	var drop_pos: Vector3 = monolith.global_position + Vector3(6.0, 0.0, 6.0) if monolith else Vector3(6.0, 0.0, 6.0)
-	print("=== НАГРАДА (", source_label, "): артефакт ", artifact_type, " (", rarity, ") +", bonus[0], " энергии, +", bonus[1], " биомассы ===")
+	print("=== НАГРАДА (", source_label, "): артефакт ", artifact_type, " (", rarity, ", ", stars, "★) +", bonus[0], " энергии, +", bonus[1], " биомассы ===")
 	var reward_value: float = 10.0 if rarity == "common" else (30.0 if rarity == "rare" else 80.0)
-	anomaly_manager.create_artifact(artifact_type, drop_pos, rarity, reward_value)
+	anomaly_manager.create_artifact(artifact_type, drop_pos, rarity, reward_value * star_mult)
 
 
 func _grant_gacha_rewards(level: int):
@@ -563,6 +576,9 @@ func _grant_gacha_rewards(level: int):
 	var unlocked_msg := ""
 	if gm:
 		unlocked_msg = gm.grant_mutant_reward(mutant_roll["type"], mutant_roll["rarity"])
+		# Дубль качнул звёзды - спавнящиеся мутанты должны узнать об этом сразу
+		if spawn_manager and gm.get_lab_data():
+			spawn_manager.set_mutant_stars(gm.get_lab_data().mutant_stars)
 	spawn_manager.queue_reward_mutant(mutant_roll["type"])
 	print("=== ГАЧА МУТАНТОВ (ур. ", level, "): ", mutant_roll["type"], " [", mutant_roll["rarity"], "] ", unlocked_msg, " ===")
 	
