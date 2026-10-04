@@ -43,6 +43,9 @@ func show_result(result: Dictionary):
             stats.get("mutants_created", 0),
             stats.get("artifacts_stolen", 0)
         ]
+
+    if result.get("mode", "") == "survival":
+        stats_label.text += "\nВолн пройдено: %d" % int(result.get("waves_survived", 0))
     
     if result.has("artifacts_collected"):
         var common = 0

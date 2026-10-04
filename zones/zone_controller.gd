@@ -301,6 +301,19 @@ func _initialize_run():
 			float(campaign.get("hp_mult", 1.0)),
 			float(campaign.get("damage_mult", 1.0)),
 			float(campaign.get("speed_mult", 1.0)))
+	elif run_params.get("run_mode", "campaign") == "survival":
+		# Выживание: волны бесконечны, победы нет; эскалацию считает SurvivalData
+		var survival: Dictionary = run_params.get("survival_params", {})
+
+		progression_manager.current_run = run_data.run_number
+		progression_manager.current_difficulty = float(survival.get("hp_mult", 1.0))
+
+		spawn_manager.endless_mode = true
+		spawn_manager.set_difficulty(1.0)
+		_apply_survival_wave(survival)
+
+		event_manager.endless_mode = true
+		pulses = 0
 
 	event_manager.set_pulses_to_win(pulses)
 	event_manager.set_run_number(run_number)
@@ -317,6 +330,8 @@ func _initialize_run():
 	var run_label: String = "Забег #" + str(run_number)
 	if run_params.has("campaign_params"):
 		run_label = "Кампания: «" + str(run_params["campaign_params"].get("title", "Уровень")) + "»"
+	elif run_params.get("run_mode", "") == "survival":
+		run_label = "ВЫЖИВАНИЕ: волны без предела"
 	Signals.run_started.emit(run_number, run_difficulty, pulses)
 	print(run_label + " в фазе подготовки (множитель врагов: " + str(run_difficulty) + "). Расставьте защиты и нажмите СТАРТ.")
 
@@ -324,7 +339,7 @@ func _initialize_run():
 func _apply_lab_bonuses():
 	if not run_params.has("bonuses"):
 		return
-	
+
 	var bonuses = run_params["bonuses"]
 	
 	# Применяем бонусы к менеджерам
@@ -344,6 +359,24 @@ func _apply_lab_bonuses():
 		spawn_manager.cost_multiplier = bonuses["mutant_cost_mult"]
 	
 	print("Бонусы лаборатории применены: " + str(bonuses))
+
+
+## Параметры волны выживания: тот же формат, что у уровня кампании
+func _apply_survival_wave(params: Dictionary):
+	spawn_manager.min_stalkers_per_wave = int(params.get("count_min", 8))
+	spawn_manager.max_stalkers_per_wave = int(params.get("count_max", 10))
+	spawn_manager.wave_break = float(params.get("wave_break", 45.0))
+	spawn_manager.set_rank_weights(params.get("mix", [100, 0, 0]))
+	spawn_manager.set_campaign_scaling(
+		float(params.get("hp_mult", 1.0)),
+		float(params.get("damage_mult", 1.0)),
+		float(params.get("speed_mult", 1.0)))
+	print("Волна выживания %d: сталкеров %d-%d, состав н/в/м %s, множитель x%.2f" % [
+		int(params.get("wave", 1)),
+		int(params.get("count_min", 8)),
+		int(params.get("count_max", 10)),
+		str(params.get("mix", [])),
+		float(params.get("hp_mult", 1.0))])
 
 
 # ==================== ОБРАБОТЧИКИ HUD ====================
@@ -456,8 +489,13 @@ func _on_wave_started(wave_number: int, count: int):
 func _on_wave_ended(wave_number: int, survivors: int):
 	wave_ended.emit(wave_number, survivors)
 	Signals.wave_ended.emit(wave_number, survivors, spawn_manager.get_stalker_count())
-	
+
 	print("Волна " + str(wave_number) + " закончилась, выжило: " + str(survivors))
+
+	# Выживание: следующая волна сильнее текущей
+	if run_params.get("run_mode", "") == "survival":
+		_apply_survival_wave(
+			SurvivalData.get_wave_params(wave_number + 1, run_params.get("campaign_mode", CampaignData.MODE_NORMAL)))
 
 
 func _on_stalker_died(stalker: Node, biomass_returned: float):
@@ -692,6 +730,13 @@ func _collect_run_result(success: bool) -> Dictionary:
 			bonus *= CampaignData.REPLAY_REWARD_FACTOR
 		reward += bonus
 
+	# Выживание: награда за пройденные волны платится при любом исходе -
+	# смерть здесь ожидаемый конец забега, а не провал
+	var waves_survived := 0
+	if run_params.get("run_mode", "") == "survival":
+		waves_survived = maxi(0, (spawn_manager.current_wave if spawn_manager else 1) - 1)
+		reward += SurvivalData.wave_bonus(waves_survived)
+
 	var stats = {
 		"stalkers_killed": progression_manager.get_stalkers_killed() if progression_manager else 0,
 		"anomalies_created": progression_manager.get_anomalies_created() if progression_manager else 0,
@@ -704,7 +749,9 @@ func _collect_run_result(success: bool) -> Dictionary:
 	return {
 		"success": success,
 		"run_number": run_number,
+		"mode": str(run_params.get("run_mode", "campaign")),
 		"campaign_level": int(run_params.get("campaign_level", 0)),
+		"waves_survived": waves_survived,
 		"reward": reward,
 		"statistics": stats,
 		"artifacts_collected": _collect_artifacts()

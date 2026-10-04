@@ -16,6 +16,10 @@ var current_scene_name: String = ""
 # 0 = идти на текущий рубеж (campaign_level сейва)
 var selected_campaign_level: int = 0
 
+# Режим следующего забега: "campaign" или "survival" (выбор в лаборатории,
+# запоминается в настройках клиента)
+var selected_run_mode: String = "campaign"
+
 # Константы
 const SAVE_DIR = "user://saves/"
 const SAVE_FILE_PREFIX = "save_"
@@ -52,15 +56,30 @@ func _load_settings():
 	var cfg = ConfigFile.new()
 	if cfg.load(SETTINGS_PATH) == OK:
 		active_save_slot = clampi(int(cfg.get_value("game", "active_save_slot", AUTOSAVE_SLOT)), AUTOSAVE_SLOT, MANUAL_SLOTS)
+		selected_run_mode = str(cfg.get_value("game", "run_mode", "campaign"))
 	print("Активный слот сохранения: " + ("автосейв" if active_save_slot == AUTOSAVE_SLOT else str(active_save_slot)))
 
 
 func _save_settings():
 	var cfg = ConfigFile.new()
 	cfg.set_value("game", "active_save_slot", active_save_slot)
+	cfg.set_value("game", "run_mode", selected_run_mode)
 	var error = cfg.save(SETTINGS_PATH)
 	if error != OK:
 		print("Не удалось сохранить настройки: код " + str(error))
+
+
+## Режим забега: кампания или выживание
+func get_selected_run_mode() -> String:
+	return selected_run_mode if selected_run_mode == "survival" else "campaign"
+
+
+func set_selected_run_mode(mode: String) -> bool:
+	if mode != "campaign" and mode != "survival":
+		return false
+	selected_run_mode = mode
+	_save_settings()
+	return true
 
 
 func get_active_save_slot() -> int:
@@ -129,14 +148,22 @@ func _setup_run_params(params: Dictionary):
 	if current_save_data and current_save_data.lab_data:
 		bonuses = current_save_data.lab_data.get_bonuses()
 
-	# Кампания: уровень выбран в лаборатории (или текущий рубеж), параметры - из CampaignData
-	var campaign_level := get_selected_or_frontier_level()
-	var campaign_mode := get_campaign_mode()
-	params["campaign_level"] = campaign_level
-	params["campaign_mode"] = campaign_mode
-	params["campaign_params"] = CampaignData.get_level_params(campaign_level, campaign_mode)
-	# Переигрывание пройденного уровня: награда урезана, рубеж не двигается
-	params["campaign_replay"] = campaign_level < get_campaign_level()
+	# Режим забега: кампания (уровень из лаборатории) или выживание
+	var run_mode := get_selected_run_mode()
+	params["run_mode"] = run_mode
+	params["campaign_mode"] = get_campaign_mode()
+
+	if run_mode == "survival":
+		# Выживание: параметры первой волны; следующие считает ZoneController
+		# после каждой волны (эскалация - в SurvivalData)
+		params["survival_params"] = SurvivalData.get_wave_params(1, get_campaign_mode())
+	else:
+		# Кампания: уровень выбран в лаборатории (или текущий рубеж)
+		var campaign_level := get_selected_or_frontier_level()
+		params["campaign_level"] = campaign_level
+		params["campaign_params"] = CampaignData.get_level_params(campaign_level, get_campaign_mode())
+		# Переигрывание пройденного уровня: награда урезана, рубеж не двигается
+		params["campaign_replay"] = campaign_level < get_campaign_level()
 
 	# Стартовая биомасса в бою: остаток лаборатории + 300 базы.
 	# Остаток СПИСЫВАЕТСЯ из лаборатории (перенос припасов на фронт)
@@ -374,7 +401,14 @@ func process_run_result(result: Dictionary):
 	print("Добавлено биомассы: " + str(reward))
 
 	_apply_campaign_result(result)
-	
+
+	# Выживание: рекорд пройденных волн
+	if result.get("mode", "") == "survival":
+		var waves_survived := int(result.get("waves_survived", 0))
+		if waves_survived > stats.best_survival_wave:
+			stats.best_survival_wave = waves_survived
+			print("Новый рекорд выживания: %d волн" % waves_survived)
+
 	stats.total_runs += 1
 	var success = result.get("success", false)
 	if success:
@@ -401,9 +435,12 @@ func process_run_result(result: Dictionary):
 	
 	lab.run_number += 1
 	print("Номер забега: " + str(lab.run_number))
-	
+
 	save_to_active_slot()
-	
+
+	# Результат для панели итогов в лаборатории (забирается и снимается там)
+	get_tree().root.set_meta("last_run_result", result)
+
 	Signals.run_ended.emit(lab.run_number - 1, success, reward)
 
 

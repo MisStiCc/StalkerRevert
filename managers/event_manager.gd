@@ -14,6 +14,9 @@ signal game_won(run_number: int, reward: float)
 @export var pulses_to_win: int = 3
 @export var difficulty_increase_per_pulse: float = 0.2
 
+# Выживание: победы через выбросы нет - они остаются только тактическим инструментом
+var endless_mode: bool = false
+
 # Состояние
 var is_radiating: bool = false
 # Забег уже завершён (победа/поражение) - выбросы больше не запускаются
@@ -89,13 +92,13 @@ func start_radiation_pulse() -> bool:
 
 func _end_pulse_later() -> void:
     await get_tree().create_timer(pulse_duration).timeout
-    
+
     is_radiating = false
     radiation_pulse_ended.emit()
     print("Выброс закончен", "EventManager")
-    
-    # Проверка на победу
-    if pulse_count >= pulses_to_win:
+
+    # В выживании выбросы не приближают победу - её нет
+    if not endless_mode and pulse_count >= pulses_to_win:
         _win_game()
 
 
@@ -273,6 +276,8 @@ func get_pulse_count() -> int:
 
 
 func get_pulses_remaining() -> int:
+    if endless_mode:
+        return 0
     return max(0, pulses_to_win - pulse_count)
 
 
@@ -285,6 +290,8 @@ func get_current_difficulty() -> float:
 
 
 func has_won() -> bool:
+    if endless_mode:
+        return false
     return pulse_count >= pulses_to_win
 
 

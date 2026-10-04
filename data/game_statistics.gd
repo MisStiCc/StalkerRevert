@@ -14,6 +14,9 @@ class_name GameStatistics
 @export var biomass_earned: float = 0.0
 @export var biomass_spent: float = 0.0
 
+# Режим выживания: лучший результат (пройдено волн за забег)
+@export var best_survival_wave: int = 0
+
 
 func get_win_rate() -> float:
     if total_runs == 0:
@@ -35,3 +38,4 @@ func reset():
     artifacts_stolen = 0
     biomass_earned = 0.0
     biomass_spent = 0.0
+    best_survival_wave = 0

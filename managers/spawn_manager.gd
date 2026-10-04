@@ -74,6 +74,9 @@ var campaign_hp_mult: float = 1.0
 var campaign_damage_mult: float = 1.0
 var campaign_speed_mult: float = 1.0
 
+# Выживание: волны бесконечны, параметры каждой волны обновляет ZoneController
+var endless_mode: bool = false
+
 # Статистика
 var _stalkers_killed: int = 0
 var _artifacts_stolen: int = 0
@@ -153,28 +156,29 @@ func set_difficulty(difficulty: float):
 func _start_wave():
 	if is_spawning or not is_active:
 		return
-	
-	if current_wave >= max_waves:
+
+	# В выживании волны не кончаются
+	if not endless_mode and current_wave >= max_waves:
 		return
-	
+
 	is_spawning = true
 	current_wave += 1
-	
+
 	var stalkers_to_spawn = _calculate_stalker_count()
 	wave_started.emit(current_wave, stalkers_to_spawn)
 	print("Волна " + str(current_wave) + " начата, сталкеров: " + str(stalkers_to_spawn))
-	
+
 	var spawned = 0
 	for i in range(stalkers_to_spawn):
 		if _spawn_stalker():
 			spawned += 1
 		await get_tree().create_timer(0.3).timeout
-	
+
 	is_spawning = false
 	wave_ended.emit(current_wave, spawned)
 	print("Волна " + str(current_wave) + " завершена, создано: " + str(spawned))
-	
-	if current_wave >= max_waves:
+
+	if not endless_mode and current_wave >= max_waves:
 		_watch_field_clear()
 	else:
 		_schedule_next_wave()

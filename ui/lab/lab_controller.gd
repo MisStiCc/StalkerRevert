@@ -51,6 +51,8 @@ var _campaign_prev_button: Button
 var _campaign_next_button: Button
 var _campaign_mode_button: Button
 var _campaign_label: Label
+# Переключатель режима забега: кампания / выживание
+var _run_mode_button: Button
 
 
 func _ready():
@@ -66,8 +68,19 @@ func _ready():
 	_refresh_ui()
 	_setup_campaign_selector()
 	_refresh_campaign_ui()
-	
+	_show_last_run_result()
+
 	print("lab_controller: initialized, GameManager найден: ", game_manager != null)
+
+
+func _show_last_run_result():
+	"""Панель итогов последнего забега (результат кладёт GameManager.process_run_result)"""
+	if not get_tree().root.has_meta("last_run_result"):
+		return
+
+	var result: Dictionary = get_tree().root.get_meta("last_run_result")
+	get_tree().root.remove_meta("last_run_result")
+	show_run_result(result)
 
 
 func _load_cover_art():
@@ -160,12 +173,13 @@ func _refresh_ui():
 	artifact_counts_label.text = "Common: %d   Rare: %d   Legendary: %d" % [common, rare, legendary]
 	
 	if statistics:
-		stats_label.text = "Всего забегов: %d   Побед: %d   Поражений: %d\nСталкеров убито: %d   Артефактов украдено: %d" % [
+		stats_label.text = "Всего забегов: %d   Побед: %d   Поражений: %d\nСталкеров убито: %d   Артефактов украдено: %d\nРекорд выживания: %d волн" % [
 			statistics.total_runs,
 			statistics.wins,
 			statistics.losses,
 			statistics.stalkers_killed,
-			statistics.artifacts_stolen
+			statistics.artifacts_stolen,
+			statistics.best_survival_wave
 		]
 
 
@@ -210,27 +224,47 @@ func _setup_campaign_selector():
 	_campaign_label = Label.new()
 	_campaign_label.add_theme_font_size_override("font_size", 16)
 
+	_run_mode_button = Button.new()
+	_run_mode_button.text = "Кампания"
 	_campaign_prev_button = Button.new()
 	_campaign_prev_button.text = "◀"
 	_campaign_next_button = Button.new()
 	_campaign_next_button.text = "▶"
 	_campaign_mode_button = Button.new()
 
+	row.add_child(_run_mode_button)
 	row.add_child(_campaign_prev_button)
 	row.add_child(_campaign_label)
 	row.add_child(_campaign_next_button)
 	row.add_child(_campaign_mode_button)
 	header.add_child(row)
 
+	_run_mode_button.pressed.connect(_on_run_mode_pressed)
 	_campaign_prev_button.pressed.connect(_on_campaign_prev_pressed)
 	_campaign_next_button.pressed.connect(_on_campaign_next_pressed)
 	_campaign_mode_button.pressed.connect(_on_campaign_mode_pressed)
-	for btn in [_campaign_prev_button, _campaign_next_button, _campaign_mode_button]:
+	for btn in [_run_mode_button, _campaign_prev_button, _campaign_next_button, _campaign_mode_button]:
 		btn.mouse_entered.connect(_play_hover_sound)
 
 
 func _refresh_campaign_ui():
 	if not game_manager or not _campaign_label:
+		return
+
+	# Режим забега определяет, что показывает строка
+	var is_survival: bool = game_manager.get_selected_run_mode() == "survival"
+	_run_mode_button.text = "Выживание" if is_survival else "Кампания"
+	# Множитель сложности применяется в обоих режимах
+	_campaign_mode_button.text = "Сложность: %s" % CampaignData.get_mode_name(game_manager.get_campaign_mode())
+
+	if is_survival:
+		var record: int = 0
+		var stats = game_manager.get_statistics()
+		if stats:
+			record = stats.best_survival_wave
+		_campaign_label.text = "ВЫЖИВАНИЕ - волны без предела, награда за каждую (рекорд: %d)" % record
+		_campaign_prev_button.disabled = true
+		_campaign_next_button.disabled = true
 		return
 
 	var frontier: int = game_manager.get_campaign_level()
@@ -251,6 +285,20 @@ func _refresh_campaign_ui():
 	_campaign_prev_button.disabled = _campaign_level <= 1
 	_campaign_next_button.disabled = _campaign_level >= frontier
 	_campaign_mode_button.text = "Сложность: %s" % CampaignData.get_mode_name(game_manager.get_campaign_mode())
+
+
+func _on_run_mode_pressed():
+	"""Переключение режима забега: кампания <-> выживание"""
+	_play_click_sound()
+	if not game_manager:
+		return
+
+	var next_mode: String = "survival"
+	if game_manager.get_selected_run_mode() == "survival":
+		next_mode = "campaign"
+
+	game_manager.set_selected_run_mode(next_mode)
+	_refresh_campaign_ui()
 
 
 func _on_campaign_prev_pressed():
