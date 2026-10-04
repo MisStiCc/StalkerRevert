@@ -75,6 +75,7 @@ func _ready():
 	_connect_buttons()
 	_setup_sounds()
 	_load_minimap()
+	_apply_prices()
 	
 	print("HUD инициализирован")
 
@@ -87,6 +88,36 @@ func _load_minimap():
 		minimap_art.texture = load(MAP_PATH)
 	else:
 		minimap_art.visible = false
+
+
+func _apply_prices():
+	"""Ценники на кнопках из реальных цен менеджеров (со скидками лаборатории)"""
+	if not zone_controller:
+		return
+	var am = zone_controller.get("anomaly_manager")
+	var sm = zone_controller.get("spawn_manager")
+	var anomalies = {
+		fire_button: "heat_anomaly", electric_button: "electric_anomaly",
+		acid_button: "acid_anomaly", vortex_button: "gravity_vortex",
+		lift_button: "gravity_lift", whirlwind_button: "gravity_whirlwind",
+		steam_button: "thermal_steam", comet_button: "thermal_comet",
+		jelly_button: "chemical_jelly", gas_button: "chemical_gas",
+		acid_cloud_button: "chemical_acid_cloud", radiation_button: "radiation_hotspot",
+		time_button: "time_dilation", teleport_button: "teleport",
+		tesla_button: "electric_tesla", fluff_button: "bio_burning_fluff",
+	}
+	var mutants = {
+		dog_button: "dog_mutant", flesh_button: "flesh", snork_button: "snork_mutant",
+		pseudodog_button: "pseudodog", controller_button: "controller_mutant",
+		poltergeist_button: "poltergeist", bloodsucker_button: "bloodsucker",
+		chimera_button: "chimera", zombie_button: "zombie",
+	}
+	for btn in anomalies:
+		var cost: int = int(am.get_anomaly_cost(anomalies[btn])) if am else 0
+		btn.text = btn.text + " ⚡" + str(cost)
+	for btn in mutants:
+		var cost: int = int(sm.get_mutant_cost(mutants[btn])) if sm else 0
+		btn.text = btn.text + " 🧬" + str(cost)
 
 
 func _connect_buttons():

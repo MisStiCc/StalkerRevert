@@ -109,6 +109,10 @@ func _physics_process(delta):
 		velocity.x = 0
 		velocity.z = 0
 		move_and_slide()
+	
+	# Граница мира ( Helpers.WORLD_LIMIT ) - периметр не выпускает
+	global_position.x = clampf(global_position.x, -Helpers.WORLD_LIMIT, Helpers.WORLD_LIMIT)
+	global_position.z = clampf(global_position.z, -Helpers.WORLD_LIMIT, Helpers.WORLD_LIMIT)
 
 
 func _update_effects(delta):

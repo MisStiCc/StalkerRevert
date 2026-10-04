@@ -12,6 +12,8 @@ var leap_timer: Timer
 var is_leaping: bool = false
 var leap_target: Vector3
 var leap_time: float = 0.0
+var _leap_vx: float = 0.0
+var _leap_vz: float = 0.0
 
 func _ready():
 	health = 250.0
@@ -96,22 +98,30 @@ func _start_leap():
 	leap_target = target_stalker.global_position
 	leap_time = 0.0
 	
+	# Честная баллистика: горизонтальную скорость фиксируем на весь прыжок,
+	# вертикальную - из времени полёта и гравитации (настоящая парабола)
+	var to_target = leap_target - global_position
+	var flight_time = max(to_target.length() / (speed * 2.0), 0.45)
+	_leap_vx = to_target.x / flight_time
+	_leap_vz = to_target.z / flight_time
+	velocity.y = 0.5 * gravity * flight_time + 3.0
+	
 	leap_timer.start()
 
 
 func _handle_leap(delta):
 	leap_time += delta
 	
-	if is_instance_valid(target_stalker):
-		leap_target = target_stalker.global_position
-	
-	var direction = (leap_target - global_position).normalized()
-	velocity = direction * speed * 3.0
-	velocity.y = 8.0 - (leap_time * 2.0)
+	# Гравитация - единственная вертикальная сила: траектория - парабола
+	velocity.x = _leap_vx
+	velocity.z = _leap_vz
+	velocity.y -= gravity * delta
 	
 	move_and_slide()
 	
-	if is_on_floor() or global_position.distance_to(leap_target) < 2.0 or leap_time > 1.5:
+	if velocity.y < 0.0 and is_on_floor():
+		_land()
+	elif leap_time > 2.0:
 		_land()
 
 

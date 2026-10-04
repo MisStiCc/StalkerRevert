@@ -402,6 +402,9 @@ func spawn_mutant(mutant_type: String, position: Vector3, _biomass_cost: float) 
 		return null
 	
 	var mutant = scene.instantiate()
+	# Спавн не за периметром Зоны
+	position.x = clampf(position.x, -Helpers.WORLD_LIMIT, Helpers.WORLD_LIMIT)
+	position.z = clampf(position.z, -Helpers.WORLD_LIMIT, Helpers.WORLD_LIMIT)
 	mutant.position = position
 	
 	if mutant.has_method("set_health_multiplier"):

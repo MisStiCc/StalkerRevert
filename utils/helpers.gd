@@ -2,6 +2,9 @@
 extends Node
 class_name Helpers
 
+## Жёсткая граница мира по XZ (периметр + запас на кламп камер)
+const WORLD_LIMIT: float = 165.0
+
 
 static func format_number(value: float, decimals: int = 0) -> String:
     var s = str(int(value))

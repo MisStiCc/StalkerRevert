@@ -417,10 +417,14 @@ func _get_spawn_position_from_camera() -> Vector3:
 	query.collision_mask = 1
 	var result = space.intersect_ray(query)
 	if result:
-		return result.position
+		point = result.position
+	else:
+		point.y = 0.0
 	
-	# Рельеф не найден (чанк не загружен) - fallback на плоскость земли
-	return Vector3(point.x, 0.0, point.z)
+	# Не размещаем за периметром Зоны
+	point.x = clampf(point.x, -Helpers.WORLD_LIMIT, Helpers.WORLD_LIMIT)
+	point.z = clampf(point.z, -Helpers.WORLD_LIMIT, Helpers.WORLD_LIMIT)
+	return point
 
 
 # ==================== ОБРАБОТЧИКИ МЕНЕДЖЕРОВ ====================

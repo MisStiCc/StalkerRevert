@@ -19,6 +19,7 @@ signal quit_pressed
 @onready var title_label: Label = $VBox/Title
 @onready var cover_art: TextureRect = $CoverArt
 @onready var back_button: Button = $SettingsScreen/Panel/BackButton
+@onready var load_back_button: Button = $LoadScreen/Panel/VBox/BackButton
 @onready var music_slider: HSlider = $SettingsScreen/Panel/MusicSlider
 @onready var sfx_slider: HSlider = $SettingsScreen/Panel/SfxSlider
 
@@ -56,6 +57,7 @@ func _setup_buttons():
 	settings_button.pressed.connect(_on_settings_pressed)
 	quit_button.pressed.connect(_on_quit_pressed)
 	back_button.pressed.connect(_on_back_pressed)
+	load_back_button.pressed.connect(_on_back_pressed)
 
 
 func _setup_settings():
