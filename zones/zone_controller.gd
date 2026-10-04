@@ -500,6 +500,57 @@ func _on_wave_ended(wave_number: int, survivors: int):
 	if run_params.get("run_mode", "") == "survival":
 		_apply_survival_wave(
 			SurvivalData.get_wave_params(wave_number + 1, run_params.get("campaign_mode", CampaignData.MODE_NORMAL)))
+		_grant_wave_milestone(wave_number)
+
+
+func _grant_wave_milestone(waves: int):
+	"""Круглые волны выживания (10/20/30): награда гачи - мутант + артефакт"""
+	var reward: Dictionary = GachaData.milestone_wave_reward(waves)
+	if reward.is_empty() or is_run_finished:
+		return
+	print("=== ВЕХА ВЫЖИВАНИЯ: ", reward.get("label", ""), " ===")
+	if reward.has("mutant"):
+		spawn_manager.queue_reward_mutant(reward["mutant"])
+	_grant_artifact_reward(reward.get("artifact", "common_artifact"), reward.get("label", ""))
+
+
+func _grant_artifact_reward(artifact_type: String, source_label: String):
+	"""Артефакт-награда: спавнится у монолита как реликвия + ресурсный бонус"""
+	var rarity := "common"
+	for r in ["legendary", "rare"]:
+		if GachaData.ARTIFACT_POOL[r].has(artifact_type):
+			rarity = r
+			break
+	var bonus: Array = GachaData.ARTIFACT_BONUS[rarity]
+	if resource_manager:
+		resource_manager.add_energy(bonus[0])
+		resource_manager.add_biomass(bonus[1])
+	var monolith = get_tree().get_first_node_in_group("monolith")
+	var drop_pos: Vector3 = monolith.global_position + Vector3(6.0, 0.0, 6.0) if monolith else Vector3(6.0, 0.0, 6.0)
+	print("=== НАГРАДА (", source_label, "): артефакт ", artifact_type, " (", rarity, ") +", bonus[0], " энергии, +", bonus[1], " биомассы ===")
+	var reward_value: float = 10.0 if rarity == "common" else (30.0 if rarity == "rare" else 80.0)
+	anomaly_manager.create_artifact(artifact_type, drop_pos, rarity, reward_value)
+
+
+func _grant_gacha_rewards(level: int):
+	"""Гача за пройденный уровень кампании: мутант + артефакт по уровню"""
+	var gm = get_tree().get_first_node_in_group("game_manager")
+	var mutant_roll: Dictionary = GachaData.roll_mutant_gacha(level)
+	var artifact_roll: Dictionary = GachaData.roll_artifact_gacha(level)
+	
+	# Химера - гарантия середины кампании (уровень 50), если не выпала из гачи
+	if level >= GachaData.CHIMERA_GUARANTEE_LEVEL and gm and not gm.has_chimera_unlocked():
+		mutant_roll = {"type": "chimera", "rarity": "legendary", "guaranteed": true}
+	
+	var unlocked_msg := ""
+	if gm:
+		unlocked_msg = gm.grant_mutant_reward(mutant_roll["type"], mutant_roll["rarity"])
+	spawn_manager.queue_reward_mutant(mutant_roll["type"])
+	print("=== ГАЧА МУТАНТОВ (ур. ", level, "): ", mutant_roll["type"], " [", mutant_roll["rarity"], "] ", unlocked_msg, " ===")
+	
+	_grant_artifact_reward(artifact_roll["type"], "гача ур. " + str(level))
+	if gm:
+		gm.grant_artifact_reward(artifact_roll["type"])
 
 
 func _on_stalker_died(stalker: Node, biomass_returned: float):
@@ -581,6 +632,7 @@ func _on_game_won(run_number: int, reward: float):
 	Signals.game_won.emit(run_number, reward)
 	
 	print("ПОБЕДА! Забег #" + str(run_number) + " награда: " + str(reward))
+	_grant_gacha_rewards(run_number)
 	finish_run(true)
 
 

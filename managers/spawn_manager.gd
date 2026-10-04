@@ -89,6 +89,8 @@ const MONOLITH_CACHE_TIME: float = 1.0
 
 # Для предотвращения спавна в одной точке
 var _last_spawn_positions: Array[Vector3] = []
+# Наградные мутанты (гача/вехи выживания): спавнятся бесплатно у монолита на старте волны
+var reward_mutants: Array[String] = []
 const MIN_SPAWN_DISTANCE_BETWEEN_STALKERS: float = 10.0
 
 # ВЫСОТА СПАВНА - origin тела сталкера на 1.8 над землёй
@@ -164,6 +166,8 @@ func _start_wave():
 	is_spawning = true
 	current_wave += 1
 
+	_spawn_reward_mutants()
+
 	var stalkers_to_spawn = _calculate_stalker_count()
 	wave_started.emit(current_wave, stalkers_to_spawn)
 	print("Волна " + str(current_wave) + " начата, сталкеров: " + str(stalkers_to_spawn))
@@ -203,6 +207,27 @@ func _watch_field_clear():
 	if is_active:
 		print("Все волны отбиты, сталкеров не осталось!")
 		all_waves_cleared.emit()
+
+
+func queue_reward_mutant(mutant_type: String):
+	"""Наградный мутант (гача/веха): бесплатно вступит в бой на старте волны"""
+	reward_mutants.append(mutant_type)
+	print("SpawnManager: награда - ", mutant_type, " вступит в бой со следующей волной")
+
+
+func _spawn_reward_mutants():
+	while not reward_mutants.is_empty():
+		var type: String = reward_mutants.pop_front()
+		var angle = randf() * TAU
+		var dist = randf_range(45.0, 70.0)
+		var ray = PhysicsRayQueryParameters3D.create(
+			Vector3(cos(angle) * dist, 30.0, sin(angle) * dist),
+			Vector3(cos(angle) * dist, -30.0, sin(angle) * dist), 1)
+		var hit = get_viewport().get_world_3d().direct_space_state.intersect_ray(ray)
+		var pos = hit.get("position", Vector3(cos(angle) * dist, 0.0, sin(angle) * dist)) + Vector3(0, 1.8, 0)
+		var mutant = spawn_mutant(type, pos, 0.0)
+		if mutant:
+			print("SpawnManager: наградный мутант вступил в бой: ", type)
 
 
 func _calculate_stalker_count() -> int:

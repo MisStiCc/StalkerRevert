@@ -43,6 +43,32 @@ func _ready():
 	Signals.game_started.emit()
 
 
+func grant_mutant_reward(mutant_type: String, rarity: String) -> String:
+	"""Награда гачи: мутант в коллекцию. Возвращает статус (новый/дубль)"""
+	if not current_save_data or not current_save_data.lab_data:
+		return ""
+	var lab = current_save_data.lab_data
+	if lab.unlocked_mutants.has(mutant_type):
+		return "уже в коллекции"
+	lab.unlocked_mutants.append(mutant_type)
+	save_game(0)
+	return "НОВЫЙ МУТАНТ В КОЛЛЕКЦИИ"
+
+
+func grant_artifact_reward(artifact_type: String):
+	"""Награда гачи: артефакт в коллекцию Зоны"""
+	if not current_save_data or not current_save_data.lab_data:
+		return
+	current_save_data.lab_data.won_artifacts.append(artifact_type)
+	save_game(0)
+
+
+func has_chimera_unlocked() -> bool:
+	if current_save_data and current_save_data.lab_data:
+		return current_save_data.lab_data.unlocked_mutants.has("chimera")
+	return false
+
+
 func _create_save_directory():
 	var dir = DirAccess.open("user://")
 	if not dir.dir_exists("saves"):
