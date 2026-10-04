@@ -33,6 +33,12 @@ signal settings_opened
 @onready var settings_music_slider: HSlider = $SettingsScreen/Panel/MusicSlider
 @onready var settings_sfx_slider: HSlider = $SettingsScreen/Panel/SfxSlider
 @onready var settings_back_button: Button = $SettingsScreen/Panel/BackButton
+@onready var shop_button: Button = $VBox/BottomButtons/ShopButton
+@onready var shop_panel: Control = $ShopPanel
+@onready var shop_close_button: Button = $ShopPanel/Panel/ShopClose
+@onready var shop_biomass_label: Label = $ShopPanel/Panel/ShopBiomass
+@onready var mutant_grid: GridContainer = $ShopPanel/Panel/MutantGrid
+@onready var artifact_grid: GridContainer = $ShopPanel/Panel/ArtifactGrid
 @onready var save_button: Button = $VBox/BottomButtons/SaveButton
 
 # Панели
@@ -119,6 +125,8 @@ func _setup_connections():
 	menu_button.pressed.connect(_on_menu_pressed)
 	settings_button.pressed.connect(_on_settings_pressed)
 	settings_back_button.pressed.connect(_on_settings_back_pressed)
+	shop_button.pressed.connect(_on_shop_pressed)
+	shop_close_button.pressed.connect(_on_shop_close_pressed)
 	_setup_settings_sliders()
 	_setup_save_slot_selector()
 	save_button.pressed.connect(_on_save_pressed)
@@ -402,6 +410,60 @@ func _set_bus_volume(bus_name: String, value: float):
 func _on_settings_back_pressed():
 	_play_click_sound()
 	settings_screen.visible = false
+
+
+# ==================== МАГАЗИН ====================
+
+func _on_shop_pressed():
+	_play_click_sound()
+	shop_panel.visible = true
+	_rebuild_shop()
+
+
+func _on_shop_close_pressed():
+	_play_click_sound()
+	shop_panel.visible = false
+
+
+func _rebuild_shop():
+	"""Кнопки магазина из таблиц GachaData: имя + цена, покупка за биомассу лаборатории"""
+	for child in mutant_grid.get_children():
+		child.queue_free()
+	for child in artifact_grid.get_children():
+		child.queue_free()
+	var lab_biomass: float = lab_data.biomass if lab_data else 0.0
+	shop_biomass_label.text = "Биомасса лаборатории: " + str(int(lab_biomass))
+	for entry in GachaData.get_shop_mutants():
+		var type: String = entry[0]
+		var price: float = entry[2]
+		var btn := Button.new()
+		btn.text = entry[1] + "
+🧬" + str(int(price))
+		btn.custom_minimum_size = Vector2(160, 34)
+		btn.pressed.connect(_on_shop_buy.bind("mutant", type, price))
+		mutant_grid.add_child(btn)
+	for entry in GachaData.get_shop_artifacts():
+		var type: String = entry[0]
+		var price: float = entry[2]
+		var btn := Button.new()
+		btn.text = entry[1] + "
+🧬" + str(int(price))
+		btn.custom_minimum_size = Vector2(240, 34)
+		btn.pressed.connect(_on_shop_buy.bind("artifact", type, price))
+		artifact_grid.add_child(btn)
+
+
+func _on_shop_buy(kind: String, item_type: String, price: float):
+	var bought := false
+	if kind == "mutant":
+		bought = game_manager.buy_shop_mutant(item_type, price)
+	else:
+		bought = game_manager.buy_shop_artifact(item_type, price)
+	if bought:
+		_play_click_sound()
+		_rebuild_shop()
+	else:
+		_show_message("Недостаточно биомассы в лаборатории", 1.5)
 
 
 func _on_settings_pressed():

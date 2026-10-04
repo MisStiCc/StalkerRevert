@@ -35,6 +35,31 @@ const ARTIFACT_BONUS := {
 # Круглые волны выживания: сбалансированные награды
 const MILESTONE_WAVES := [10, 20, 30]
 
+# МАГАЗИН: покупка НЕтоповых мутантов и артефактов за биомассу лаборатории.
+# Купленный мутант бесплатно вступит в бой в начале следующего забега,
+# артефакт - заспавнится у монолита как приманка для сталкеров.
+# Химеры, псевдогиганта и легендарных артефактов в магазине нет - только гача и вехи.
+const SHOP_MUTANTS := [
+	["zombie", "Зомби", 30], ["dog_mutant", "Собака", 45], ["flesh", "Плоть", 45],
+	["snork_mutant", "Снорк", 75], ["pseudodog", "Псевдопёс", 75],
+	["poltergeist", "Полтергейст", 120], ["controller_mutant", "Контролёр", 120],
+	["bloodsucker", "Кровосос", 150],
+]
+const SHOP_ARTIFACTS := [
+	["battery_artifact", "Батарейка", 150],
+	["energy_artifact", "Энергетик", 350],
+	["clock_artifact", "Часы", 350],
+	["rare_artifact", "Редкий артефакт", 600],
+]
+
+
+static func get_shop_mutants() -> Array:
+	return SHOP_MUTANTS
+
+
+static func get_shop_artifacts() -> Array:
+	return SHOP_ARTIFACTS
+
 
 static func rarity_weights(level: int) -> Dictionary:
 	# Легендарки: ~4% на старте, до 10% к концу кампании

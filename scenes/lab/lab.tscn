@@ -327,9 +327,105 @@ offset_right = 250.0
 offset_bottom = 270.0
 text = "НАЗАД"
 
+[node name="ShopButton" type="Button" parent="VBox/BottomButtons" unique_id=445293369]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "МАГАЗИН"
+
 [node name="SaveButton" type="Button" parent="VBox/BottomButtons" unique_id=445293368]
 layout_mode = 2
 text = "СОХРАНИТЬ"
+
+[node name="ShopPanel" type="Control" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+
+[node name="Shade" type="ColorRect" parent="ShopPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.6)
+
+[node name="Panel" type="Panel" parent="ShopPanel"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -280.0
+offset_top = -210.0
+offset_right = 280.0
+offset_bottom = 210.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ShopTitle" type="Label" parent="ShopPanel/Panel"]
+layout_mode = 0
+offset_left = 0.0
+offset_top = 10.0
+offset_right = 560.0
+offset_bottom = 35.0
+text = "МАГАЗИН ЗОНЫ - припасы для забега"
+horizontal_alignment = 1
+
+[node name="ShopBiomass" type="Label" parent="ShopPanel/Panel"]
+layout_mode = 0
+offset_left = 0.0
+offset_top = 36.0
+offset_right = 560.0
+offset_bottom = 56.0
+text = "Биомасса лаборатории: 0"
+horizontal_alignment = 1
+
+[node name="MutantsHeader" type="Label" parent="ShopPanel/Panel"]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 68.0
+offset_right = 540.0
+offset_bottom = 88.0
+text = "МУТАНТЫ (вступят в бой в начале забега)"
+
+[node name="MutantGrid" type="GridContainer" parent="ShopPanel/Panel"]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 92.0
+offset_right = 540.0
+offset_bottom = 210.0
+columns = 3
+
+[node name="ArtifactsHeader" type="Label" parent="ShopPanel/Panel"]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 218.0
+offset_right = 540.0
+offset_bottom = 238.0
+text = "АРТЕФАКТЫ (приманка у монолита в забеге)"
+
+[node name="ArtifactGrid" type="GridContainer" parent="ShopPanel/Panel"]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 242.0
+offset_right = 540.0
+offset_bottom = 330.0
+columns = 2
+
+[node name="ShopClose" type="Button" parent="ShopPanel/Panel"]
+layout_mode = 0
+offset_left = 200.0
+offset_top = 340.0
+offset_right = 360.0
+offset_bottom = 375.0
+text = "НАЗАД"
 
 [node name="UpgradePanel" type="Control" parent="." unique_id=1648802834]
 visible = false

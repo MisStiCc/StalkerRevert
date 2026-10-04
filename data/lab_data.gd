@@ -29,6 +29,10 @@ var campaign_level_reached: int = 1
 # Награды гачи: выигранные мутанты и артефакты
 @export var unlocked_mutants: Array[String] = []
 @export var won_artifacts: Array[String] = []
+
+# Покупки магазина: придут в бой / заспавнятся у монолита в начале забега
+@export var pending_mutants: Array[String] = []
+@export var pending_artifacts: Array[String] = []
 @export var monolith_regen_level: int = 0
 @export var rare_chance_level: int = 0
 

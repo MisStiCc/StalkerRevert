@@ -63,6 +63,46 @@ func grant_artifact_reward(artifact_type: String):
 	save_game(0)
 
 
+func buy_shop_mutant(mutant_type: String, price: float) -> bool:
+	"""Магазин: купить мутанта за биомассу лаборатории (придёт на забег)"""
+	if not current_save_data or not current_save_data.lab_data:
+		return false
+	var lab = current_save_data.lab_data
+	if lab.biomass < price:
+		print("Магазин: недостаточно биомассы (нужно ", price, ")")
+		return false
+	lab.biomass -= price
+	lab.pending_mutants.append(mutant_type)
+	save_game(0)
+	return true
+
+
+func buy_shop_artifact(artifact_type: String, price: float) -> bool:
+	if not current_save_data or not current_save_data.lab_data:
+		return false
+	var lab = current_save_data.lab_data
+	if lab.biomass < price:
+		print("Магазин: недостаточно биомассы (нужно ", price, ")")
+		return false
+	lab.biomass -= price
+	lab.pending_artifacts.append(artifact_type)
+	save_game(0)
+	return true
+
+
+func consume_shop_purchases() -> Dictionary:
+	"""Забег начинается: забираем купленное из лаборатории"""
+	var result := {"mutants": [], "artifacts": []}
+	if current_save_data and current_save_data.lab_data:
+		var lab = current_save_data.lab_data
+		result["mutants"] = lab.pending_mutants.duplicate()
+		result["artifacts"] = lab.pending_artifacts.duplicate()
+		lab.pending_mutants.clear()
+		lab.pending_artifacts.clear()
+		save_game(0)
+	return result
+
+
 func has_chimera_unlocked() -> bool:
 	if current_save_data and current_save_data.lab_data:
 		return current_save_data.lab_data.unlocked_mutants.has("chimera")

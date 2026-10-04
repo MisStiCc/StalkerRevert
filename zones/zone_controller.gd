@@ -51,6 +51,8 @@ var run_params: Dictionary = {}
 var is_initialized: bool = false
 # Забег уже завершается (одноразовый finish_run)
 var is_run_finished: bool = false
+# Купленные в магазине артефакты: спавн у монолита на старте забега
+var _shop_artifacts_pending: Array[String] = []
 # Фаза подготовки: сталкеры не спавнятся, пока игрок не нажмёт СТАРТ
 var is_prep_phase: bool = true
 
@@ -325,6 +327,22 @@ func _initialize_run():
 	# Стартовая биомасса забега (остаток лаборатории + 300)
 	resource_manager.current_biomass = clamp(
 		run_params.get("start_biomass", 300.0), 0.0, max_biomass)
+	
+	# Покупки магазина: наградные мутанты в очередь, артефакты у монолита
+	var gm = get_tree().get_first_node_in_group("game_manager")
+	if gm and gm.has_method("consume_shop_purchases"):
+		var shop: Dictionary = gm.consume_shop_purchases()
+		for t in shop.get("mutants", []):
+			spawn_manager.queue_reward_mutant(t)
+		for a in shop.get("artifacts", []):
+			_shop_artifacts_pending.append(a)
+	
+	# Артефакты из магазина - приманка у монолита
+	for a in _shop_artifacts_pending:
+		if anomaly_manager:
+			anomaly_manager.create_artifact(a, Vector3(8.0, 1.8, 8.0), "common", 0.0)
+			print("Магазин: артефакт ", a, " размещён у монолита")
+	_shop_artifacts_pending.clear()
 
 	# Фаза подготовки: спавн сталкеров начнётся по кнопке СТАРТ в HUD
 	var run_label: String = "Забег #" + str(run_number)
