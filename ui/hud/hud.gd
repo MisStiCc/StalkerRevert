@@ -114,10 +114,12 @@ func _apply_prices():
 	}
 	for btn in anomalies:
 		var cost: int = int(am.get_anomaly_cost(anomalies[btn])) if am else 0
-		btn.text = btn.text + " ⚡" + str(cost)
+		btn.text = btn.text + "
+⚡" + str(cost)
 	for btn in mutants:
 		var cost: int = int(sm.get_mutant_cost(mutants[btn])) if sm else 0
-		btn.text = btn.text + " 🧬" + str(cost)
+		btn.text = btn.text + "
+🧬" + str(cost)
 
 
 func _connect_buttons():
