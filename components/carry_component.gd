@@ -27,21 +27,21 @@ var max_carry_weight: float = 10.0
 
 
 func _ready():
-    print("CarryComponent инициализирован", "CarryComponent")
+    pass # (лог отключён)
 
 
 func pick_up_artifact(artifact: Node) -> bool:
     if is_carrying:
-        print("Попытка подобрать артефакт, но уже есть", "CarryComponent")
+        pass # (лог отключён)
         return false
     
     if not is_instance_valid(artifact):
-        print("Попытка подобрать невалидный артефакт", "CarryComponent")
+        pass # (лог отключён)
         return false
     
     # Проверяем, что это артефакт
     if not artifact.has_method("collect"):
-        print("Объект не является артефактом: " + str(artifact), "CarryComponent")
+        pass # (лог отключён)
         return false
     
     # Подбираем
@@ -60,7 +60,7 @@ func pick_up_artifact(artifact: Node) -> bool:
         artifact.position = Vector3(0, 1.5, 0)
     
     artifact_picked_up.emit(artifact)
-    print("Артефакт подобран: " + artifact.name, "CarryComponent")
+    pass # (лог отключён)
     
     return true
 
@@ -92,7 +92,7 @@ func drop_artifact() -> bool:
         carried_artifact.set_collected(false)
     
     artifact_dropped.emit(carried_artifact)
-    print("Артефакт выброшен в " + str(world_pos), "CarryComponent")
+    pass # (лог отключён)
     
     carried_artifact = null
     is_carrying = false
@@ -114,7 +114,7 @@ func steal_artifact() -> bool:
         rarity = carried_artifact.get_rarity_name()
     
     artifact_stolen.emit(carried_artifact)
-    print("Артефакт украден! Редкость: " + rarity + ", ценность: " + str(value), "CarryComponent")
+    pass # (лог отключён)
     
     carried_artifact.queue_free()
     carried_artifact = null

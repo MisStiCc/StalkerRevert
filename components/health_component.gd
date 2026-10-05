@@ -101,7 +101,7 @@ func take_damage(amount: float, source: Node = null) -> float:
     var is_critical_hit = final_damage > amount * 0.8
     damaged.emit(final_damage, source, is_critical_hit)
     
-    print("Получен урон: " + str(final_damage) + " (исходный: " + str(amount) + ") от " + str(source), "HealthComponent")
+    # (лог отключён)
     
     if current_health <= 0:
         die(source)

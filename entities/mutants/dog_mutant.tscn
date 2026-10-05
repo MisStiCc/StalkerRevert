@@ -1,10 +1,18 @@
-[gd_scene load_steps=2 format=3 uid="uid://dog_mutant"]
+[gd_scene load_steps=3 format=3 uid="uid://dog_mutant"]
 
 [ext_resource type="Script" path="res://entities/mutants/dog_mutant.gd" id="1"]
 [ext_resource type="PackedScene" path="res://entities/mutants/base_mutant.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://models/dog_mutant.glb" id="3"]
 
 [node name="DogMutant" instance=ExtResource("2")]
 script = ExtResource("1")
+editable_children = true
+
+[node name="MeshInstance3D" parent="." index="0"]
+visible = false
+
+[node name="Model" parent="." instance=ExtResource("3")]
+transform = Transform3D(-1.2, 0, 0, 0, 1.2, 0, 0, 0, -1.2, 0, 0.787, 0)
 
 [node name="AttackTimer" type="Timer" parent="."]
 wait_time = 1.0

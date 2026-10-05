@@ -86,6 +86,13 @@ func _chase(_delta):
 		# "Химера: добыча увела от территории, возврат"  # (лог отключён)
 		return
 	
+	# Застрял у дома - прыжок прямо через препятствие (кинематика проходит сквозь)
+	if can_leap and not is_leaping and _stuck_time > 1.5:
+		var stuck_dist: float = global_position.distance_to(target_stalker.global_position)
+		if stuck_dist > 3.0 and stuck_dist < 30.0:
+			_start_leap()
+			return
+	
 	var direction = (target_stalker.global_position - global_position).normalized()
 	velocity = direction * speed
 	

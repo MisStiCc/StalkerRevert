@@ -63,13 +63,13 @@ func _process(delta):
 
 func add_energy(amount: float):
     current_energy += amount
-    print("Энергия +" + str(amount) + ", теперь: " + str(current_energy), "ResourceManager")
+    # (лог отключён)
 
 
 func spend_energy(amount: float) -> bool:
     if current_energy >= amount:
         current_energy -= amount
-        print("Энергия -" + str(amount) + ", осталось: " + str(current_energy), "ResourceManager")
+        # (лог отключён)
         return true
     print("Недостаточно энергии: нужно " + str(amount) + ", есть " + str(current_energy), "ResourceManager")
     return false
@@ -93,13 +93,13 @@ func _check_critical_energy():
 func add_biomass(amount: float):
     current_biomass += amount
     accumulated_biomass += amount
-    print("Биомасса +" + str(amount) + ", теперь: " + str(current_biomass), "ResourceManager")
+    # (лог отключён)
 
 
 func spend_biomass(amount: float) -> bool:
     if current_biomass >= amount:
         current_biomass -= amount
-        print("Биомасса -" + str(amount) + ", осталось: " + str(current_biomass), "ResourceManager")
+        # (лог отключён)
         return true
     print("Недостаточно биомассы: нужно " + str(amount) + ", есть " + str(current_biomass), "ResourceManager")
     return false
@@ -124,7 +124,7 @@ func _check_critical_biomass():
             return
         _critical_biomass_latched = true
         critical_biomass_reached.emit(get_biomass_percent())
-        print("Критический уровень биомассы: " + str(get_biomass_percent() * 100) + "%", "ResourceManager")
+        # (лог отключён)
     elif _critical_biomass_latched and current_biomass < max_biomass * critical_threshold:
         _critical_biomass_latched = false
 

@@ -383,6 +383,10 @@ func _apply_lab_bonuses():
 	
 	if bonuses.has("mutant_cost_mult") and spawn_manager:
 		spawn_manager.cost_multiplier = bonuses["mutant_cost_mult"]
+		# Ценники HUD рисуются до применения бонусов - перерисовать
+		var hud_prices = get_tree().get_first_node_in_group("hud")
+		if hud_prices and hud_prices.has_method("_apply_prices"):
+			hud_prices._apply_prices.call_deferred()
 	
 	print("Бонусы лаборатории применены: " + str(bonuses))
 
@@ -720,7 +724,7 @@ func _on_stalker_died(stalker: Node, biomass_returned: float):
 		stalker_type = stalker.get_stalker_type()
 	
 	Signals.stalker_died.emit(stalker, stalker_type, stalker.global_position, biomass_returned)
-	print("Сталкер погиб: " + stalker_type + ", возвращено биомассы: " + str(biomass_returned))
+	# (лог отключён)
 
 
 func _on_mutant_spawned(_mutant: Node, mutant_type: String):
@@ -876,7 +880,7 @@ func register_stalker(_stalker: Node):
 func on_stalker_died(stalker: Node, biomass_returned: float):
 	if resource_manager:
 		resource_manager.add_biomass(biomass_returned)
-		print("Биомасса добавлена (прямой вызов): " + str(biomass_returned))
+		# (лог отключён)
 	
 	progression_manager.record_stalker_killed()
 	

@@ -413,7 +413,7 @@ func _on_stalker_died(stalker: Node):
 	_stalkers_killed += 1
 	
 	stalker_died.emit(stalker, return_value)
-	print("Сталкер погиб, возвращено биомассы: " + str(return_value))
+	# (лог отключён)
 	# Биомассу начисляет BaseStalker._on_died -> ZoneController.on_stalker_died
 
 
