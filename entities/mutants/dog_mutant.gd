@@ -17,7 +17,7 @@ func _ready():
 	super._ready()
 	
 	_setup_label()
-	print("Dog mutant initialized")
+	# "Dog mutant initialized"  # (лог отключён)
 
 
 func _physics_process(delta):
@@ -93,12 +93,12 @@ func _attack(_delta):
 		target_stalker.take_damage(damage, self)
 		attacked_stalker.emit(target_stalker)
 		attack_timer.start()
-		print("DogMutant атакует!")
+		# "DogMutant атакует!"  # (лог отключён)
 
 
 func take_damage(dmg: float, source = null):
 	if randf() < dodge_chance:
-		print("DogMutant уклонился!")
+		# "DogMutant уклонился!"  # (лог отключён)
 		return
 	
 	super.take_damage(dmg, source)

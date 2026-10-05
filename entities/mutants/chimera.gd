@@ -36,7 +36,7 @@ func _ready():
 	add_child(leap_timer)
 	
 	_setup_label()
-	print("Chimera mutant initialized")
+	# "Chimera mutant initialized"  # (лог отключён)
 
 
 func _physics_process(delta):
@@ -83,7 +83,7 @@ func _chase(_delta):
 	if _spawn_position.distance_to(global_position) > leash_radius:
 		target_stalker = null
 		current_state = State.PATROL
-		print("Химера: добыча увела от территории, возврат")
+		# "Химера: добыча увела от территории, возврат"  # (лог отключён)
 		return
 	
 	var direction = (target_stalker.global_position - global_position).normalized()
@@ -102,7 +102,7 @@ func _start_leap():
 	if not target_stalker or not is_instance_valid(target_stalker):
 		return
 	
-	print("Chimera: прыгаю!")
+	# "Chimera: прыгаю!"  # (лог отключён)
 	is_leaping = true
 	can_leap = false
 	leap_target = target_stalker.global_position
@@ -142,7 +142,7 @@ func _handle_leap(delta):
 
 
 func _land():
-	print("Chimera: приземлился!")
+	# "Chimera: приземлился!"  # (лог отключён)
 	is_leaping = false
 	
 	var stalkers = get_tree().get_nodes_in_group("stalkers")
@@ -179,7 +179,7 @@ func _attack(_delta):
 			attacked_stalker.emit(target_stalker)
 		
 		attack_timer.start()
-		print("Chimera атакует!")
+		# "Chimera атакует!"  # (лог отключён)
 
 
 func _setup_label():

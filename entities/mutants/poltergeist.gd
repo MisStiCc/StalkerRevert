@@ -34,7 +34,7 @@ func _ready():
 	add_child(telekinesis_timer)
 	
 	_setup_label()
-	print("Poltergeist mutant initialized")
+	# "Poltergeist mutant initialized"  # (лог отключён)
 
 
 func _physics_process(delta):
@@ -106,7 +106,7 @@ func _use_telekinesis():
 	if not target_stalker or not is_instance_valid(target_stalker):
 		return
 	
-	print("Poltergeist использует телекинез!")
+	# "Poltergeist использует телекинез!"  # (лог отключён)
 	can_telekinesis = false
 	
 	if target_stalker.has_method("take_damage"):
@@ -123,7 +123,7 @@ func _on_telekinesis_cooldown_ended():
 func _try_become_invisible():
 	if not is_invisible and randf() < invisibility_threshold:
 		is_invisible = true
-		print("Poltergeist стал невидимым!")
+		# "Poltergeist стал невидимым!"  # (лог отключён)
 
 
 func _update_invisibility():
@@ -137,7 +137,7 @@ func _update_invisibility():
 
 func take_damage(dmg: float, source = null):
 	if randf() < 0.3:
-		print("Poltergeist избежал урона!")
+		# "Poltergeist избежал урона!"  # (лог отключён)
 		return
 	
 	is_invisible = false

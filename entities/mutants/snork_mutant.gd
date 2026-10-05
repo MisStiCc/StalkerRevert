@@ -33,7 +33,7 @@ func _ready():
 	add_child(jump_timer)
 	
 	_setup_label()
-	print("Snork mutant initialized")
+	# "Snork mutant initialized"  # (лог отключён)
 
 
 func _physics_process(delta):
@@ -88,7 +88,7 @@ func _try_jump():
 	if not target_stalker or not is_instance_valid(target_stalker):
 		return
 	
-	print("Snork прыгает!")
+	# "Snork прыгает!"  # (лог отключён)
 	jump_target = target_stalker.global_position
 	is_jumping = true
 	can_jump = false
@@ -133,7 +133,7 @@ func _land():
 		if dist < 3.0:
 			target_stalker.take_damage(damage * leap_damage_multiplier, self)
 			attacked_stalker.emit(target_stalker)
-			print("Snork атакует с прыжка!")
+			# "Snork атакует с прыжка!"  # (лог отключён)
 	
 	if is_instance_valid(target_stalker):
 		if global_position.distance_to(target_stalker.global_position) < 2.0:
@@ -162,7 +162,7 @@ func _attack(_delta):
 		target_stalker.take_damage(damage, self)
 		attacked_stalker.emit(target_stalker)
 		attack_timer.start()
-		print("Snork атакует!")
+		# "Snork атакует!"  # (лог отключён)
 		
 		if randf() < 0.3:
 			_jump_away()
@@ -179,7 +179,7 @@ func _jump_away():
 	_jump_start_time = Time.get_ticks_msec() / 1000.0
 	velocity.y = 2.0
 	jump_timer.start()
-	print("Snork отпрыгивает!")
+	# "Snork отпрыгивает!"  # (лог отключён)
 
 
 func _setup_label():

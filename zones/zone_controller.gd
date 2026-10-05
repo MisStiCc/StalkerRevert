@@ -777,7 +777,11 @@ func _on_game_won(run_number: int, reward: float):
 	Signals.game_won.emit(run_number, reward)
 	
 	print("ПОБЕДА! Забег #" + str(run_number) + " награда: " + str(reward))
-	_grant_gacha_rewards(run_number)
+	# Гача по уровню КАМПАНИИ, а не по номеру забега
+	var gacha_level := run_number
+	if run_params.has("campaign_params"):
+		gacha_level = int(run_params.get("campaign_level", run_number))
+	_grant_gacha_rewards(clampi(gacha_level, 1, 100))
 	_grant_campaign_rolls()
 	finish_run(true)
 

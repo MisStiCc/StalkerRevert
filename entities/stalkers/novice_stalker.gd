@@ -32,9 +32,11 @@ func _ready():
 	# Поиск монолита
 	monolith = get_tree().get_first_node_in_group("monolith")
 	if monolith:
-		print("NoviceStalker: Монолит НАЙДЕН на позиции ", monolith.global_position)
+		pass
+		# "NoviceStalker: Монолит НАЙДЕН на позиции ", monolith.global_position  # (лог отключён)
 	else:
-		print("NoviceStalker: ОШИБКА - Монолит НЕ НАЙДЕН в группе 'monolith'!")
+		pass
+		# "NoviceStalker: ОШИБКА - Монолит НЕ НАЙДЕН в группе 'monolith'!"  # (лог отключён)
 	
 	# Настройка StateMachine с зависимостями
 	if state_machine:
@@ -55,7 +57,7 @@ func _ready():
 	# Высоту задаёт спавн по лучу (рельеф) и физика: фиксированный Y=1.8
 	# на холмах закапывал тело в рельеф, и оно проваливалось насквозь
 	
-	print("NoviceStalker готов на позиции ", global_position)
+	# "NoviceStalker готов на позиции ", global_position  # (лог отключён)
 
 
 func _init_components():
@@ -128,7 +130,7 @@ func _physics_hook(delta):
 		_monolith_check_timer = 0.0
 		if monolith and is_instance_valid(monolith):
 			var dist = global_position.distance_to(monolith.global_position)
-			print("NoviceStalker: расстояние до монолита = ", dist)
+			# "NoviceStalker: расстояние до монолита = ", dist  # (лог отключён)
 	
 	# ГРАВИТАЦИЯ
 	if not is_on_floor():
@@ -159,7 +161,7 @@ func _check_height():
 	velocity = Vector3.ZERO
 	if result:
 		global_position.y = result.position.y + STALKER_HEIGHT
-		print("NoviceStalker: провалился под землю, возвращён на рельеф Y=", global_position.y)
+		# "NoviceStalker: провалился под землю, возвращён на рельеф Y=", global_position.y  # (лог отключён)
 	else:
 		# Земли нет (чанк выгружен) - возвращаем к монолиту
 		var mx = 10.0
@@ -168,7 +170,7 @@ func _check_height():
 			mx = monolith.global_position.x + 10.0
 			mz = monolith.global_position.z + 10.0
 		global_position = Vector3(mx, STALKER_HEIGHT, mz)
-		print("NoviceStalker: земли нет под сталкером, возвращён к монолиту")
+		# "NoviceStalker: земли нет под сталкером, возвращён к монолиту"  # (лог отключён)
 
 
 func _check_attack(delta):
@@ -187,7 +189,7 @@ func _attack_target(target: Node):
 		target.take_damage(damage, self)
 		attack_timer = attack_cooldown
 		attacked.emit(target)
-		print("NoviceStalker атакует ", target.name)
+		# "NoviceStalker атакует ", target.name  # (лог отключён)
 
 
 func _log_status():
@@ -199,14 +201,15 @@ func _log_status():
 	if current_target and is_instance_valid(current_target):
 		target_info = "цель: " + current_target.name + " на дистанции " + str(global_position.distance_to(current_target.global_position))
 	
-	print("NoviceStalker: состояние=", state_name, ", ", target_info)
+	# "NoviceStalker: состояние=", state_name, ", ", target_info  # (лог отключён)
 	
 	if navigation_component:
 		print("NoviceStalker: навигация active=", navigation_component.is_navigating(), 
 			  " target=", navigation_component.target_position)
 	
 	if monolith and is_instance_valid(monolith):
-		print("NoviceStalker: дистанция до монолита = ", global_position.distance_to(monolith.global_position))
+		pass
+		# "NoviceStalker: дистанция до монолита = ", global_position.distance_to(monolith.global_position)  # (лог отключён)
 
 
 func _on_threat_detected(threat: Node, type: String):

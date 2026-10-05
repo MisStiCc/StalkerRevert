@@ -33,9 +33,11 @@ func _ready():
 	
 	monolith = get_tree().get_first_node_in_group("monolith")
 	if monolith:
-		print("VeteranStalker: Монолит НАЙДЕН на позиции ", monolith.global_position)
+		pass
+		# "VeteranStalker: Монолит НАЙДЕН на позиции ", monolith.global_position  # (лог отключён)
 	else:
-		print("VeteranStalker: ОШИБКА - Монолит НЕ НАЙДЕН!")
+		pass
+		# "VeteranStalker: ОШИБКА - Монолит НЕ НАЙДЕН!"  # (лог отключён)
 	
 	if state_machine:
 		state_machine.setup({
@@ -54,7 +56,7 @@ func _ready():
 	# Высоту задаёт спавн по лучу (рельеф) и физика: фиксированный Y=1.8
 	# на холмах закапывал тело в рельеф, и оно проваливалось насквозь
 	
-	print("VeteranStalker готов на позиции ", global_position)
+	# "VeteranStalker готов на позиции ", global_position  # (лог отключён)
 
 
 func _init_components():
@@ -121,7 +123,7 @@ func _physics_hook(delta):
 		_monolith_check_timer = 0.0
 		if monolith and is_instance_valid(monolith):
 			var dist = global_position.distance_to(monolith.global_position)
-			print("VeteranStalker: расстояние до монолита = ", dist)
+			# "VeteranStalker: расстояние до монолита = ", dist  # (лог отключён)
 	
 	_update_speed_based_on_distance()
 	
@@ -153,7 +155,7 @@ func _check_height():
 	velocity = Vector3.ZERO
 	if result:
 		global_position.y = result.position.y + STALKER_HEIGHT
-		print("VeteranStalker: провалился под землю, возвращён на рельеф Y=", global_position.y)
+		# "VeteranStalker: провалился под землю, возвращён на рельеф Y=", global_position.y  # (лог отключён)
 	else:
 		# Земли нет (чанк выгружен) - возвращаем к монолиту
 		var mx = 10.0
@@ -162,7 +164,7 @@ func _check_height():
 			mx = monolith.global_position.x + 10.0
 			mz = monolith.global_position.z + 10.0
 		global_position = Vector3(mx, STALKER_HEIGHT, mz)
-		print("VeteranStalker: земли нет под сталкером, возвращён к монолиту")
+		# "VeteranStalker: земли нет под сталкером, возвращён к монолиту"  # (лог отключён)
 
 
 func _update_speed_based_on_distance():
@@ -198,7 +200,7 @@ func _attack_target(target: Node):
 		target.take_damage(damage, self)
 		attack_timer = attack_cooldown
 		attacked.emit(target)
-		print("VeteranStalker атакует ", target.name)
+		# "VeteranStalker атакует ", target.name  # (лог отключён)
 
 
 func _on_threat_detected(threat: Node, type: String):

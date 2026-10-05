@@ -34,9 +34,11 @@ func _ready():
 	
 	monolith = get_tree().get_first_node_in_group("monolith")
 	if monolith:
-		print("MasterStalker: Монолит НАЙДЕН на позиции ", monolith.global_position)
+		pass
+		# "MasterStalker: Монолит НАЙДЕН на позиции ", monolith.global_position  # (лог отключён)
 	else:
-		print("MasterStalker: ОШИБКА - Монолит НЕ НАЙДЕН!")
+		pass
+		# "MasterStalker: ОШИБКА - Монолит НЕ НАЙДЕН!"  # (лог отключён)
 	
 	if state_machine:
 		state_machine.setup({
@@ -55,7 +57,7 @@ func _ready():
 	# Высоту задаёт спавн по лучу (рельеф) и физика: фиксированный Y=1.8
 	# на холмах закапывал тело в рельеф, и оно проваливалось насквозь
 	
-	print("MasterStalker готов на позиции ", global_position)
+	# "MasterStalker готов на позиции ", global_position  # (лог отключён)
 
 
 func _init_components():
@@ -126,7 +128,7 @@ func _physics_hook(delta):
 		_monolith_check_timer = 0.0
 		if monolith and is_instance_valid(monolith):
 			var dist = global_position.distance_to(monolith.global_position)
-			print("MasterStalker: расстояние до монолита = ", dist)
+			# "MasterStalker: расстояние до монолита = ", dist  # (лог отключён)
 	
 	_scan_timer += delta
 	if state_machine and state_machine.current_state == GameEnums.StalkerState.PATROL and _scan_timer > _scan_interval:
@@ -161,7 +163,7 @@ func _check_height():
 	velocity = Vector3.ZERO
 	if result:
 		global_position.y = result.position.y + STALKER_HEIGHT
-		print("MasterStalker: провалился под землю, возвращён на рельеф Y=", global_position.y)
+		# "MasterStalker: провалился под землю, возвращён на рельеф Y=", global_position.y  # (лог отключён)
 	else:
 		# Земли нет (чанк выгружен) - возвращаем к монолиту
 		var mx = 10.0
@@ -170,7 +172,7 @@ func _check_height():
 			mx = monolith.global_position.x + 10.0
 			mz = monolith.global_position.z + 10.0
 		global_position = Vector3(mx, STALKER_HEIGHT, mz)
-		print("MasterStalker: земли нет под сталкером, возвращён к монолиту")
+		# "MasterStalker: земли нет под сталкером, возвращён к монолиту"  # (лог отключён)
 
 
 func _scan_for_targets():
@@ -200,7 +202,7 @@ func _scan_for_targets():
 		current_target = best_target
 		if state_machine:
 			state_machine.set_state(GameEnums.StalkerState.ATTACK_MUTANT)
-		print("MasterStalker: найдена цель для атаки - ", best_target.name)
+		# "MasterStalker: найдена цель для атаки - ", best_target.name  # (лог отключён)
 
 
 func _check_attack(delta):
@@ -226,7 +228,7 @@ func _attack_target(target: Node):
 			target.take_damage(damage * 0.5, self)
 		attack_timer = attack_cooldown
 		attacked.emit(target)
-		print("MasterStalker выполняет комбо на ", target.name)
+		# "MasterStalker выполняет комбо на ", target.name  # (лог отключён)
 		return
 	
 	if randf() < _combo_chance:
@@ -240,13 +242,13 @@ func _attack_target(target: Node):
 		target.take_damage(damage * 2.0, self)
 		attack_timer = attack_cooldown
 		attacked.emit(target)
-		print("MasterStalker добивает ", target.name)
+		# "MasterStalker добивает ", target.name  # (лог отключён)
 		return
 	
 	target.take_damage(damage, self)
 	attack_timer = attack_cooldown
 	attacked.emit(target)
-	print("MasterStalker атакует ", target.name)
+	# "MasterStalker атакует ", target.name  # (лог отключён)
 
 
 func _on_threat_detected(threat: Node, type: String):

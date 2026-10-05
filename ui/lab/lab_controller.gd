@@ -280,6 +280,9 @@ func _format_number(value: float) -> String:
 
 func _setup_campaign_selector():
 	"""Селектор уровня кампании в шапке лаборатории: ◀ уровень ▶ и режим сложности"""
+	# По умолчанию стоим на ТЕКУЩЕМ рубеже, а не переигрываем первый уровень
+	if game_manager:
+		_campaign_level = game_manager.get_campaign_level()
 	var header: HBoxContainer = get_node_or_null("VBox/Header")
 	if not header:
 		print("lab_controller: Header не найден, селектор кампании не построен")

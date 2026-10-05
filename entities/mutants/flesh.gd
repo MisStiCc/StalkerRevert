@@ -31,7 +31,7 @@ func _ready():
 	add_child(charge_timer)
 	
 	_setup_label()
-	print("Flesh mutant initialized")
+	# "Flesh mutant initialized"  # (лог отключён)
 
 
 func _physics_process(delta):
@@ -61,7 +61,7 @@ func _patrol(delta):
 		target_stalker = nearest_stalker
 		current_state = State.CHASE
 		accumulated_damage = 0.0
-		print("Flesh стал агрессивным!")
+		# "Flesh стал агрессивным!"  # (лог отключён)
 	
 	super._patrol(delta)
 
@@ -87,7 +87,7 @@ func _start_charge():
 	if not target_stalker or not is_instance_valid(target_stalker):
 		return
 	
-	print("Flesh начинает таран!")
+	# "Flesh начинает таран!"  # (лог отключён)
 	is_charging = true
 	can_charge = false
 	charge_target = target_stalker.global_position
@@ -110,7 +110,7 @@ func _handle_charge(_delta):
 
 
 func _end_charge():
-	print("Flesh закончил таран!")
+	# "Flesh закончил таран!"  # (лог отключён)
 	is_charging = false
 	
 	var stalkers = get_tree().get_nodes_in_group("stalkers")
@@ -120,7 +120,7 @@ func _end_charge():
 			if dist < 4.0:
 				stalker.take_damage(charge_damage, self)
 				attacked_stalker.emit(stalker)
-				print("Flesh нанёс урон тараном!")
+				# "Flesh нанёс урон тараном!"  # (лог отключён)
 	
 	if is_instance_valid(target_stalker):
 		current_state = State.CHASE
@@ -146,7 +146,7 @@ func _attack(_delta):
 		target_stalker.take_damage(damage, self)
 		attacked_stalker.emit(target_stalker)
 		attack_timer.start()
-		print("Flesh атакует!")
+		# "Flesh атакует!"  # (лог отключён)
 
 
 func take_damage(dmg: float, source = null):
@@ -155,7 +155,7 @@ func take_damage(dmg: float, source = null):
 	if accumulated_damage > aggression_threshold and current_state == State.PATROL:
 		current_state = State.CHASE
 		accumulated_damage = 0.0
-		print("Flesh разъярен!")
+		# "Flesh разъярен!"  # (лог отключён)
 	
 	super.take_damage(dmg, source)
 

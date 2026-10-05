@@ -20,7 +20,7 @@ func _ready():
 	super._ready()
 	
 	_setup_label()
-	print("Zombie mutant initialized")
+	# "Zombie mutant initialized"  # (лог отключён)
 
 
 func _physics_process(delta):
@@ -87,17 +87,17 @@ func _attack(_delta):
 			_try_infect(target_stalker)
 		
 		attack_timer.start()
-		print("Zombie атакует!")
+		# "Zombie атакует!"  # (лог отключён)
 
 
 func _try_infect(stalker: Node3D):
 	if stalker.has_method("apply_infection"):
 		stalker.apply_infection(10.0)
-		print("Zombie: заразил сталкера!")
+		# "Zombie: заразил сталкера!"  # (лог отключён)
 
 
 func _become_raging():
-	print("Zombie: вхожу в ярость!")
+	# "Zombie: вхожу в ярость!"  # (лог отключён)
 	is_raging = true
 	accumulated_rage = 0.0
 	damage = 25.0

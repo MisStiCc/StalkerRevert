@@ -29,7 +29,7 @@ func _ready():
 	add_child(stomp_timer)
 	
 	_setup_label()
-	print("Pseudogiant mutant initialized")
+	# "Pseudogiant mutant initialized"  # (лог отключён)
 
 
 func _physics_process(delta):
@@ -81,7 +81,7 @@ func _chase(_delta):
 
 
 func _ground_stomp():
-	print("Pseudogiant: удар по земле!")
+	# "Pseudogiant: удар по земле!"  # (лог отключён)
 	is_stomping = true
 	can_stomp = false
 	
@@ -111,7 +111,7 @@ func _create_shockwave():
 				if stalker.has_method("stun"):
 					stalker.stun(1.0 * damage_mult)
 	
-	print("Pseudogiant создал ударную волну!")
+	# "Pseudogiant создал ударную волну!"  # (лог отключён)
 
 
 func _on_stomp_cooldown_ended():
@@ -136,7 +136,7 @@ func _attack(_delta):
 			target_stalker.stun(0.5)
 		
 		attack_timer.start()
-		print("Pseudogiant атакует!")
+		# "Pseudogiant атакует!"  # (лог отключён)
 
 
 func _setup_label():

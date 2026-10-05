@@ -17,7 +17,7 @@ var current_state: GameEnums.StalkerState = GameEnums.StalkerState.SEEK_MONOLITH
 		if current_state != value:
 			var old = current_state
 			current_state = value
-			print("StateMachine: состояние изменено с ", _get_state_name(old), " на ", _get_state_name(value))
+			# "StateMachine: состояние изменено с ", _get_state_name(old), " на ", _get_state_name(value)  # (лог отключён)
 			state_changed.emit(old, value)
 			_on_state_entered(value)
 
@@ -54,7 +54,7 @@ var _lost_path_time: float = 0.0
 
 func _ready():
 	set_process(true)
-	print("StateMachineComponent инициализирован")
+	# "StateMachineComponent инициализирован"  # (лог отключён)
 
 
 func setup(deps: Dictionary):
@@ -65,13 +65,13 @@ func setup(deps: Dictionary):
 	health = deps.get("health")
 	monolith = deps.get("monolith")
 	
-	print("StateMachine: зависимости установлены")
-	print("  - поведение: ", behavior_strategy)
-	print("  - навигация: ", navigation != null)
-	print("  - память: ", memory != null)
-	print("  - переноска: ", carry != null)
-	print("  - здоровье: ", health != null)
-	print("  - монолит: ", monolith != null)
+	# "StateMachine: зависимости установлены"  # (лог отключён)
+	# "  - поведение: ", behavior_strategy  # (лог отключён)
+	# "  - навигация: ", navigation != null  # (лог отключён)
+	# "  - память: ", memory != null  # (лог отключён)
+	# "  - переноска: ", carry != null  # (лог отключён)
+	# "  - здоровье: ", health != null  # (лог отключён)
+	# "  - монолит: ", monolith != null  # (лог отключён)
 
 
 func _process(delta):
@@ -85,7 +85,7 @@ func _process(delta):
 	# Логируем состояние каждые 3 секунды
 	if _log_timer > 3.0:
 		_log_timer = 0.0
-		print("StateMachine: текущее состояние=", _get_state_name(current_state))
+		# "StateMachine: текущее состояние=", _get_state_name(current_state)  # (лог отключён)
 	
 	# Обработка текущего состояния
 	match current_state:
@@ -117,14 +117,14 @@ func _process(delta):
 
 func _process_idle(_delta):
 	if current_state_time > 2.0:
-		print("StateMachine: IDLE -> PATROL (таймаут)")
+		# "StateMachine: IDLE -> PATROL (таймаут)"  # (лог отключён)
 		set_state(GameEnums.StalkerState.PATROL)
 
 
 func _process_patrol(_delta):
 	if navigation and not navigation.is_navigating():
 		var random_pos = stalker.global_position + Vector3(randf_range(-20, 20), 0, randf_range(-20, 20))
-		print("StateMachine: PATROL - двигаюсь к случайной точке ", random_pos)
+		# "StateMachine: PATROL - двигаюсь к случайной точке ", random_pos  # (лог отключён)
 		navigation.move_to(random_pos)
 
 
@@ -135,15 +135,15 @@ func _process_seek_artifact(_delta):
 			var dist = stalker.global_position.distance_to(target.global_position)
 			if dist < 2.0 and carry and not carry.has_artifact():
 				if carry.can_pick_up(target):
-					print("StateMachine: SEEK_ARTIFACT - подбираю артефакт")
+					# "StateMachine: SEEK_ARTIFACT - подбираю артефакт"  # (лог отключён)
 					carry.pick_up_artifact(target)
 			elif navigation and (not navigation.is_navigating() or _target_update_timer > 1.0):
-				print("StateMachine: SEEK_ARTIFACT - двигаюсь к артефакту ", target.global_position)
+				# "StateMachine: SEEK_ARTIFACT - двигаюсь к артефакту ", target.global_position  # (лог отключён)
 				navigation.move_to(target.global_position)
 				_target_update_timer = 0.0
 				_last_target_position = target.global_position
 	elif navigation and navigation.is_navigating():
-		print("StateMachine: SEEK_ARTIFACT - нет артефактов, останавливаюсь")
+		# "StateMachine: SEEK_ARTIFACT - нет артефактов, останавливаюсь"  # (лог отключён)
 		navigation.stop()
 
 
@@ -154,7 +154,7 @@ func _process_seek_monolith(delta):
 		var dist = stalker.global_position.distance_to(monolith.global_position)
 		if dist < 5.0:
 			_monolith_reached = true
-			print("StateMachine: SEEK_MONOLITH - достиг монолита!")
+			# "StateMachine: SEEK_MONOLITH - достиг монолита!"  # (лог отключён)
 			if navigation:
 				navigation.stop()
 			var zc = get_tree().get_first_node_in_group("zone_controller")
@@ -205,7 +205,7 @@ func _update_anti_stuck(target_pos: Vector3, delta):
 	if flat.length() > 145.0:
 		flat = flat.normalized() * 145.0
 		detour = Vector3(flat.x, detour.y, detour.z)
-	print("StateMachine: антизастревание #", _stuck_detours, " - обходная точка ", detour)
+	# "StateMachine: антизастревание #", _stuck_detours, " - обходная точка ", detour  # (лог отключён)
 	navigation.move_to(detour)
 
 
@@ -216,7 +216,7 @@ func _process_flee(_delta):
 			if threat and is_instance_valid(threat):
 				var flee_dir = (stalker.global_position - threat.global_position).normalized()
 				var flee_pos = stalker.global_position + flee_dir * 30
-				print("StateMachine: FLEE - убегаю от ", threat.name, " в ", flee_pos)
+				# "StateMachine: FLEE - убегаю от ", threat.name, " в ", flee_pos  # (лог отключён)
 				navigation.move_to(flee_pos)
 
 
@@ -231,7 +231,7 @@ func _process_attack_anomaly(_delta):
 				target.take_damage(stalker.damage, stalker)
 				stalker.attack_timer = stalker.attack_cooldown
 		elif navigation and (not navigation.is_navigating() or _target_update_timer > 1.0):
-			print("StateMachine: ATTACK_ANOMALY - двигаюсь к аномалии")
+			# "StateMachine: ATTACK_ANOMALY - двигаюсь к аномалии"  # (лог отключён)
 			navigation.move_to(target.global_position)
 			_target_update_timer = 0.0
 
@@ -249,7 +249,7 @@ func _process_attack_mutant(_delta):
 				target.take_damage(stalker.damage, stalker)
 				stalker.attack_timer = stalker.attack_cooldown
 		elif horizontal_dist >= 3.0 and navigation and (not navigation.is_navigating() or _target_update_timer > 1.0):
-			print("StateMachine: ATTACK_MUTANT - двигаюсь к мутанту")
+			# "StateMachine: ATTACK_MUTANT - двигаюсь к мутанту"  # (лог отключён)
 			navigation.move_to(target.global_position)
 			_target_update_timer = 0.0
 
@@ -260,13 +260,13 @@ func _process_carry_artifact(delta):
 		var dist_from_monolith: float = stalker.global_position.distance_to(
 			monolith.global_position if monolith and is_instance_valid(monolith) else Vector3.ZERO)
 		if dist_from_monolith > 150.0:
-			print("StateMachine: CARRY_ARTIFACT - артефакт украден (вышел за периметр)")
+			# "StateMachine: CARRY_ARTIFACT - артефакт украден (вышел за периметр)"  # (лог отключён)
 			carry.steal_artifact()
 			set_state(GameEnums.StalkerState.SEEK_MONOLITH)
 			return
 		_update_anti_stuck(_get_edge_position(), delta)
 		if navigation and (not navigation.is_navigating() or _target_update_timer > 2.0):
-			print("StateMachine: CARRY_ARTIFACT - несу артефакт к краю")
+			# "StateMachine: CARRY_ARTIFACT - несу артефакт к краю"  # (лог отключён)
 			navigation.move_to(_get_edge_position())
 			_target_update_timer = 0.0
 
@@ -284,7 +284,7 @@ func _check_transitions():
 	# 2. Если несем артефакт
 	if carry and carry.has_artifact():
 		if current_state != GameEnums.StalkerState.CARRY_ARTIFACT:
-			print("StateMachine: переход в CARRY_ARTIFACT (есть артефакт)")
+			# "StateMachine: переход в CARRY_ARTIFACT (есть артефакт)"  # (лог отключён)
 			set_state(GameEnums.StalkerState.CARRY_ARTIFACT)
 		return
 	
@@ -297,33 +297,37 @@ func _check_transitions():
 			var threat_dist = stalker.global_position.distance_to(nearest_threat.global_position)
 			if threat_dist <= memory.vision_range:
 				if behavior_strategy and behavior_strategy.should_flee_from(nearest_threat):
-					if current_state != GameEnums.StalkerState.FLEE:
-						print("StateMachine: переход в FLEE от ", nearest_threat.name)
-						set_state(GameEnums.StalkerState.FLEE)
-						if navigation:
-							var flee_dir = (stalker.global_position - nearest_threat.global_position).normalized()
-							var flee_target = stalker.global_position + flee_dir * 30
-							# Не убегаем за периметр (за 150м кончается земля)
-							var flat_f = Vector2(flee_target.x, flee_target.z)
-							if flat_f.length() > 145.0:
-								flat_f = flat_f.normalized() * 145.0
-								flee_target = Vector3(flat_f.x, flee_target.y, flee_target.z)
-							navigation.move_to(flee_target)
-					return
+					# Паника не бесконечна: уже бежим и угроза дальше 15м - хватит
+					var keep_fleeing: bool = current_state != GameEnums.StalkerState.FLEE or threat_dist <= 15.0
+					if keep_fleeing:
+						if current_state != GameEnums.StalkerState.FLEE:
+							# "StateMachine: переход в FLEE от ", nearest_threat.name  # (лог отключён)
+							set_state(GameEnums.StalkerState.FLEE)
+							if navigation:
+								var flee_dir = (stalker.global_position - nearest_threat.global_position).normalized()
+								var flee_target = stalker.global_position + flee_dir * 30
+								# Не убегаем за периметр (за 150м кончается земля)
+								var flat_f = Vector2(flee_target.x, flee_target.z)
+								if flat_f.length() > 145.0:
+									flat_f = flat_f.normalized() * 145.0
+									flee_target = Vector3(flat_f.x, flee_target.y, flee_target.z)
+								navigation.move_to(flee_target)
+						return
+					# Выпадаем из паники - идут обычные переходы (обычно SEEK_MONOLITH)
 				elif behavior_strategy and behavior_strategy.should_attack(nearest_threat):
 					var target_state = GameEnums.StalkerState.ATTACK_ANOMALY
 					if nearest_threat.is_in_group("mutants"):
 						target_state = GameEnums.StalkerState.ATTACK_MUTANT
 					
 					if current_state != target_state:
-						print("StateMachine: переход в атаку на ", nearest_threat.name)
+						# "StateMachine: переход в атаку на ", nearest_threat.name  # (лог отключён)
 						set_state(target_state)
 					return
 	
 	# 4. Поиск артефактов
 	if memory and memory.has_artifacts() and behavior_strategy and behavior_strategy.prefers_artifacts():
 		if current_state != GameEnums.StalkerState.SEEK_ARTIFACT:
-			print("StateMachine: переход в SEEK_ARTIFACT")
+			# "StateMachine: переход в SEEK_ARTIFACT"  # (лог отключён)
 			set_state(GameEnums.StalkerState.SEEK_ARTIFACT)
 		return
 	
@@ -332,7 +336,7 @@ func _check_transitions():
 	# Без монолита - патрулируем.
 	if current_state != GameEnums.StalkerState.SEEK_MONOLITH:
 		if monolith and is_instance_valid(monolith):
-			print("StateMachine: переход в SEEK_MONOLITH (цель по умолчанию)")
+			# "StateMachine: переход в SEEK_MONOLITH (цель по умолчанию)"  # (лог отключён)
 			set_state(GameEnums.StalkerState.SEEK_MONOLITH)
 		elif current_state != GameEnums.StalkerState.PATROL:
 			set_state(GameEnums.StalkerState.PATROL)
@@ -342,7 +346,7 @@ func _on_state_entered(state: GameEnums.StalkerState):
 	current_state_time = 0.0
 	state_entered.emit(state)
 	
-	print("StateMachine: вход в состояние ", _get_state_name(state))
+	# "StateMachine: вход в состояние ", _get_state_name(state)  # (лог отключён)
 	
 	_stuck_time = 0.0
 	_stuck_detours = 0
@@ -367,7 +371,7 @@ func _on_state_entered(state: GameEnums.StalkerState):
 func _on_state_exited(state: GameEnums.StalkerState):
 	state_exited.emit(state)
 	
-	print("StateMachine: выход из состояния ", _get_state_name(state))
+	# "StateMachine: выход из состояния ", _get_state_name(state)  # (лог отключён)
 	
 	match state:
 		GameEnums.StalkerState.FLEE:
@@ -387,7 +391,7 @@ func _try_opportunistic_pickup():
 	if target and is_instance_valid(target):
 		var to_target = target.global_position - stalker.global_position
 		if Vector2(to_target.x, to_target.z).length() < 3.0 and carry.can_pick_up(target):
-			print("StateMachine: подобрал артефакт на бегу - ", target.name)
+			# "StateMachine: подобрал артефакт на бегу - ", target.name  # (лог отключён)
 			carry.pick_up_artifact(target)
 
 

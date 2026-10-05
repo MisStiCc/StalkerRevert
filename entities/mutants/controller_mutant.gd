@@ -28,7 +28,7 @@ func _ready():
 	add_child(control_timer)
 	
 	_setup_label()
-	print("Controller mutant initialized")
+	# "Controller mutant initialized"  # (лог отключён)
 
 
 func _physics_process(delta):
@@ -83,7 +83,7 @@ func _try_control():
 	if not target_stalker or not is_instance_valid(target_stalker):
 		return
 	
-	print("Controller пытается взять контроль!")
+	# "Controller пытается взять контроль!"  # (лог отключён)
 	is_controlling = true
 	can_control = false
 	controlled_stalker = target_stalker
@@ -98,13 +98,13 @@ func _try_control():
 func _apply_control_effect(stalker: Node3D):
 	if stalker.has_method("set_controlled"):
 		stalker.set_controlled(true, self)
-		print("Controller взял под контроль!")
+		# "Controller взял под контроль!"  # (лог отключён)
 
 
 func _on_control_ended():
 	if is_instance_valid(controlled_stalker) and controlled_stalker.has_method("set_controlled"):
 		controlled_stalker.set_controlled(false, self)
-		print("Controller отпустил контроль")
+		# "Controller отпустил контроль"  # (лог отключён)
 	
 	is_controlling = false
 	controlled_stalker = null
@@ -138,7 +138,7 @@ func _attack(_delta):
 
 func take_damage(dmg: float, source = null):
 	if is_controlling and randf() < 0.3:
-		print("Контроль прерван уроном!")
+		# "Контроль прерван уроном!"  # (лог отключён)
 		control_timer.stop()
 		_on_control_ended()
 	

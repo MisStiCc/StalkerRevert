@@ -120,7 +120,7 @@ func _update_effects(delta):
 		stun_timer -= delta
 		if stun_timer <= 0:
 			is_stunned = false
-			print("Stalker: оглушение закончилось")
+			# "Stalker: оглушение закончилось"  # (лог отключён)
 
 
 func _ready_hook():
@@ -145,7 +145,7 @@ func _attack_target(target: Node):
 		target.take_damage(damage, self)
 		attack_timer = attack_cooldown
 		attacked.emit(target)
-		print("BaseStalker: атака по ", target.name)
+		# "BaseStalker: атака по ", target.name  # (лог отключён)
 
 
 func _on_died(_source: Node):
@@ -185,38 +185,38 @@ func _on_threat_detected(threat: Node, type: String):
 	if not current_target:
 		current_target = threat
 		target_acquired.emit(threat, type)
-		print("BaseStalker: обнаружена угроза ", type, " - ", threat.name)
+		# "BaseStalker: обнаружена угроза ", type, " - ", threat.name  # (лог отключён)
 
 
 func _on_threat_lost(threat: Node):
 	if current_target == threat:
 		current_target = null
 		target_lost.emit(threat)
-		print("BaseStalker: угроза потеряна - ", threat.name)
+		# "BaseStalker: угроза потеряна - ", threat.name  # (лог отключён)
 
 
 func _on_artifact_detected(artifact: Node):
 	if carry_component and not carry_component.has_artifact():
 		if carry_component.can_pick_up(artifact) and navigation_component:
 			navigation_component.move_to(artifact.global_position)
-			print("BaseStalker: двигаюсь к артефакту")
+			# "BaseStalker: двигаюсь к артефакту"  # (лог отключён)
 
 
 func _on_artifact_picked_up(artifact: Node):
 	var value = artifact.get_value() if artifact.has_method("get_value") else 0
 	artifact_picked_up.emit(artifact, value)
-	print("BaseStalker: артефакт подобран, ценность ", value)
+	# "BaseStalker: артефакт подобран, ценность ", value  # (лог отключён)
 
 
 func _on_artifact_dropped(artifact: Node):
 	artifact_dropped.emit(artifact)
-	print("BaseStalker: артефакт выброшен")
+	# "BaseStalker: артефакт выброшен"  # (лог отключён)
 
 
 func _on_artifact_stolen(artifact: Node):
 	var value = artifact.get_value() if artifact.has_method("get_value") else 0
 	artifact_stolen.emit(artifact, value)
-	print("BaseStalker: артефакт украден, ценность ", value)
+	# "BaseStalker: артефакт украден, ценность ", value  # (лог отключён)
 
 
 # ==================== МЕТОДЫ ДЛЯ ЭФФЕКТОВ АНОМАЛИЙ ====================
@@ -228,7 +228,7 @@ func stun(duration: float):
 	# Останавливаем движение
 	if navigation_component:
 		navigation_component.stop()
-	print("Stalker оглушён на ", duration, " секунд")
+	# "Stalker оглушён на ", duration, " секунд"  # (лог отключён)
 
 
 func apply_slow(factor: float):
@@ -236,7 +236,7 @@ func apply_slow(factor: float):
 	slow_factor = factor
 	if navigation_component:
 		navigation_component.set_speed(speed * slow_factor)
-	print("Stalker замедлен, фактор ", factor)
+	# "Stalker замедлен, фактор ", factor  # (лог отключён)
 
 
 func apply_time_dilation(time_scale: float):
@@ -244,7 +244,7 @@ func apply_time_dilation(time_scale: float):
 	time_dilation = time_scale
 	if navigation_component:
 		navigation_component.set_speed(speed * time_dilation)
-	print("Stalker: дилатация времени ", time_scale)
+	# "Stalker: дилатация времени ", time_scale  # (лог отключён)
 
 
 func reset_effects():
@@ -254,7 +254,7 @@ func reset_effects():
 	time_dilation = 1.0
 	if navigation_component:
 		navigation_component.set_speed(speed)
-	print("Stalker: эффекты сброшены")
+	# "Stalker: эффекты сброшены"  # (лог отключён)
 
 
 # ==================== ПУБЛИЧНЫЕ МЕТОДЫ ====================

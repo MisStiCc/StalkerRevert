@@ -56,7 +56,7 @@ func _ready():
 	add_child(leap_timer)
 	
 	_setup_label()
-	print("Bloodsucker mutant initialized: ", subspecies)
+	# "Bloodsucker mutant initialized: ", subspecies  # (лог отключён)
 
 
 func _physics_process(delta):
@@ -81,7 +81,7 @@ func _try_go_invisible():
 	invisibility_timer.wait_time = invisibility_duration
 	invisibility_timer.start()
 	
-	print("Bloodsucker стал невидимым!")
+	# "Bloodsucker стал невидимым!"  # (лог отключён)
 
 
 func _on_invisibility_ended():
@@ -89,7 +89,7 @@ func _on_invisibility_ended():
 		return
 		
 	is_invisible = false
-	print("Bloodsucker стал видимым")
+	# "Bloodsucker стал видимым"  # (лог отключён)
 	
 	await get_tree().create_timer(invisibility_cooldown).timeout
 	can_go_invisible = true
@@ -132,7 +132,7 @@ func _chase(_delta):
 	if _spawn_position.distance_to(global_position) > leash_radius:
 		target_stalker = null
 		current_state = State.PATROL
-		print("Кровосос: добыча увела от территории, возврат")
+		# "Кровосос: добыча увела от территории, возврат"  # (лог отключён)
 		return
 	
 	var direction = (target_stalker.global_position - global_position).normalized()
@@ -152,7 +152,7 @@ func _ambush_attack():
 	if not target_stalker or not is_instance_valid(target_stalker):
 		return
 	
-	print("Bloodsucker атакует из засады!")
+	# "Bloodsucker атакует из засады!"  # (лог отключён)
 	is_invisible = false
 	invisibility_timer.stop()
 	
@@ -185,7 +185,7 @@ func _attack(_delta):
 		target_stalker.take_damage(damage, self)
 		attacked_stalker.emit(target_stalker)
 		attack_timer.start()
-		print("Bloodsucker атакует!")
+		# "Bloodsucker атакует!"  # (лог отключён)
 
 
 func take_damage(dmg: float, source = null):
@@ -195,7 +195,7 @@ func take_damage(dmg: float, source = null):
 	if is_invisible:
 		is_invisible = false
 		invisibility_timer.stop()
-		print("Bloodsucker стал видимым из-за урона")
+		# "Bloodsucker стал видимым из-за урона"  # (лог отключён)
 	
 	super.take_damage(dmg, source)
 

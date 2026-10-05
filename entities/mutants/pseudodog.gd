@@ -52,7 +52,7 @@ func _ready():
 	add_child(howl_timer)
 	
 	_setup_label()
-	print("Pseudodog mutant initialized: ", subspecies)
+	# "Pseudodog mutant initialized: ", subspecies  # (лог отключён)
 
 
 func _find_monolith() -> Node:
@@ -85,7 +85,7 @@ func _physics_process(delta):
 			var target_pos = monolith.global_position + dir_to_monolith * (max_distance_from_monolith * 0.7)
 			if navigation_component:
 				navigation_component.move_to(target_pos)
-				print("Pseudodog возвращается к монолиту")
+				# "Pseudodog возвращается к монолиту"  # (лог отключён)
 			return
 	
 	# Если мы возвращались и уже достаточно близко - сбрасываем флаг
@@ -145,7 +145,7 @@ func _patrol(delta):
 		target_stalker = nearest_stalker
 		current_state = State.CHASE
 		_returning_to_monolith = false
-		print("Pseudodog нашёл цель: ", nearest_stalker.name)
+		# "Pseudodog нашёл цель: ", nearest_stalker.name  # (лог отключён)
 	
 	super._patrol(delta)
 
@@ -189,7 +189,7 @@ func _flank_target():
 	
 	velocity.x = flank_dir.x * speed
 	velocity.z = flank_dir.z * speed
-	print("Pseudodog фланкирует!")
+	# "Pseudodog фланкирует!"  # (лог отключён)
 
 
 func _try_psy_howl():
@@ -205,7 +205,7 @@ func _psy_howl():
 	if not target_stalker or not is_instance_valid(target_stalker):
 		return
 	
-	print("Pseudodog использует пси-вой!")
+	# "Pseudodog использует пси-вой!"  # (лог отключён)
 	can_howl = false
 	
 	if target_stalker.has_method("stun"):
@@ -237,7 +237,7 @@ func _attack(delta):
 		target_stalker.take_damage(total_damage, self)
 		attacked_stalker.emit(target_stalker)
 		attack_timer.start()
-		print("Pseudodog атакует! Урон: ", total_damage)
+		# "Pseudodog атакует! Урон: ", total_damage  # (лог отключён)
 	
 	super._attack(delta)
 

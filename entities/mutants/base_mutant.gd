@@ -125,7 +125,7 @@ func _setup_navigation_component():
 	navigation_component.nav_agent = nav_agent
 	navigation_component.move_speed = speed
 	add_child(navigation_component)
-	print("NavigationComponent добавлен для мутанта")
+	# "NavigationComponent добавлен для мутанта"  # (лог отключён)
 
 
 func _physics_process(delta):
@@ -261,7 +261,7 @@ func _find_best_target():
 		target_stalker = nearest
 		current_state = State.CHASE
 		spotted_stalker.emit(nearest)
-		print("Мутант нашёл цель: ", nearest.name)
+		# "Мутант нашёл цель: ", nearest.name  # (лог отключён)
 
 
 func _on_stalker_detected(body: Node3D):
