@@ -201,7 +201,7 @@ func _update_anti_stuck(target_pos: Vector3, delta):
 	var flat := Vector2(detour.x, detour.z)
 	if flat.length() > 145.0:
 		flat = flat.normalized() * 145.0
-		detour = Vector3(flat.x, detour.y, flat.z)
+		detour = Vector3(flat.x, detour.y, detour.z)
 	print("StateMachine: антизастревание #", _stuck_detours, " - обходная точка ", detour)
 	navigation.move_to(detour)
 
@@ -251,7 +251,7 @@ func _process_attack_mutant(_delta):
 			_target_update_timer = 0.0
 
 
-func _process_carry_artifact(_delta):
+func _process_carry_artifact(delta):
 	if carry and carry.has_artifact():
 		# Артефакт украден, когда сталкер вынес его за периметр Зоны
 		var dist_from_monolith: float = stalker.global_position.distance_to(
