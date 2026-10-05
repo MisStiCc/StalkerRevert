@@ -1,10 +1,18 @@
-[gd_scene load_steps=2 format=3 uid="uid://pseudogiant"]
+[gd_scene load_steps=3 format=3 uid="uid://pseudogiant"]
 
 [ext_resource type="Script" path="res://entities/mutants/pseudogiant.gd" id="1"]
 [ext_resource type="PackedScene" path="res://entities/mutants/base_mutant.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://models/pseudogiant.glb" id="3"]
 
 [node name="Pseudogiant" instance=ExtResource("2")]
 script = ExtResource("1")
+editable_children = true
+
+[node name="MeshInstance3D" parent="." index="0"]
+visible = false
+
+[node name="Model" parent="." instance=ExtResource("3")]
+transform = Transform3D(-2.4, 0, 0, 0, 2.4, 0, 0, 0, -2.4, 0, 2.28, 0)
 
 [node name="AttackTimer" type="Timer" parent="."]
 wait_time = 1.0
