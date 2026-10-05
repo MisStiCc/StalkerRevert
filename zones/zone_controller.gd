@@ -550,27 +550,37 @@ func _grant_campaign_rolls():
 	if not run_params.has("campaign_params"):
 		return
 	var completed: int = int(run_params.get("campaign_level", 0))
-	var rolls: int = GachaData.campaign_roll_reward(completed)
-	if rolls <= 0:
-		return
 	var gm_rolls = get_tree().get_first_node_in_group("game_manager")
-	if gm_rolls:
-		gm_rolls.grant_gacha_rolls(rolls, "кампания: уровень " + str(completed))
+	if not gm_rolls:
+		return
+	var rolls: int = GachaData.campaign_roll_reward(completed)
+	if rolls > 0:
+		gm_rolls.grant_mutant_rolls(rolls, "кампания: уровень " + str(completed))
 		_gacha_rewards_log.append(Loc.t("reward.gacha_rolls", {"n": rolls}))
+	var anomaly_rolls: int = GachaData.campaign_anomaly_roll_reward(completed)
+	if anomaly_rolls > 0:
+		gm_rolls.grant_anomaly_rolls(anomaly_rolls, "кампания: уровень " + str(completed))
+		_gacha_rewards_log.append(Loc.t("reward.anomaly_rolls", {"n": anomaly_rolls}))
 
 
 ## Крутки за каждые 10 волн выживания (видимо в HUD сразу)
 func _grant_survival_rolls(wave_number: int):
-	var rolls: int = GachaData.survival_roll_reward(wave_number)
-	if rolls <= 0:
-		return
 	var gm_rolls = get_tree().get_first_node_in_group("game_manager")
-	if gm_rolls:
-		gm_rolls.grant_gacha_rolls(rolls, "выживание: волна " + str(wave_number))
+	if not gm_rolls:
+		return
+	var hud_rolls = get_tree().get_first_node_in_group("hud")
+	var rolls: int = GachaData.survival_roll_reward(wave_number)
+	if rolls > 0:
+		gm_rolls.grant_mutant_rolls(rolls, "выживание: волна " + str(wave_number))
 		_gacha_rewards_log.append(Loc.t("reward.gacha_rolls", {"n": rolls}))
-		var hud_rolls = get_tree().get_first_node_in_group("hud")
 		if hud_rolls and hud_rolls.has_method("show_reward_note"):
 			hud_rolls.show_reward_note(Loc.t("hud.rolls_note", {"n": rolls}))
+	var anomaly_rolls: int = GachaData.survival_anomaly_roll_reward(wave_number)
+	if anomaly_rolls > 0:
+		gm_rolls.grant_anomaly_rolls(anomaly_rolls, "выживание: волна " + str(wave_number))
+		_gacha_rewards_log.append(Loc.t("reward.anomaly_rolls", {"n": anomaly_rolls}))
+		if hud_rolls and hud_rolls.has_method("show_reward_note"):
+			hud_rolls.show_reward_note(Loc.t("hud.anomaly_rolls_note", {"n": anomaly_rolls}))
 
 
 # ==================== СОБЫТИЯ ВЫЖИВАНИЯ ====================

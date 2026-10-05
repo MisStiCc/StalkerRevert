@@ -43,9 +43,11 @@ var _target_update_timer: float = 0.0
 var _log_timer: float = 0.0
 # Одноразовый триггер прибытия к монолиту
 var _monolith_reached: bool = false
-# Антизастревание: стоим на месте слишком долго - обходим с смещением
+# Антизастревание: стоим на месте слишком долго - перпендикулярный обход
+# с эскалацией радиуса (обходные точки ВДОЛЬ маршрута вели в то же препятствие)
 var _stuck_pos: Vector3 = Vector3.ZERO
 var _stuck_time: float = 0.0
+var _stuck_detours: int = 0
 # Прямой ход при потере пути (дыры в навмеше на стыках чанков)
 var _lost_path_time: float = 0.0
 
@@ -171,23 +173,37 @@ func _process_seek_monolith(delta):
 				navigation.move_to(monolith.global_position)
 		else:
 			_lost_path_time = 0.0
-		# Антизастревание: 6 секунд почти без движения - пробуем обходную точку
-		_stuck_time += delta
-		if stalker.global_position.distance_to(_stuck_pos) < 1.5:
-			if _stuck_time > 6.0 and navigation:
-				var off = Vector3(randf_range(-12, 12), 0.0, randf_range(-12, 12))
-				var detour = monolith.global_position + off
-				# Обходная точка не дальше периметра (за 150м кончается земля)
-				var flat = Vector2(detour.x, detour.z)
-				if flat.length() > 145.0:
-					flat = flat.normalized() * 145.0
-					detour = Vector3(flat.x, detour.y, flat.z)
-				print("StateMachine: антизастревание - обходная точка ", detour)
-				navigation.move_to(detour)
-				_stuck_time = 0.0
-		else:
-			_stuck_pos = stalker.global_position
-			_stuck_time = 0.0
+		# Антизастревание v2: перпендикулярный обход с эскалацией
+		_update_anti_stuck(monolith.global_position, delta)
+
+
+## Антизастревание v2: 6с почти без движения -> обходная точка ПЕРПЕНДИКУЛЯРНО
+## маршруту от текущей позиции (не у цели!), радиус растёт с числом попыток.
+## target_pos - куда сталкер идёт (монолит, край карты)
+func _update_anti_stuck(target_pos: Vector3, delta):
+	_stuck_time += delta
+	if stalker.global_position.distance_to(_stuck_pos) >= 1.0:
+		_stuck_pos = stalker.global_position
+		_stuck_time = 0.0
+		_stuck_detours = 0
+		return
+	if _stuck_time < 6.0 or not navigation:
+		return
+	_stuck_time = 0.0
+	_stuck_detours += 1
+	var dir: Vector3 = target_pos - stalker.global_position
+	dir.y = 0.0
+	dir = dir.normalized() if dir.length() > 0.1 else Vector3.FORWARD
+	var perp := Vector3(-dir.z, 0.0, dir.x)
+	var side := 1.0 if randf() < 0.5 else -1.0
+	var radius: float = 10.0 + 8.0 * float(_stuck_detours)
+	var detour: Vector3 = stalker.global_position + perp * side * radius + dir * 5.0
+	var flat := Vector2(detour.x, detour.z)
+	if flat.length() > 145.0:
+		flat = flat.normalized() * 145.0
+		detour = Vector3(flat.x, detour.y, flat.z)
+	print("StateMachine: антизастревание #", _stuck_detours, " - обходная точка ", detour)
+	navigation.move_to(detour)
 
 
 func _process_flee(_delta):
@@ -245,6 +261,7 @@ func _process_carry_artifact(_delta):
 			carry.steal_artifact()
 			set_state(GameEnums.StalkerState.SEEK_MONOLITH)
 			return
+		_update_anti_stuck(_get_edge_position(), delta)
 		if navigation and (not navigation.is_navigating() or _target_update_timer > 2.0):
 			print("StateMachine: CARRY_ARTIFACT - несу артефакт к краю")
 			navigation.move_to(_get_edge_position())
@@ -323,6 +340,9 @@ func _on_state_entered(state: GameEnums.StalkerState):
 	state_entered.emit(state)
 	
 	print("StateMachine: вход в состояние ", _get_state_name(state))
+	
+	_stuck_time = 0.0
+	_stuck_detours = 0
 	
 	match state:
 		GameEnums.StalkerState.IDLE:

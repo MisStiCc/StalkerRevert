@@ -57,6 +57,17 @@ static func campaign_roll_reward(completed_level: int) -> int:
 static func survival_roll_reward(completed_wave: int) -> int:
 	return 3 if int(completed_wave) > 0 and int(completed_wave) % 10 == 0 else 0
 
+
+## Крутки АНОМАЛИЙНОЙ гачи (артефакты): только за серьёзное -
+## каждый 30-й уровень кампании +10 (30/60/90)
+static func campaign_anomaly_roll_reward(completed_level: int) -> int:
+	return 10 if int(completed_level) > 0 and int(completed_level) % 30 == 0 else 0
+
+
+## Крутки аномалийной гачи за выживание: каждая 30-я волна +10
+static func survival_anomaly_roll_reward(completed_wave: int) -> int:
+	return 10 if int(completed_wave) > 0 and int(completed_wave) % 30 == 0 else 0
+
 # Уровень кампании -> что открывается (мутанты по силе, арты по редкости)
 const UNLOCK_TABLE := {
 	3: {"artifacts": ["slime_artifact", "spark_artifact"]},

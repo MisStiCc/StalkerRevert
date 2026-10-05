@@ -113,29 +113,61 @@ func upgrade_artifact_star(artifact_type: String) -> bool:
 
 # ==================== ФЕРМА: КОПИИ И КОРМ ====================
 
-## Скормить копию ЭТОГО же типа: 1 копия = +1 звезда
-func feed_same_copy(mutant_type: String) -> String:
+## Рецепт новой звезды: копии x НОВАЯ звезда (2-я - 2 копии, 5-я - 5)
+## + очки корма (2/4/6/8) + корм должен быть с числом звёзд ЦЕЛИ
+func get_star_requirements(mutant_type: String) -> Dictionary:
 	var lab = get_lab_data()
-	if lab.get_farm_copies(mutant_type) <= 0:
-		return "Нет копий этого мутанта на ферме"
 	var stars: int = lab.get_mutant_stars(mutant_type)
-	if stars >= LabData.MAX_STARS:
+	var copies_need: int = stars + 1
+	var points_need: int = GachaData.get_star_feed_cost(stars)
+	var copies_have: int = lab.get_farm_copies(mutant_type)
+	var points_have: int = lab.get_star_progress(mutant_type)
+	return {
+		"stars": stars,
+		"max": stars >= LabData.MAX_STARS,
+		"copies_have": copies_have, "copies_need": copies_need,
+		"points_have": points_have, "points_need": points_need,
+		"ready": copies_have >= copies_need and points_have >= points_need,
+	}
+
+
+## Повысить звезду по полному рецепту (кнопка на ферме)
+func try_upgrade_star(mutant_type: String) -> String:
+	var lab = get_lab_data()
+	var req: Dictionary = get_star_requirements(mutant_type)
+	if bool(req.get("max")):
 		return "Звёзды уже максимальны"
-	lab.consume_farm_copy(mutant_type)
+	if int(req.get("copies_have")) < int(req.get("copies_need")):
+		return "Нужно копий: %d/%d" % [int(req.get("copies_have")), int(req.get("copies_need"))]
+	if int(req.get("points_have")) < int(req.get("points_need")):
+		return "Нужно корма: %d/%d" % [int(req.get("points_have")), int(req.get("points_need"))]
+	for i in range(int(req.get("copies_need"))):
+		lab.consume_farm_copy(mutant_type)
+	lab.clear_star_progress(mutant_type)
 	lab.add_mutant_star(mutant_type)
-	print("Ферма: копия %s -> звезда %d/%d★" % [mutant_type, stars + 1, LabData.MAX_STARS])
+	var new_stars: int = lab.get_mutant_stars(mutant_type)
+	print("Ферма: %s -> %d/%d★ (копий списано %d)" % [mutant_type, new_stars, LabData.MAX_STARS, int(req.get("copies_need"))])
 	save_to_active_slot()
-	return "ЗВЕЗДА! %s теперь %d/%d★" % [GachaData.display_name(mutant_type), stars + 1, LabData.MAX_STARS]
+	return "ЗВЕЗДА! %s теперь %d/%d★" % [GachaData.display_name(mutant_type), new_stars, LabData.MAX_STARS]
 
 
-## Начислить крутки в ОБЕ гачи (кампания/выживание)
-func grant_gacha_rolls(count: int, source: String = ""):
+## Начислить крутки гачи МУТАНТОВ
+func grant_mutant_rolls(count: int, source: String = ""):
 	if count <= 0 or not current_save_data or not current_save_data.lab_data:
 		return
 	var lab = current_save_data.lab_data
 	lab.gacha_rolls_mutants += count
+	print("Крутки гачи мутантов +", count, " (", source, "), всего ", lab.gacha_rolls_mutants)
+	save_to_active_slot()
+
+
+## Начислить крутки АНОМАЛИЙНОЙ гачи (артефакты открывают аномалии)
+func grant_anomaly_rolls(count: int, source: String = ""):
+	if count <= 0 or not current_save_data or not current_save_data.lab_data:
+		return
+	var lab = current_save_data.lab_data
 	lab.gacha_rolls_artifacts += count
-	print("Крутки гачи +", count, " (", source, "): мутанты ", lab.gacha_rolls_mutants, ", арты ", lab.gacha_rolls_artifacts)
+	print("Аномалийные крутки +", count, " (", source, "), всего ", lab.gacha_rolls_artifacts)
 	save_to_active_slot()
 
 
@@ -197,28 +229,28 @@ func spin_artifact_gacha(times: int) -> Array:
 	return results
 
 
-## Скормить копию ДРУГОГО типа как корм: очки по редкости корма,
-## при наборе порога (2/4/6/8) - звезда цели
+## Скормить копию ДРУГОГО типа как корм: очки по редкости корма.
+## Корм должен быть с тем же числом звёзд, что у цели (звёздная пирамида)
 func feed_fodder(fodder_type: String, target_type: String) -> String:
 	var lab = get_lab_data()
 	if fodder_type == target_type:
-		return "Копию этого типа скормите кнопкой +★"
+		return "Копии цели идут в рецепт повышения, не в корм"
 	if lab.get_farm_copies(fodder_type) <= 0:
 		return "Нет копий корма на ферме"
 	var stars: int = lab.get_mutant_stars(target_type)
 	if stars >= LabData.MAX_STARS:
 		return "У цели уже максимальные звёзды"
+	var fodder_stars: int = lab.get_mutant_stars(fodder_type)
+	if fodder_stars != stars:
+		return "Корм должен быть с %d★ (у %s сейчас %d★)" % [stars, GachaData.display_name(fodder_type), fodder_stars]
 	var points: int = GachaData.get_fodder_value(fodder_type, true)
 	lab.consume_farm_copy(fodder_type)
 	var progress: int = lab.add_star_progress(target_type, points)
 	var need: int = GachaData.get_star_feed_cost(stars)
-	print("Ферма: копия %s (+%d) -> %s, прогресс %d/%d" % [fodder_type, points, target_type, progress, need])
-	if progress >= need:
-		lab.add_mutant_star(target_type)
-		lab.clear_star_progress(target_type)
-		save_to_active_slot()
-		return "ЗВЕЗДА! %s теперь %d/%d★" % [GachaData.display_name(target_type), stars + 1, LabData.MAX_STARS]
+	print("Ферма: копия %s (+%d) -> %s, корм %d/%d" % [fodder_type, points, target_type, progress, need])
 	save_to_active_slot()
+	if progress >= need:
+		return "Корма достаточно (%d/%d) - теперь нужны копии: %d" % [progress, need, stars + 1]
 	return "Корм принят: %d/%d до звезды" % [progress, need]
 
 

@@ -634,27 +634,18 @@ func _rebuild_star_panel():
 		return
 	star_biomass_label.text = Loc.t("stars.biomass_line", {"n": int(lab_data.biomass)})
 
-	var mutants: Array[String] = []
-	for t in lab_data.unlocked_mutants:
-		if not mutants.has(t):
-			mutants.append(t)
 	var artifacts: Array[String] = []
 	for t in lab_data.won_artifacts:
 		if not artifacts.has(t):
 			artifacts.append(t)
 
-	if mutants.is_empty() and artifacts.is_empty():
+	if artifacts.is_empty():
 		var empty := Label.new()
-		empty.text = Loc.t("stars.empty")
+		empty.text = Loc.t("stars.artifacts_only")
 		star_list.add_child(empty)
 		return
 
-	if not mutants.is_empty():
-		star_list.add_child(_make_star_section(Loc.t("stars.mutants_header")))
-	for type in mutants:
-		star_list.add_child(_make_star_row("mutant", type))
-	if not artifacts.is_empty():
-		star_list.add_child(_make_star_section(Loc.t("stars.artifacts_header")))
+	star_list.add_child(_make_star_section(Loc.t("stars.artifacts_header")))
 	for type in artifacts:
 		star_list.add_child(_make_star_row("artifact", type))
 
@@ -918,18 +909,24 @@ func _rebuild_farm_panel():
 		return
 	farm_title_label.text = Loc.t("farm.title")
 
-	# Режим кормления: выбор цели для выбранного корма
+	# Режим кормления: цель должна получать корм СВОЕЙ звёздности
 	if not _feed_fodder.is_empty():
 		var fodder_type: String = _feed_fodder[0]
 		var points: int = GachaData.get_fodder_value(fodder_type, true)
-		farm_list.add_child(_make_farm_section(Loc.t("farm.pick_target", {"fodder": Loc.type_name(fodder_type), "points": points})))
+		var fodder_stars: int = lab_data.get_mutant_stars(fodder_type)
+		farm_list.add_child(_make_farm_section(Loc.t("farm.fodder_star_rule", {"fodder": Loc.type_name(fodder_type), "points": points, "stars": fodder_stars})))
 		var cancel := Button.new()
 		cancel.text = Loc.t("lab.back")
 		cancel.pressed.connect(_on_feed_cancel)
 		farm_list.add_child(cancel)
+		var target_stars: int = fodder_stars
+		var found := false
 		for type in lab_data.unlocked_mutants:
-			if type == fodder_type:
+			if type == fodder_type or lab_data.get_farm_copies(type) <= 0:
 				continue
+			if lab_data.get_mutant_stars(type) != target_stars:
+				continue  # корм той же звёздности, что и цель
+			found = true
 			var row := HBoxContainer.new()
 			var stars: int = lab_data.get_mutant_stars(type)
 			var name_label := Label.new()
@@ -941,34 +938,48 @@ func _rebuild_farm_panel():
 			btn.pressed.connect(_on_feed_confirm.bind(type))
 			row.add_child(btn)
 			farm_list.add_child(row)
+		if not found:
+			var none := Label.new()
+			none.text = Loc.t("farm.no_matching_fodder", {"n": target_stars})
+			farm_list.add_child(none)
 		return
 
-	var copies_found := false
+	# Обычный режим: строки с рецептом звезды
+	farm_list.add_child(_make_farm_section(Loc.t("farm.recipe")))
+	var any_row := false
 	for type in lab_data.unlocked_mutants:
-		var copies: int = lab_data.get_farm_copies(type)
-		if copies <= 0:
+		var req: Dictionary = game_manager.get_star_requirements(type)
+		if int(req.get("copies_have")) <= 0 and int(req.get("points_have")) <= 0:
 			continue
-		copies_found = true
+		any_row = true
 		var row := HBoxContainer.new()
-		var stars: int = lab_data.get_mutant_stars(type)
+		var stars: int = int(req.get("stars"))
 		var name_label := Label.new()
-		name_label.text = "%s %s - %s" % [Loc.type_name(type), LabData.stars_text(stars), Loc.t("farm.copies", {"n": copies})]
+		name_label.text = "%s %s - %s, %s" % [
+			Loc.type_name(type), LabData.stars_text(stars),
+			Loc.t("farm.copies_need", {"have": int(req.get("copies_have")), "need": int(req.get("copies_need"))}),
+			Loc.t("farm.points_need", {"have": int(req.get("points_have")), "need": int(req.get("points_need"))})]
 		name_label.tooltip_text = Loc.t("farm.value_tip", {"points": GachaData.get_fodder_value(type, true)})
 		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(name_label)
-		if stars < LabData.MAX_STARS:
-			var star_btn := Button.new()
-			star_btn.text = Loc.t("farm.star_btn")
-			star_btn.pressed.connect(_on_farm_same_star.bind(type))
-			row.add_child(star_btn)
-		if copies > 1:
-			var feed_btn := Button.new()
-			feed_btn.text = Loc.t("farm.feed_btn")
-			feed_btn.pressed.connect(_on_farm_feed_pressed.bind(type))
-			row.add_child(feed_btn)
+		if bool(req.get("max")):
+			var max_label := Label.new()
+			max_label.text = Loc.t("stars.max")
+			row.add_child(max_label)
+		else:
+			var up_btn := Button.new()
+			up_btn.text = Loc.t("farm.upgrade_btn", {"n": stars + 1})
+			up_btn.disabled = not bool(req.get("ready"))
+			up_btn.pressed.connect(_on_farm_upgrade.bind(type))
+			row.add_child(up_btn)
+			if lab_data.get_farm_copies(type) > 0:
+				var feed_btn := Button.new()
+				feed_btn.text = Loc.t("farm.feed_btn")
+				feed_btn.pressed.connect(_on_farm_feed_pressed.bind(type))
+				row.add_child(feed_btn)
 		farm_list.add_child(row)
 
-	if not copies_found:
+	if not any_row:
 		var empty := Label.new()
 		empty.text = Loc.t("farm.empty")
 		farm_list.add_child(empty)
@@ -980,10 +991,10 @@ func _make_farm_section(text: String) -> Label:
 	return label
 
 
-func _on_farm_same_star(type: String):
+func _on_farm_upgrade(type: String):
 	_play_click_sound()
-	var msg: String = game_manager.feed_same_copy(type)
-	print("Ферма: ", msg)
+	var msg: String = game_manager.try_upgrade_star(type)
+	_show_message(msg, 2.0)
 	_rebuild_farm_panel()
 	_refresh_ui()
 
