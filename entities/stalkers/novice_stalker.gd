@@ -129,7 +129,7 @@ func _physics_hook(delta):
 	if _monolith_check_timer > 5.0:
 		_monolith_check_timer = 0.0
 		if monolith and is_instance_valid(monolith):
-			var dist = global_position.distance_to(monolith.global_position)
+			var _dist = global_position.distance_to(monolith.global_position)
 			# "NoviceStalker: расстояние до монолита = ", dist  # (лог отключён)
 	
 	# ГРАВИТАЦИЯ
@@ -193,23 +193,8 @@ func _attack_target(target: Node):
 
 
 func _log_status():
-	var state_name = "unknown"
-	if state_machine:
-		state_name = state_machine.get_state_name()
-	
-	var target_info = "нет цели"
-	if current_target and is_instance_valid(current_target):
-		target_info = "цель: " + current_target.name + " на дистанции " + str(global_position.distance_to(current_target.global_position))
-	
-	# "NoviceStalker: состояние=", state_name, ", ", target_info  # (лог отключён)
-	
-	if navigation_component:
-		print("NoviceStalker: навигация active=", navigation_component.is_navigating(), 
-			  " target=", navigation_component.target_position)
-	
-	if monolith and is_instance_valid(monolith):
-		pass
-		# "NoviceStalker: дистанция до монолита = ", global_position.distance_to(monolith.global_position)  # (лог отключён)
+	# Логирование состояния отключено (было спамом в консоль)
+	pass
 
 
 func _on_threat_detected(threat: Node, type: String):

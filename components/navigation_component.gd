@@ -128,13 +128,13 @@ func _process(delta):
 		var next = nav_agent.get_next_path_position()
 		var dist_to_target = entity.global_position.distance_to(target_position) if target_position != Vector3.ZERO else 0.0
 		var path_size = nav_agent.get_current_navigation_path().size()
-		print("Navigation: entity=", entity.name, 
-			  " moving=", is_moving,
-			  " pos=", Vector3(entity.global_position.x, 0, entity.global_position.z),
-			  " target=", Vector3(target_position.x, 0, target_position.z),
-			  " dist=", dist_to_target,
-			  " next=", Vector3(next.x, 0, next.z),
-			  " path_len=", path_size)
+		# print("Navigation: entity=", entity.name, 
+			  # " moving=", is_moving,
+			  # " pos=", Vector3(entity.global_position.x, 0, entity.global_position.z),
+			  # " target=", Vector3(target_position.x, 0, target_position.z),
+			  # " dist=", dist_to_target,
+			  # " next=", Vector3(next.x, 0, next.z),
+			  # " path_len=", path_size)
 
 
 func _check_target_reachable(target: Vector3) -> bool:
@@ -241,8 +241,8 @@ func move_to(position: Vector3):
 		# ближайшая точка - это край карты, и сталкеры уйдут туда вместо цели.
 		# State machine периодически повторяет move_to, так что цель заработает,
 		# когда навмеш достроится.
-		print("NavigationComponent: цель далеко от навмеша! Цель: ", position,
-			  " Ближайшая точка: ", closest_point, " Дистанция: ", distance_to_navmesh)
+		# print("NavigationComponent: цель далеко от навмеша! Цель: ", position,
+			  # " Ближайшая точка: ", closest_point, " Дистанция: ", distance_to_navmesh)
 	
 	# Печатаем только значимые перенацеливания: погоня шагами по 0.3м
 	# не должна заваливать консоль (output overflow в редакторе)

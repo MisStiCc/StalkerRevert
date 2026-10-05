@@ -18,12 +18,12 @@ var _difficulty: float = 1.0
 
 func _ready():
 	add_to_group("spawner")
-	print("StalkerSpawner: _ready()")
+	# print("StalkerSpawner: _ready()")
 	
 	# Ищем монолит
 	_monolith = get_tree().get_first_node_in_group("monolith")
 	if not _monolith:
-		print("StalkerSpawner: Монолит не найден при инициализации!")
+		# print("StalkerSpawner: Монолит не найден при инициализации!")
 
 
 func set_difficulty(diff: float):
@@ -34,17 +34,17 @@ func spawn_stalker() -> Node:
 	if not _monolith:
 		_monolith = get_tree().get_first_node_in_group("monolith")
 		if not _monolith:
-			print("Монолит не найден!")
+			# print("Монолит не найден!")
 			return null
 	
 	var scene = _get_stalker_scene_by_difficulty()
 	if not scene:
-		print("Нет сцены для сталкера!")
+		# print("Нет сцены для сталкера!")
 		return null
 	
 	var pos = _get_spawn_position()
 	if pos == Vector3.ZERO:
-		print("Не удалось найти позицию для спавна!")
+		# print("Не удалось найти позицию для спавна!")
 		return null
 	
 	var stalker = scene.instantiate()
@@ -62,7 +62,7 @@ func spawn_stalker() -> Node:
 		stalker_type = "master"
 	
 	stalker_spawned.emit(stalker, stalker_type)
-	print("Сталкер заспавнен: " + stalker_type + " на позиции " + str(pos))
+	# print("Сталкер заспавнен: " + stalker_type + " на позиции " + str(pos))
 	
 	return stalker
 
@@ -109,7 +109,7 @@ func _get_spawn_position() -> Vector3:
 		if result:
 			return result.position + Vector3(0, 1.2, 0)
 	
-	print("Не удалось найти позицию после 20 попыток")
+	# print("Не удалось найти позицию после 20 попыток")
 	
 	# Запасной вариант
 	var fallback_pos = _monolith.global_position + Vector3(10, 0, 10)

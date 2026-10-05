@@ -23,7 +23,7 @@ var known_stalkers: Array[Node] = []
 var vision_range: float = 30.0:
 	set(value):
 		vision_range = max(1.0, value)
-		print("Дальность зрения изменена на " + str(vision_range))
+		# print("Дальность зрения изменена на " + str(vision_range))
 
 var update_interval: float = 1.0
 var memory_duration: float = 10.0
@@ -36,7 +36,7 @@ var object_timers: Dictionary = {}  # instance_id -> time_seen
 
 func _ready():
 	set_process(true)
-	print("MemoryComponent инициализирован с дальностью " + str(vision_range))
+	# print("MemoryComponent инициализирован с дальностью " + str(vision_range))
 
 
 func _process(delta):
@@ -140,7 +140,7 @@ func _scan_for_anomalies(tree: SceneTree, pos: Vector3, current_time: float):
 			if not object_timers.has(id):
 				known_anomalies.append(a)
 				threat_detected.emit(a, "anomaly")
-				print("Обнаружена аномалия на расстоянии " + str(dist))
+				# print("Обнаружена аномалия на расстоянии " + str(dist))
 			object_timers[id] = current_time
 
 
@@ -156,7 +156,7 @@ func _scan_for_mutants(tree: SceneTree, pos: Vector3, current_time: float):
 			if not object_timers.has(id):
 				known_mutants.append(m)
 				threat_detected.emit(m, "mutant")
-				print("Обнаружен мутант на расстоянии " + str(dist))
+				# print("Обнаружен мутант на расстоянии " + str(dist))
 			object_timers[id] = current_time
 
 
@@ -176,7 +176,7 @@ func _scan_for_artifacts(tree: SceneTree, pos: Vector3, current_time: float):
 			if not object_timers.has(id):
 				known_artifacts.append(a)
 				artifact_detected.emit(a)
-				print("Обнаружен артефакт на расстоянии " + str(dist))
+				# print("Обнаружен артефакт на расстоянии " + str(dist))
 			object_timers[id] = current_time
 
 
@@ -191,7 +191,7 @@ func _scan_for_stalkers(tree: SceneTree, pos: Vector3, current_time: float):
 			var id = s.get_instance_id()
 			if not object_timers.has(id):
 				known_stalkers.append(s)
-				print("Обнаружен другой сталкер на расстоянии " + str(dist))
+				# print("Обнаружен другой сталкер на расстоянии " + str(dist))
 			object_timers[id] = current_time
 
 
@@ -387,7 +387,7 @@ func clear_memory():
 	known_stalkers.clear()
 	object_timers.clear()
 	memory_cleared.emit()
-	print("Память очищена")
+	# print("Память очищена")
 
 
 func set_vision_range(range_val: float):

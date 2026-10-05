@@ -122,7 +122,7 @@ func _physics_hook(delta):
 	if _monolith_check_timer > 5.0:
 		_monolith_check_timer = 0.0
 		if monolith and is_instance_valid(monolith):
-			var dist = global_position.distance_to(monolith.global_position)
+			var _dist = global_position.distance_to(monolith.global_position)
 			# "VeteranStalker: расстояние до монолита = ", dist  # (лог отключён)
 	
 	_update_speed_based_on_distance()

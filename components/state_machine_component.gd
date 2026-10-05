@@ -298,14 +298,14 @@ func _check_transitions():
 			if threat_dist <= memory.vision_range:
 				if behavior_strategy and behavior_strategy.should_flee_from(nearest_threat):
 					# Паника не бесконечна: уже бежим и угроза дальше 15м - хватит
-					var keep_fleeing: bool = current_state != GameEnums.StalkerState.FLEE or threat_dist <= 15.0
+					var keep_fleeing: bool = current_state != GameEnums.StalkerState.FLEE or threat_dist <= 8.0
 					if keep_fleeing:
 						if current_state != GameEnums.StalkerState.FLEE:
 							# "StateMachine: переход в FLEE от ", nearest_threat.name  # (лог отключён)
 							set_state(GameEnums.StalkerState.FLEE)
 							if navigation:
 								var flee_dir = (stalker.global_position - nearest_threat.global_position).normalized()
-								var flee_target = stalker.global_position + flee_dir * 30
+								var flee_target = stalker.global_position + flee_dir * 15
 								# Не убегаем за периметр (за 150м кончается земля)
 								var flat_f = Vector2(flee_target.x, flee_target.z)
 								if flat_f.length() > 145.0:

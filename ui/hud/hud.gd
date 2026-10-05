@@ -80,6 +80,9 @@ func _ready():
 	_load_minimap()
 	_apply_language_and_prices()
 	Loc.changed.connect(_apply_language_and_prices)
+	# Цены с бонусами лаборатории: ZoneController применяет множители в _ready,
+	# поэтому после готовности всей сцены перерисовываем ценники
+	_apply_language_and_prices.call_deferred()
 
 	print("HUD инициализирован")
 
