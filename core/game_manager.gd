@@ -43,7 +43,7 @@ func _ready():
 	Signals.game_started.emit()
 
 
-func grant_mutant_reward(mutant_type: String, rarity: String) -> String:
+func grant_mutant_reward(mutant_type: String, _rarity: String) -> String:
 	"""Награда гачи: новый мутант в коллекцию, дубль - КОПИЯ на ферму.
 	Копию можно скормить на звезду этого же типа или как корм другому."""
 	if not current_save_data or not current_save_data.lab_data:
@@ -182,6 +182,10 @@ func buy_shop_artifact(artifact_type: String, price: float) -> bool:
 		return false
 	lab.biomass -= price
 	lab.pending_artifacts.append(artifact_type)
+	# Купленный арт получен - соответствующая аномалия открывается
+	if not lab.won_artifacts.has(artifact_type):
+		lab.won_artifacts.append(artifact_type)
+		print("КОЛЛЕКЦИЯ: открыт артефакт из магазина - аномалия доступна: " + artifact_type)
 	save_game(0)
 	return true
 

@@ -53,6 +53,8 @@ var is_initialized: bool = false
 var is_run_finished: bool = false
 # Купленные в магазине артефакты: спавн у монолита на старте забега
 var _shop_artifacts_pending: Array[String] = []
+# Награды гачи/вех/событий за забег (для панели итогов)
+var _gacha_rewards_log: Array[String] = []
 # Фаза подготовки: сталкеры не спавнятся, пока игрок не нажмёт СТАРТ
 var is_prep_phase: bool = true
 
@@ -198,7 +200,7 @@ func _setup_managers():
 	# AnomalyManager
 	anomaly_manager = AnomalyManager.new()
 	anomaly_manager.anomaly_scenes = anomaly_scenes
-	anomaly_manager.anomaly_artifact_map = anomaly_artifact_map
+	anomaly_manager.anomaly_artifact_map = anomaly_artifact_map if not anomaly_artifact_map.is_empty() else GachaData.ANOMALY_ARTIFACT_MAP
 	anomaly_manager.artifact_values = artifact_values
 	anomaly_manager.difficulty_to_rarity = difficulty_to_rarity
 	add_child(anomaly_manager)
@@ -348,6 +350,7 @@ func _initialize_run():
 			print("Магазин: артефакт ", a, " размещён у монолита")
 	_shop_artifacts_pending.clear()
 
+	_gacha_rewards_log.clear()
 	# Фаза подготовки: спавн сталкеров начнётся по кнопке СТАРТ в HUD
 	var run_label: String = "Забег #" + str(run_number)
 	if run_params.has("campaign_params"):
@@ -404,6 +407,13 @@ func _apply_survival_wave(params: Dictionary):
 # ==================== ОБРАБОТЧИКИ HUD ====================
 
 func _on_hud_anomaly_requested(anomaly_type: String):
+	# Закрытая аномалия: гвард в create_anomaly, здесь подсказка игроку
+	var artifact_key: String = GachaData.get_artifact_for_anomaly(anomaly_type)
+	var gm_hint = get_tree().get_first_node_in_group("game_manager")
+	if gm_hint and not artifact_key.is_empty() and not gm_hint.is_artifact_unlocked(artifact_key):
+		var hud_locked = get_tree().get_first_node_in_group("hud")
+		if hud_locked and hud_locked.has_method("show_reward_note"):
+			hud_locked.show_reward_note(Loc.t("hud.anomaly_locked", {"artifact": Loc.type_name(artifact_key)}))
 	print("Запрос аномалии: " + anomaly_type)
 	var pos = _get_spawn_position_from_camera()
 	var anomaly = create_anomaly(anomaly_type, pos, 1)
@@ -610,6 +620,11 @@ func _grant_artifact_reward(artifact_type: String, source_label: String):
 	var monolith = get_tree().get_first_node_in_group("monolith")
 	var drop_pos: Vector3 = monolith.global_position + Vector3(6.0, 0.0, 6.0) if monolith else Vector3(6.0, 0.0, 6.0)
 	print("=== НАГРАДА (", source_label, "): артефакт ", artifact_type, " (", rarity, ", ", stars, "★) +", bonus[0], " энергии, +", bonus[1], " биомассы ===")
+	_gacha_rewards_log.append(Loc.t("reward.gacha_artifact", {"name": Loc.type_name(artifact_type)}))
+	# Новый арт открывает свою аномалию - обновляем замки HUD
+	var hud_unlock = get_tree().get_first_node_in_group("hud")
+	if hud_unlock and hud_unlock.has_method("refresh_mutant_unlocks"):
+		hud_unlock.refresh_mutant_unlocks()
 	var reward_value: float = 10.0 if rarity == "common" else (30.0 if rarity == "rare" else 80.0)
 	anomaly_manager.create_artifact(artifact_type, drop_pos, rarity, reward_value * star_mult)
 
@@ -632,10 +647,16 @@ func _grant_gacha_rewards(level: int):
 			spawn_manager.set_mutant_stars(gm.get_lab_data().mutant_stars)
 	spawn_manager.queue_reward_mutant(mutant_roll["type"])
 	print("=== ГАЧА МУТАНТОВ (ур. ", level, "): ", mutant_roll["type"], " [", mutant_roll["rarity"], "] ", unlocked_msg, " ===")
+	_gacha_rewards_log.append(Loc.t("reward.gacha_mutant", {"name": Loc.type_name(mutant_roll["type"])}))
 	
 	_grant_artifact_reward(artifact_roll["type"], "гача ур. " + str(level))
 	if gm:
 		gm.grant_artifact_reward(artifact_roll["type"])
+	# Видимая награда: нота в HUD
+	var hud_reward = get_tree().get_first_node_in_group("hud")
+	if hud_reward and hud_reward.has_method("show_reward_note"):
+		hud_reward.show_reward_note(Loc.t("hud.reward_note", {
+			"text": Loc.type_name(mutant_roll["type"]) + " + " + Loc.type_name(artifact_roll["type"])}))
 
 
 func _on_stalker_died(stalker: Node, biomass_returned: float):
@@ -748,6 +769,13 @@ func can_afford(energy: float, biomass: float) -> bool:
 # Аномалии
 func create_anomaly(type: String, position: Vector3, difficulty: int = 1) -> Node:
 	if not anomaly_manager:
+		return null
+	
+	# Гейтинг: каждый арт открывает свою аномалию, пока арта нет - в бой нельзя
+	var artifact_key: String = GachaData.get_artifact_for_anomaly(type)
+	var gm_guard = get_tree().get_first_node_in_group("game_manager")
+	if gm_guard and not artifact_key.is_empty() and not gm_guard.is_artifact_unlocked(artifact_key):
+		print("Зона: аномалия закрыта - нужен её артефакт (", artifact_key, ")")
 		return null
 	
 	var cost = anomaly_manager.get_anomaly_cost(type)
@@ -902,6 +930,7 @@ func _collect_run_result(success: bool) -> Dictionary:
 		"waves_survived": waves_survived,
 		"reward": reward,
 		"statistics": stats,
+		"gacha_rewards": _gacha_rewards_log.duplicate(),
 		"artifacts_collected": _collect_artifacts()
 	}
 

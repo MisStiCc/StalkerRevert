@@ -13,7 +13,33 @@ const CHIMERA_GUARANTEE_LEVEL: int = 50
 # На старте доступны только слабейшие; кампания открывает остальных на 1 звезду.
 # Химера вне таблицы - джекпот гачи с гарантией на уровне 50.
 const DEFAULT_UNLOCKED_MUTANTS := ["zombie", "dog_mutant", "flesh"]
-const DEFAULT_UNLOCKED_ARTIFACTS := ["common_artifact", "battery_artifact", "glowstick_artifact"]
+# Дефолтные арты открывают стартовые аномалии: Электра, Кислота, Тесла
+const DEFAULT_UNLOCKED_ARTIFACTS := ["spark_artifact", "slime_artifact", "battery_artifact"]
+
+# КАЖДЫЙ АРТ СООТВЕТСТВУЕТ СВОЕЙ АНОМАЛИИ: пока арт не получен (гача/веха/
+# магазин), аномалию в бою применить нельзя. Убитая аномалия роняет свой арт.
+const ANOMALY_ARTIFACT_MAP := {
+	"heat_anomaly": "fireball_artifact",
+	"electric_anomaly": "spark_artifact",
+	"acid_anomaly": "slime_artifact",
+	"gravity_vortex": "graviton_artifact",
+	"gravity_lift": "jumper_artifact",
+	"gravity_whirlwind": "hourglass_artifact",
+	"thermal_steam": "gas_bottle_artifact",
+	"thermal_comet": "storm_artifact",
+	"chemical_jelly": "flesh_artifact",
+	"chemical_gas": "void_artifact",
+	"chemical_acid_cloud": "uranium_artifact",
+	"radiation_hotspot": "glowstick_artifact",
+	"time_dilation": "clock_artifact",
+	"teleport": "energy_artifact",
+	"electric_tesla": "battery_artifact",
+	"bio_burning_fluff": "heart_artifact",
+}
+
+
+static func get_artifact_for_anomaly(anomaly_type: String) -> String:
+	return ANOMALY_ARTIFACT_MAP.get(anomaly_type, "")
 
 # Уровень кампании -> что открывается (мутанты по силе, арты по редкости)
 const UNLOCK_TABLE := {

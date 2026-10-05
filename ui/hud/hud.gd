@@ -58,6 +58,7 @@ var _break_next_wave: int = 0
 var emission_timer: float = 0.0
 var is_emission_active: bool = false
 var _mutant_buttons: Dictionary = {}
+var _anomaly_buttons: Dictionary = {}
 
 
 func _ready():
@@ -138,10 +139,12 @@ func _apply_prices():
 		chimera_button: ["chimera", "mu.chimera"], zombie_button: ["zombie", "mu.zombie"],
 	}
 	_mutant_buttons = {}
+	_anomaly_buttons = {}
 	for btn in anomalies:
 		var cost: int = int(am.get_anomaly_cost(anomalies[btn][0])) if am else 0
 		btn.text = Loc.t(anomalies[btn][1]) + "
 ⚡" + str(cost)
+		_anomaly_buttons[btn] = anomalies[btn][0]
 	for btn in mutants:
 		var cost: int = int(sm.get_mutant_cost(mutants[btn][0])) if sm else 0
 		btn.text = Loc.t(mutants[btn][1]) + "
@@ -151,8 +154,18 @@ func _apply_prices():
 
 
 func refresh_mutant_unlocks():
-	"""Гейтинг коллекции: неразблокированный мутант в бою не применить"""
+	"""Гейтинг коллекции: без разблокировки мутант/аномалия в бой не применить"""
 	var gm = get_tree().get_first_node_in_group("game_manager")
+	for btn in _anomaly_buttons:
+		var anomaly_type: String = _anomaly_buttons[btn]
+		var artifact_key: String = GachaData.get_artifact_for_anomaly(anomaly_type)
+		var art_unlocked: bool = artifact_key.is_empty() or (gm.is_artifact_unlocked(artifact_key) if gm else true)
+		btn.disabled = not art_unlocked
+		btn.tooltip_text = (Loc.t("hud.anomaly_locked_tip", {"artifact": Loc.type_name(artifact_key)})) if not art_unlocked else ""
+		if not art_unlocked and not btn.text.begins_with("🔒"):
+			btn.text = "🔒" + btn.text
+		if art_unlocked and btn.text.begins_with("🔒"):
+			btn.text = btn.text.trim_prefix("🔒")
 	for btn in _mutant_buttons:
 		var type: String = _mutant_buttons[btn]
 		var unlocked: bool = gm.is_mutant_unlocked(type) if gm else true
@@ -465,3 +478,13 @@ func _on_note_expired(desc: String = ""):
 		return
 	emission_label.text = ""
 	emission_label.modulate = Color.WHITE
+
+
+## Золотая нота награды (гача/вехи/события) в панели выброса
+func show_reward_note(text: String):
+	emission_label.text = Loc.t("hud.reward_note", {"text": text})
+	emission_label.modulate = Color(1.0, 0.85, 0.2)
+	if _note_timer and _note_timer.timeout.is_connected(_on_note_expired):
+		_note_timer.timeout.disconnect(_on_note_expired)
+	_note_timer = get_tree().create_timer(3.0)
+	_note_timer.timeout.connect(_on_note_expired)

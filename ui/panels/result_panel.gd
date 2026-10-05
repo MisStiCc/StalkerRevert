@@ -58,10 +58,15 @@ func show_result(result: Dictionary):
                 "rare": rare += 1
                 "legendary": legendary += 1
         
-        artifacts_label.text = "Собрано артефактов:\nCommon: %d   Rare: %d   Legendary: %d" % [common, rare, legendary]
+        artifacts_label.text = Loc.t("result.artifacts") + "\nCommon: %d   Rare: %d   Legendary: %d" % [common, rare, legendary]
         artifacts_label.visible = true
     else:
         artifacts_label.visible = false
+
+    var gacha: Array = result.get("gacha_rewards", [])
+    if not gacha.is_empty():
+        artifacts_label.text += "\n" + Loc.t("result.gacha_header") + "\n" + "\n".join(gacha)
+        artifacts_label.visible = true
     
     open()
 

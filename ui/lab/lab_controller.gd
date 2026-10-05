@@ -557,17 +557,6 @@ var star_list: VBoxContainer
 
 func _build_star_ui():
 	"""Кнопка ★ в магазине + панель прокачки звёзд (строится кодом)"""
-	var shop_inner: Panel = shop_panel.get_node_or_null("Panel")
-	if shop_inner:
-		var open_btn := Button.new()
-		open_btn.name = "StarOpenButton"
-		open_btn.text = Loc.t("shop.stars")
-		open_btn.position = Vector2(390, 8)
-		open_btn.size = Vector2(150, 30)
-		open_btn.pressed.connect(_on_stars_pressed)
-		open_btn.mouse_entered.connect(_play_hover_sound)
-		shop_inner.add_child(open_btn)
-
 	star_panel = Control.new()
 	star_panel.name = "StarPanel"
 	star_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -593,14 +582,12 @@ func _build_star_ui():
 
 	var title := Label.new()
 	title.text = Loc.t("stars.title")
-	title.set_anchors_preset(Control.PRESET_TOP_WIDE)
 	title.position = Vector2(0, 10)
 	title.size = Vector2(560, 25)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	panel.add_child(title)
 
 	star_biomass_label = Label.new()
-	star_biomass_label.set_anchors_preset(Control.PRESET_TOP_WIDE)
 	star_biomass_label.position = Vector2(0, 36)
 	star_biomass_label.size = Vector2(560, 20)
 	star_biomass_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -628,6 +615,7 @@ func _build_star_ui():
 func _on_stars_pressed():
 	_play_click_sound()
 	shop_panel.visible = false
+	farm_panel.visible = false
 	star_panel.visible = true
 	_rebuild_star_panel()
 
@@ -874,8 +862,15 @@ func _build_farm_ui():
 	panel.offset_bottom = 210.0
 	farm_panel.add_child(panel)
 
+	var star_btn := Button.new()
+	star_btn.text = Loc.t("shop.stars")
+	star_btn.position = Vector2(390, 8)
+	star_btn.size = Vector2(150, 30)
+	star_btn.pressed.connect(_on_stars_pressed)
+	star_btn.mouse_entered.connect(_play_hover_sound)
+	panel.add_child(star_btn)
+
 	farm_title_label = Label.new()
-	farm_title_label.set_anchors_preset(Control.PRESET_TOP_WIDE)
 	farm_title_label.position = Vector2(0, 10)
 	farm_title_label.size = Vector2(560, 25)
 	farm_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -1025,8 +1020,8 @@ func _build_language_button():
 		return
 	_lang_button = Button.new()
 	_lang_button.text = Loc.t("menu.language")
-	_lang_button.position = Vector2(30, 240)
-	_lang_button.size = Vector2(340, 36)
+	_lang_button.position = Vector2(30, 262)
+	_lang_button.size = Vector2(340, 34)
 	_lang_button.pressed.connect(_on_language_pressed)
 	_lang_button.mouse_entered.connect(_play_hover_sound)
 	panel.add_child(_lang_button)

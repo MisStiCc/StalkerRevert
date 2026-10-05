@@ -89,7 +89,7 @@ text = "🔥 ВЫБРОС ⚡1000"
 [node name="AnomalyPanel" type="Panel" parent="."]
 offset_left = 8.0
 offset_top = 66.0
-offset_right = 308.0
+offset_right = 648.0
 offset_bottom = 190.0
 color = Color(0.1, 0.1, 0.1, 0.8)
 
@@ -106,63 +106,63 @@ theme_override_colors/font_color = Color(1, 0.5, 0, 1)
 [node name="FireButton" type="Button" parent="AnomalyPanel"]
 offset_left = 2.0
 offset_top = 13.0
-offset_right = 54.0
+offset_right = 78.0
 offset_bottom = 34.0
 theme_override_font_sizes/font_size = 9
 text = "Жарка"
 
 [node name="ElectricButton" type="Button" parent="AnomalyPanel"]
-offset_left = 57.0
+offset_left = 81.0
 offset_top = 13.0
-offset_right = 109.0
+offset_right = 157.0
 offset_bottom = 34.0
 theme_override_font_sizes/font_size = 9
 text = "Электра"
 
 [node name="AcidButton" type="Button" parent="AnomalyPanel"]
-offset_left = 112.0
+offset_left = 160.0
 offset_top = 13.0
-offset_right = 164.0
+offset_right = 236.0
 offset_bottom = 34.0
 theme_override_font_sizes/font_size = 9
 text = "Кислота"
 
 [node name="VortexButton" type="Button" parent="AnomalyPanel"]
-offset_left = 167.0
+offset_left = 239.0
 offset_top = 13.0
-offset_right = 219.0
+offset_right = 315.0
 offset_bottom = 34.0
 theme_override_font_sizes/font_size = 9
 text = "Воронка"
 
 [node name="LiftButton" type="Button" parent="AnomalyPanel"]
-offset_left = 222.0
+offset_left = 318.0
 offset_top = 13.0
-offset_right = 274.0
+offset_right = 394.0
 offset_bottom = 34.0
 theme_override_font_sizes/font_size = 9
 text = "Лифт"
 
 [node name="WhirlwindButton" type="Button" parent="AnomalyPanel"]
-offset_left = 277.0
+offset_left = 397.0
 offset_top = 13.0
-offset_right = 329.0
+offset_right = 473.0
 offset_bottom = 34.0
 theme_override_font_sizes/font_size = 9
 text = "Карусель"
 
 [node name="SteamButton" type="Button" parent="AnomalyPanel"]
-offset_left = 332.0
+offset_left = 476.0
 offset_top = 13.0
-offset_right = 384.0
+offset_right = 552.0
 offset_bottom = 34.0
 theme_override_font_sizes/font_size = 9
 text = "Пар"
 
 [node name="CometButton" type="Button" parent="AnomalyPanel"]
-offset_left = 387.0
+offset_left = 555.0
 offset_top = 13.0
-offset_right = 439.0
+offset_right = 631.0
 offset_bottom = 34.0
 theme_override_font_sizes/font_size = 9
 text = "Комета"
@@ -170,71 +170,71 @@ text = "Комета"
 [node name="JellyButton" type="Button" parent="AnomalyPanel"]
 offset_left = 2.0
 offset_top = 37.0
-offset_right = 54.0
+offset_right = 78.0
 offset_bottom = 58.0
 theme_override_font_sizes/font_size = 9
 text = "Холодец"
 
 [node name="GasButton" type="Button" parent="AnomalyPanel"]
-offset_left = 57.0
+offset_left = 81.0
 offset_top = 37.0
-offset_right = 109.0
+offset_right = 157.0
 offset_bottom = 58.0
 theme_override_font_sizes/font_size = 9
 text = "Газировка"
 
 [node name="AcidCloudButton" type="Button" parent="AnomalyPanel"]
-offset_left = 112.0
+offset_left = 160.0
 offset_top = 37.0
-offset_right = 164.0
+offset_right = 236.0
 offset_bottom = 58.0
 theme_override_font_sizes/font_size = 9
 text = "Кисель"
 
 [node name="RadiationButton" type="Button" parent="AnomalyPanel"]
-offset_left = 167.0
+offset_left = 239.0
 offset_top = 37.0
-offset_right = 219.0
+offset_right = 315.0
 offset_bottom = 58.0
 theme_override_font_sizes/font_size = 9
 text = "Радиация"
 
 [node name="TimeButton" type="Button" parent="AnomalyPanel"]
-offset_left = 222.0
+offset_left = 318.0
 offset_top = 37.0
-offset_right = 274.0
+offset_right = 394.0
 offset_bottom = 58.0
 theme_override_font_sizes/font_size = 9
 text = "Время"
 
 [node name="TeleportButton" type="Button" parent="AnomalyPanel"]
-offset_left = 277.0
+offset_left = 397.0
 offset_top = 37.0
-offset_right = 329.0
+offset_right = 473.0
 offset_bottom = 58.0
 theme_override_font_sizes/font_size = 9
 text = "Телепорт"
 
 [node name="TeslaButton" type="Button" parent="AnomalyPanel"]
-offset_left = 332.0
+offset_left = 476.0
 offset_top = 37.0
-offset_right = 384.0
+offset_right = 552.0
 offset_bottom = 58.0
 theme_override_font_sizes/font_size = 9
 text = "Тесла"
 
 [node name="FluffButton" type="Button" parent="AnomalyPanel"]
-offset_left = 387.0
+offset_left = 555.0
 offset_top = 37.0
-offset_right = 439.0
+offset_right = 631.0
 offset_bottom = 58.0
 theme_override_font_sizes/font_size = 9
 text = "Жг.пух"
 
 [node name="MutantPanel" type="Panel" parent="."]
-offset_left = 316.0
+offset_left = 656.0
 offset_top = 66.0
-offset_right = 496.0
+offset_right = 1096.0
 offset_bottom = 190.0
 color = Color(0.1, 0.1, 0.1, 0.8)
 
@@ -251,72 +251,72 @@ theme_override_colors/font_color = Color(0, 1, 0, 1)
 [node name="DogButton" type="Button" parent="MutantPanel"]
 offset_left = 2.0
 offset_top = 12.0
-offset_right = 48.0
+offset_right = 86.0
 offset_bottom = 44.0
 theme_override_font_sizes/font_size = 9
 text = "Собака"
 
 [node name="FleshButton" type="Button" parent="MutantPanel"]
-offset_left = 52.0
+offset_left = 89.0
 offset_top = 12.0
-offset_right = 98.0
+offset_right = 173.0
 offset_bottom = 44.0
 theme_override_font_sizes/font_size = 9
 text = "Плоть"
 
 [node name="SnorkButton" type="Button" parent="MutantPanel"]
-offset_left = 102.0
+offset_left = 176.0
 offset_top = 12.0
-offset_right = 148.0
+offset_right = 260.0
 offset_bottom = 44.0
 theme_override_font_sizes/font_size = 9
 text = "Снорк"
 
 [node name="PseudodogButton" type="Button" parent="MutantPanel"]
-offset_left = 152.0
+offset_left = 263.0
 offset_top = 12.0
-offset_right = 198.0
+offset_right = 347.0
 offset_bottom = 44.0
 theme_override_font_sizes/font_size = 9
 text = "Псевдо"
 
 [node name="ControllerButton" type="Button" parent="MutantPanel"]
-offset_left = 202.0
+offset_left = 350.0
 offset_top = 12.0
-offset_right = 248.0
+offset_right = 434.0
 offset_bottom = 44.0
 theme_override_font_sizes/font_size = 9
 text = "Контрол"
 
 [node name="PoltergeistButton" type="Button" parent="MutantPanel"]
-offset_left = 252.0
-offset_top = 12.0
-offset_right = 298.0
-offset_bottom = 44.0
+offset_left = 2.0
+offset_top = 48.0
+offset_right = 86.0
+offset_bottom = 80.0
 theme_override_font_sizes/font_size = 9
 text = "Полтер"
 
 [node name="BloodsuckerButton" type="Button" parent="MutantPanel"]
-offset_left = 302.0
-offset_top = 12.0
-offset_right = 348.0
-offset_bottom = 44.0
+offset_left = 89.0
+offset_top = 48.0
+offset_right = 173.0
+offset_bottom = 80.0
 theme_override_font_sizes/font_size = 9
 text = "Кровосос"
 
 [node name="ChimeraButton" type="Button" parent="MutantPanel"]
-offset_left = 352.0
-offset_top = 12.0
-offset_right = 398.0
-offset_bottom = 44.0
+offset_left = 176.0
+offset_top = 48.0
+offset_right = 260.0
+offset_bottom = 80.0
 theme_override_font_sizes/font_size = 9
 text = "Химера"
 
 [node name="ZombieButton" type="Button" parent="MutantPanel"]
-offset_left = 402.0
-offset_top = 12.0
-offset_right = 448.0
-offset_bottom = 44.0
+offset_left = 263.0
+offset_top = 48.0
+offset_right = 347.0
+offset_bottom = 80.0
 theme_override_font_sizes/font_size = 9
 text = "Зомби"
 

@@ -112,6 +112,13 @@ const STRINGS := {
 	"hud.emission_active": {"ru": "⚠️ ВЫБРОС! ⚠️", "en": "⚠️ EMISSION! ⚠️"},
 	"hud.break_countdown": {"ru": "⏳ Волна {cur}/{max} через {sec}с", "en": "⏳ Wave {cur}/{max} in {sec}s"},
 	"hud.wave_announce": {"ru": "🌊 ВОЛНА {cur}/{max}", "en": "🌊 WAVE {cur}/{max}"},
+	"hud.anomaly_locked": {"ru": "Аномалия закрыта - нужен артефакт: {artifact}", "en": "Anomaly locked - artifact needed: {artifact}"},
+	"hud.anomaly_locked_tip": {"ru": "Получи артефакт: {artifact}", "en": "Obtain the artifact: {artifact}"},
+	"hud.reward_note": {"ru": "🎁 НАГРАДА: {text}", "en": "🎁 REWARD: {text}"},
+	"reward.gacha_mutant": {"ru": "Мутант: {name}", "en": "Mutant: {name}"},
+	"reward.gacha_artifact": {"ru": "Артефакт: {name}", "en": "Artifact: {name}"},
+	"result.artifacts": {"ru": "Собрано артефактов:", "en": "Artifacts collected:"},
+	"result.gacha_header": {"ru": "НАГРАДЫ ЗАБЕГА:", "en": "RUN REWARDS:"},
 	"hud.event_incoming": {"ru": "⚠ СОБЫТИЕ: {title}", "en": "⚠ EVENT: {title}"},
 	"hud.event_desc": {"ru": "{desc} - враг сильнее, награда щедрее!", "en": "{desc} - tougher enemies, richer rewards!"},
 

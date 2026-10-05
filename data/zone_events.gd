@@ -50,7 +50,9 @@ static func is_event_wave(wave: int) -> bool:
 static func get_event(wave: int) -> Dictionary:
 	if not is_event_wave(wave):
 		return {}
+	@warning_ignore("integer_division")
 	var cycle: int = (wave / EVENT_WAVE_STEP - 1) / EVENTS.size()
+	@warning_ignore("integer_division")
 	var tier: int = (wave / EVENT_WAVE_STEP - 1) % EVENTS.size()
 	var event: Dictionary = EVENTS[tier].duplicate()
 	# Каждый пройденный цикл событий (25 волн) усиливает врага и награду

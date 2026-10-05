@@ -121,12 +121,12 @@ static func get_all_children(node: Node) -> Array:
     return children
 
 
-static func find_node_by_name(node: Node, name: String) -> Node:
-    if node.name == name:
+static func find_node_by_name(node: Node, node_name: String) -> Node:
+    if node.name == node_name:
         return node
     
     for child in node.get_children():
-        var result = find_node_by_name(child, name)
+        var result = find_node_by_name(child, node_name)
         if result:
             return result
     
