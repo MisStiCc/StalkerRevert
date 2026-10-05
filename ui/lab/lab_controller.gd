@@ -1030,13 +1030,6 @@ func _make_farm_section(text: String) -> Label:
 	return label
 
 
-func _on_farm_upgrade(type: String):
-	_play_click_sound()
-	var msg: String = game_manager.try_upgrade_star(type)
-	_show_message(msg, 2.0)
-	_rebuild_farm_panel()
-	_refresh_ui()
-
 
 func _on_farm_feed_pressed(type: String):
 	_play_click_sound()
