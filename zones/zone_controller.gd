@@ -957,6 +957,12 @@ func finish_run(success: bool):
 func _collect_run_result(success: bool) -> Dictionary:
 	var run_number = progression_manager.get_current_run() if progression_manager else 1
 	var reward = resource_manager.accumulated_biomass if resource_manager else 0.0
+	# Неизрасходованный стартовый капитал (остаток лаборатории + 300 базы)
+	# возвращается в награду: иначе он сгорает и награда меньше накопленного в бою
+	if resource_manager:
+		var leftover: float = resource_manager.current_biomass - resource_manager.accumulated_biomass
+		if leftover > 0.0:
+			reward += leftover
 
 	# Кампания: бонус за уровень поверх боевого дохода; реплей пройденного - 30% бонуса
 	if success and run_params.has("campaign_params"):
