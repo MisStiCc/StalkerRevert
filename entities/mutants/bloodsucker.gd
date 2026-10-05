@@ -44,6 +44,9 @@ func _ready():
 	
 	super._ready()
 	
+	if has_node("Model"):
+		_setup_animations()
+	
 	invisibility_timer = Timer.new()
 	invisibility_timer.one_shot = true
 	invisibility_timer.timeout.connect(_on_invisibility_ended)
@@ -59,6 +62,49 @@ func _ready():
 	# "Bloodsucker mutant initialized: ", subspecies  # (лог отключён)
 
 
+var _anim: AnimationPlayer
+var _current_anim: String = ""
+
+
+func _setup_animations():
+	"""Ходьба - в модели, Running подсаживается из bloodsucker_run.glb"""
+	var model := get_node_or_null("Model")
+	if model == null:
+		return
+	var players = model.find_children("*", "AnimationPlayer", true, false)
+	if players.is_empty():
+		return
+	_anim = players[0]
+	var run_scene: PackedScene = load("res://models/bloodsucker_run.glb")
+	if run_scene:
+		var run_inst: Node = run_scene.instantiate()
+		for ap in run_inst.find_children("*", "AnimationPlayer", true, false):
+			for anim_name in (ap as AnimationPlayer).get_animation_list():
+				if not _anim.has_animation(anim_name):
+					_anim.get_animation_library("").add_animation(anim_name, (ap as AnimationPlayer).get_animation(anim_name))
+		run_inst.queue_free()
+	# Разворот модели: Meshy смотрит в +Z
+	model.rotation.y = PI
+
+
+func _update_anim():
+	"""Состояние -> анимация: патруль ходит, погоня бежит, стойка замирает"""
+	if _anim == null:
+		return
+	var want := ""
+	match current_state:
+		State.CHASE, State.ATTACK:
+			want = "Running" if current_state == State.CHASE else "Walking"
+		State.PATROL:
+			want = "Walking"
+	if want != "" and _current_anim != want and _anim.has_animation(want):
+		_anim.play(want)
+		_current_anim = want
+	elif want == "" and _current_anim != "":
+		_anim.pause()
+		_current_anim = ""
+
+
 func _physics_process(delta):
 	if current_state == State.DEAD:
 		return
@@ -69,6 +115,7 @@ func _physics_process(delta):
 	_update_invisibility_visuals()
 	
 	super._physics_process(delta)
+	_update_anim()
 
 
 func _try_go_invisible():

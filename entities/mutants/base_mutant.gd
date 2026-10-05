@@ -31,6 +31,7 @@ var current_patrol_index: int = 0
 var _spawn_position: Vector3 = Vector3.ZERO
 # Процедурная анимация статичной модели (models/*.glb)
 var _model_base_y: float = 0.0
+var _model_skeletal: bool = false  # у модели есть риг и AnimationPlayer
 
 # Множители статов (лаборатория + звёздность), задаётся до add_child,
 # применяются в _ready() после статов наследника
@@ -79,6 +80,7 @@ func _ready():
 	var model := get_node_or_null("Model")
 	if model:
 		_model_base_y = model.position.y
+		_model_skeletal = not model.find_children("*", "AnimationPlayer", true, false).is_empty()
 	
 	health = max_health
 	
@@ -159,9 +161,9 @@ func _physics_process(delta):
 		var target_yaw := atan2(-horizontal.x, -horizontal.y)
 		rotation.y = lerp_angle(rotation.y, target_yaw, 8.0 * delta)
 	
-	# Процедурная анимация статичной модели: бег/воздух/стойка
+	# Процедурная анимация статичной модели (скелетная анимирует сама себя)
 	var model := get_node_or_null("Model")
-	if model:
+	if model and not _model_skeletal:
 		var t := Time.get_ticks_msec() / 1000.0
 		if not is_on_floor():
 			# в воздухе нос идёт по вертикальной скорости
