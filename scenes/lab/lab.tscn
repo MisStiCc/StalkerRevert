@@ -400,31 +400,31 @@ layout_mode = 0
 offset_left = 20.0
 offset_top = 92.0
 offset_right = 540.0
-offset_bottom = 210.0
+offset_bottom = 230.0
 columns = 3
 
 [node name="ArtifactsHeader" type="Label" parent="ShopPanel/Panel"]
 layout_mode = 0
 offset_left = 20.0
-offset_top = 218.0
+offset_top = 240.0
 offset_right = 540.0
-offset_bottom = 238.0
+offset_bottom = 260.0
 text = "АРТЕФАКТЫ (приманка у монолита в забеге)"
 
 [node name="ArtifactGrid" type="GridContainer" parent="ShopPanel/Panel"]
 layout_mode = 0
 offset_left = 20.0
-offset_top = 242.0
+offset_top = 264.0
 offset_right = 540.0
-offset_bottom = 330.0
+offset_bottom = 356.0
 columns = 2
 
 [node name="ShopClose" type="Button" parent="ShopPanel/Panel"]
 layout_mode = 0
 offset_left = 200.0
-offset_top = 340.0
+offset_top = 366.0
 offset_right = 360.0
-offset_bottom = 375.0
+offset_bottom = 401.0
 text = "НАЗАД"
 
 [node name="UpgradePanel" type="Control" parent="." unique_id=1648802834]
