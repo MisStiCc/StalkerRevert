@@ -292,6 +292,8 @@ func _setup_campaign_selector():
 
 	_campaign_label = Label.new()
 	_campaign_label.add_theme_font_size_override("font_size", 16)
+	_campaign_label.clip_text = true
+	_campaign_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
 	_run_mode_button = Button.new()
 	_run_mode_button.text = "Кампания"
@@ -507,7 +509,7 @@ func _rebuild_shop():
 🧬" + str(int(price))
 			btn.pressed.connect(_on_shop_buy.bind("mutant", type, price))
 		_add_card_icon(btn, type, true)
-		btn.custom_minimum_size = Vector2(160, 34)
+		btn.custom_minimum_size = Vector2(160, 46)
 		mutant_grid.add_child(btn)
 	for entry in GachaData.get_shop_artifacts():
 		var type: String = entry[0]
@@ -522,7 +524,7 @@ func _rebuild_shop():
 🧬" + str(int(price))
 			btn.pressed.connect(_on_shop_buy.bind("artifact", type, price))
 		_add_card_icon(btn, type, false)
-		btn.custom_minimum_size = Vector2(240, 34)
+		btn.custom_minimum_size = Vector2(240, 46)
 		artifact_grid.add_child(btn)
 
 
@@ -532,7 +534,7 @@ func _add_card_icon(btn: Button, type: String, is_mutant: bool):
 	if ResourceLoader.exists(path):
 		btn.icon = load(path)
 		btn.expand_icon = true
-		btn.add_theme_constant_override("icon_max_width", 26)
+		btn.add_theme_constant_override("icon_max_width", 24)
 
 
 func _make_icon_rect(type: String, is_mutant: bool, icon_size: int = 24) -> TextureRect:
