@@ -136,6 +136,12 @@ func _handle_leap(delta):
 	global_position = pos
 	velocity = Vector3.ZERO
 	
+	# Нос по дуге: вверх на взлёте, вниз на падении
+	var model := get_node_or_null("Model")
+	if model:
+		var vy: float = _leap_vy - gravity * t
+		model.rotation.x = clampf(vy * 0.05, -0.35, 0.35)
+	
 	if leap_time >= _leap_t_total:
 		global_position.y = max(global_position.y, leap_target.y)
 		_land()

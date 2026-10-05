@@ -29,6 +29,8 @@ var current_patrol_index: int = 0
 # Поводок: погоня дальше этого радиуса от точки спавна прекращается
 @export var leash_radius: float = 40.0
 var _spawn_position: Vector3 = Vector3.ZERO
+# Процедурная анимация статичной модели (models/*.glb)
+var _model_base_y: float = 0.0
 
 # Множители статов (лаборатория + звёздность), задаётся до add_child,
 # применяются в _ready() после статов наследника
@@ -72,6 +74,11 @@ func _ready():
 	zone_controller = get_tree().get_first_node_in_group("zone_controller")
 	if zone_controller and zone_controller.has_method("register_mutant"):
 		zone_controller.register_mutant(self)
+	
+	# Запомнить базовую высоту модели для процедурной анимации
+	var model := get_node_or_null("Model")
+	if model:
+		_model_base_y = model.position.y
 	
 	health = max_health
 	
@@ -151,6 +158,25 @@ func _physics_process(delta):
 	if horizontal.length() > 0.5:
 		var target_yaw := atan2(-horizontal.x, -horizontal.y)
 		rotation.y = lerp_angle(rotation.y, target_yaw, 8.0 * delta)
+	
+	# Процедурная анимация статичной модели: бег/воздух/стойка
+	var model := get_node_or_null("Model")
+	if model:
+		var t := Time.get_ticks_msec() / 1000.0
+		if not is_on_floor():
+			# в воздухе нос идёт по вертикальной скорости
+			model.rotation.x = lerp_angle(model.rotation.x, clampf(velocity.y * 0.06, -0.35, 0.35), 4.0 * delta)
+		elif horizontal.length() > 0.5:
+			# бег: подпрыгивание + крен + лёгкий наклон носа вниз
+			var gait: float = clampf(horizontal.length() / 6.0, 0.4, 1.5)
+			model.position.y = _model_base_y + absf(sin(t * horizontal.length() * 2.4)) * 0.08 * gait
+			model.rotation.z = sin(t * horizontal.length() * 1.2) * 0.05
+			model.rotation.x = lerp_angle(model.rotation.x, -0.10, 3.0 * delta)
+		else:
+			# стойка: дыхание
+			model.position.y = _model_base_y + sin(t * 1.8) * 0.02
+			model.rotation.z = lerp_angle(model.rotation.z, 0.0, 3.0 * delta)
+			model.rotation.x = lerp_angle(model.rotation.x, 0.0, 3.0 * delta)
 	
 	move_and_slide()
 
