@@ -2,24 +2,20 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cpy3msxpoeimg"
-path.s3tc="res://.godot/imported/Meshy_AI_Infernal_Chimera_1005165609_texture_1.jpg-6c4873643106b54d0980be61b668020e.s3tc.ctex"
+uid="uid://en8no67ohfjh"
+path="res://.godot/imported/chimera_texture_0.jpg-e5c442558a37fd5b4c0b5a1812baeef0.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
-"vram_texture": true
-}
-generator_parameters={
-"md5": "c819b82dd344a1864b18e577962283c5"
+"vram_texture": false
 }
 
 [deps]
 
-source_file="res://models/Meshy_AI_Infernal_Chimera_1005165609_texture_1.jpg"
-dest_files=["res://.godot/imported/Meshy_AI_Infernal_Chimera_1005165609_texture_1.jpg-6c4873643106b54d0980be61b668020e.s3tc.ctex"]
+source_file="res://models/chimera_texture_0.jpg"
+dest_files=["res://.godot/imported/chimera_texture_0.jpg-e5c442558a37fd5b4c0b5a1812baeef0.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=0
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -27,7 +23,7 @@ compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=true
+mipmaps/generate=false
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""
@@ -41,4 +37,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=0
+detect_3d/compress_to=1

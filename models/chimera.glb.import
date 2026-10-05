@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://bmy373fw4n7io"
-path="res://.godot/imported/Meshy_AI_Infernal_Chimera_1005165609_texture.glb-31b13a1c15fa3fd573311fb2137f465a.scn"
+uid="uid://exo7jxxuxl42"
+path="res://.godot/imported/chimera.glb-304c5f5c95b19fdefe35afc67630f5e2.scn"
 
 [deps]
 
-source_file="res://models/Meshy_AI_Infernal_Chimera_1005165609_texture.glb"
-dest_files=["res://.godot/imported/Meshy_AI_Infernal_Chimera_1005165609_texture.glb-31b13a1c15fa3fd573311fb2137f465a.scn"]
+source_file="res://models/chimera.glb"
+dest_files=["res://.godot/imported/chimera.glb-304c5f5c95b19fdefe35afc67630f5e2.scn"]
 
 [params]
 
