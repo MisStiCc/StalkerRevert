@@ -534,12 +534,12 @@ func _add_card_icon(btn: Button, type: String, is_mutant: bool):
 		btn.add_theme_constant_override("icon_max_width", 26)
 
 
-func _make_icon_rect(type: String, is_mutant: bool, size: int = 24) -> TextureRect:
+func _make_icon_rect(type: String, is_mutant: bool, icon_size: int = 24) -> TextureRect:
 	var rect := TextureRect.new()
 	var path: String = GachaData.card_icon_path(type, is_mutant)
 	if ResourceLoader.exists(path):
 		rect.texture = load(path)
-	rect.custom_minimum_size = Vector2(size, size)
+	rect.custom_minimum_size = Vector2(icon_size, icon_size)
 	rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	return rect
