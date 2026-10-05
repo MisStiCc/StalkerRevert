@@ -128,6 +128,17 @@ func feed_same_copy(mutant_type: String) -> String:
 	return "ЗВЕЗДА! %s теперь %d/%d★" % [GachaData.display_name(mutant_type), stars + 1, LabData.MAX_STARS]
 
 
+## Начислить крутки в ОБЕ гачи (кампания/выживание)
+func grant_gacha_rolls(count: int, source: String = ""):
+	if count <= 0 or not current_save_data or not current_save_data.lab_data:
+		return
+	var lab = current_save_data.lab_data
+	lab.gacha_rolls_mutants += count
+	lab.gacha_rolls_artifacts += count
+	print("Крутки гачи +", count, " (", source, "): мутанты ", lab.gacha_rolls_mutants, ", арты ", lab.gacha_rolls_artifacts)
+	save_to_active_slot()
+
+
 # ==================== ГАЧА: КРУТКИ ====================
 
 ## Батч-крутка гачи мутантов: новый -> коллекция, дубль -> копия на ферму.

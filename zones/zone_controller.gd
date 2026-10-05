@@ -540,8 +540,37 @@ func _on_wave_ended(wave_number: int, survivors: int):
 		_apply_survival_wave(
 			SurvivalData.get_wave_params(wave_number + 1, run_params.get("campaign_mode", CampaignData.MODE_NORMAL)))
 		_grant_wave_milestone(wave_number)
+		_grant_survival_rolls(wave_number)
 		_grant_survival_event_reward(wave_number)
 		_prepare_survival_event(wave_number + 1)
+
+
+## Крутки за пройденный уровень кампании: 5-й +3, 10-й +5
+func _grant_campaign_rolls():
+	if not run_params.has("campaign_params"):
+		return
+	var completed: int = int(run_params.get("campaign_level", 0))
+	var rolls: int = GachaData.campaign_roll_reward(completed)
+	if rolls <= 0:
+		return
+	var gm_rolls = get_tree().get_first_node_in_group("game_manager")
+	if gm_rolls:
+		gm_rolls.grant_gacha_rolls(rolls, "кампания: уровень " + str(completed))
+		_gacha_rewards_log.append(Loc.t("reward.gacha_rolls", {"n": rolls}))
+
+
+## Крутки за каждые 10 волн выживания (видимо в HUD сразу)
+func _grant_survival_rolls(wave_number: int):
+	var rolls: int = GachaData.survival_roll_reward(wave_number)
+	if rolls <= 0:
+		return
+	var gm_rolls = get_tree().get_first_node_in_group("game_manager")
+	if gm_rolls:
+		gm_rolls.grant_gacha_rolls(rolls, "выживание: волна " + str(wave_number))
+		_gacha_rewards_log.append(Loc.t("reward.gacha_rolls", {"n": rolls}))
+		var hud_rolls = get_tree().get_first_node_in_group("hud")
+		if hud_rolls and hud_rolls.has_method("show_reward_note"):
+			hud_rolls.show_reward_note(Loc.t("hud.rolls_note", {"n": rolls}))
 
 
 # ==================== СОБЫТИЯ ВЫЖИВАНИЯ ====================
@@ -739,6 +768,7 @@ func _on_game_won(run_number: int, reward: float):
 	
 	print("ПОБЕДА! Забег #" + str(run_number) + " награда: " + str(reward))
 	_grant_gacha_rewards(run_number)
+	_grant_campaign_rolls()
 	finish_run(true)
 
 

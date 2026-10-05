@@ -115,6 +115,8 @@ const STRINGS := {
 	"hud.anomaly_locked": {"ru": "Аномалия закрыта - нужен артефакт: {artifact}", "en": "Anomaly locked - artifact needed: {artifact}"},
 	"hud.anomaly_locked_tip": {"ru": "Получи артефакт: {artifact}", "en": "Obtain the artifact: {artifact}"},
 	"hud.reward_note": {"ru": "🎁 НАГРАДА: {text}", "en": "🎁 REWARD: {text}"},
+	"reward.gacha_rolls": {"ru": "Крутки гачи: +{n}", "en": "Gacha rolls: +{n}"},
+	"hud.rolls_note": {"ru": "🎟 +{n} круток гачи", "en": "🎟 +{n} gacha rolls"},
 	"reward.gacha_mutant": {"ru": "Мутант: {name}", "en": "Mutant: {name}"},
 	"reward.gacha_artifact": {"ru": "Артефакт: {name}", "en": "Artifact: {name}"},
 	"gacha.title": {"ru": "ГАЧА ЗОНЫ - два рукава удачи", "en": "ZONE GACHA - two arms of luck"},

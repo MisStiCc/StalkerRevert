@@ -41,6 +41,22 @@ const ANOMALY_ARTIFACT_MAP := {
 static func get_artifact_for_anomaly(anomaly_type: String) -> String:
 	return ANOMALY_ARTIFACT_MAP.get(anomaly_type, "")
 
+
+## Награда крутками за пройденный уровень кампании:
+## каждый 5-й уровень +3, каждый 10-й +5 (10-й перекрывает пятёрку), остальные 0
+static func campaign_roll_reward(completed_level: int) -> int:
+	var level := int(completed_level)
+	if level > 0 and level % 10 == 0:
+		return 5
+	if level > 0 and level % 5 == 0:
+		return 3
+	return 0
+
+
+## Награда крутками за волну выживания: каждая 10-я +3
+static func survival_roll_reward(completed_wave: int) -> int:
+	return 3 if int(completed_wave) > 0 and int(completed_wave) % 10 == 0 else 0
+
 # Уровень кампании -> что открывается (мутанты по силе, арты по редкости)
 const UNLOCK_TABLE := {
 	3: {"artifacts": ["slime_artifact", "spark_artifact"]},
