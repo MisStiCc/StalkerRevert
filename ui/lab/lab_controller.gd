@@ -2061,7 +2061,7 @@ func _rebuild_farm_recycle():
 	bar.custom_minimum_size = Vector2(0, 16)
 	farm_list.add_child(bar)
 	# Уже гарантированные крутки из партии
-	var ready_rolls := total / 10
+	var ready_rolls := int(total / 10.0)
 	if ready_rolls > 0:
 		var ready_label := Label.new()
 		ready_label.text = Loc.t("farm.recycle_confirm", {"n": ready_rolls})
