@@ -505,6 +505,7 @@ func _rebuild_shop():
 			btn.text = _shop_item_text(entry[1], type, true) + "
 🧬" + str(int(price))
 			btn.pressed.connect(_on_shop_buy.bind("mutant", type, price))
+		_add_card_icon(btn, type, true)
 		btn.custom_minimum_size = Vector2(160, 34)
 		mutant_grid.add_child(btn)
 	for entry in GachaData.get_shop_artifacts():
@@ -519,8 +520,29 @@ func _rebuild_shop():
 			btn.text = _shop_item_text(entry[1], type, false) + "
 🧬" + str(int(price))
 			btn.pressed.connect(_on_shop_buy.bind("artifact", type, price))
+		_add_card_icon(btn, type, false)
 		btn.custom_minimum_size = Vector2(240, 34)
 		artifact_grid.add_child(btn)
+
+
+func _add_card_icon(btn: Button, type: String, is_mutant: bool):
+	"""Карточка-иконка слева от текста кнопки (магазин/дропы/ферма)"""
+	var path: String = GachaData.card_icon_path(type, is_mutant)
+	if ResourceLoader.exists(path):
+		btn.icon = load(path)
+		btn.expand_icon = true
+		btn.add_theme_constant_override("icon_max_width", 26)
+
+
+func _make_icon_rect(type: String, is_mutant: bool, size: int = 24) -> TextureRect:
+	var rect := TextureRect.new()
+	var path: String = GachaData.card_icon_path(type, is_mutant)
+	if ResourceLoader.exists(path):
+		rect.texture = load(path)
+	rect.custom_minimum_size = Vector2(size, size)
+	rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	return rect
 
 
 func _shop_item_text(item_name: String, type: String, is_mutant: bool) -> String:
@@ -658,6 +680,8 @@ func _make_star_section(text: String) -> Label:
 
 func _make_star_row(kind: String, type: String) -> Control:
 	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	row.add_child(_make_icon_rect(type, kind == "mutant", 26))
 	var stars: int = lab_data.get_mutant_stars(type) if kind == "mutant" else lab_data.get_artifact_stars(type)
 
 	var name_label := Label.new()
@@ -928,6 +952,8 @@ func _rebuild_farm_panel():
 				continue  # корм той же звёздности, что и цель
 			found = true
 			var row := HBoxContainer.new()
+			row.add_theme_constant_override("separation", 6)
+			row.add_child(_make_icon_rect(type, true, 26))
 			var stars: int = lab_data.get_mutant_stars(type)
 			var name_label := Label.new()
 			name_label.text = "%s %s (%s)" % [Loc.type_name(type), LabData.stars_text(stars), Loc.t("farm.progress", {"cur": lab_data.get_star_progress(type), "need": GachaData.get_star_feed_cost(stars)})]
@@ -953,6 +979,8 @@ func _rebuild_farm_panel():
 			continue
 		any_row = true
 		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 6)
+		row.add_child(_make_icon_rect(type, true, 26))
 		var stars: int = int(req.get("stars"))
 		var name_label := Label.new()
 		name_label.text = "%s %s - %s, %s" % [
@@ -1052,8 +1080,8 @@ var gacha_list: VBoxContainer
 var _mutant_spin_stats: Array = [0, 0, 0, 0, 0]
 var _artifact_spin_stats: Array = [0, 0, 0, 0, 0]
 # Последние дропы для показа
-var _mutant_last_drops: Array[String] = []
-var _artifact_last_drops: Array[String] = []
+var _mutant_last_drops: Array = []
+var _artifact_last_drops: Array = []
 
 
 func _build_gacha_ui():
@@ -1152,7 +1180,7 @@ func _on_gacha_spin(kind: String, times: int):
 			_mutant_spin_stats[0] += 1
 			var idx: int = {"common": 1, "uncommon": 2, "rare": 3, "legendary": 4}.get(str(r.get("rarity")), 1)
 			_mutant_spin_stats[idx] += 1
-			_mutant_last_drops.push_front(_format_drop(r))
+			_mutant_last_drops.push_front(r)
 			while _mutant_last_drops.size() > 8:
 				_mutant_last_drops.pop_back()
 	else:
@@ -1161,13 +1189,24 @@ func _on_gacha_spin(kind: String, times: int):
 			_artifact_spin_stats[0] += 1
 			var idx: int = {"common": 1, "uncommon": 2, "rare": 3, "legendary": 4}.get(str(r.get("rarity")), 1)
 			_artifact_spin_stats[idx] += 1
-			_artifact_last_drops.push_front(_format_drop(r))
+			_artifact_last_drops.push_front(r)
 			while _artifact_last_drops.size() > 8:
 				_artifact_last_drops.pop_back()
 	if results.is_empty():
 		_show_message(Loc.t("gacha.no_rolls"), 1.5)
 	_rebuild_gacha_panel()
 	_refresh_ui()
+
+
+func _make_drop_row(r: Dictionary, is_mutant: bool) -> Control:
+	"""Строка дропа гачи: карточка-иконка + имя, окрашенное по редкости"""
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	row.add_child(_make_icon_rect(str(r.get("type", "")), is_mutant, 24))
+	var label := Label.new()
+	label.text = _format_drop(r)
+	label.add_theme_color_override("font_color", GachaData.rarity_color(str(r.get("rarity", "common"))))
+	return row
 
 
 func _format_drop(r: Dictionary) -> String:
@@ -1217,10 +1256,8 @@ func _rebuild_gacha_panel():
 		gacha_list.add_child(mut_stats)
 	if not _mutant_last_drops.is_empty():
 		gacha_list.add_child(_make_star_section(Loc.t("gacha.last_drops")))
-		for line in _mutant_last_drops:
-			var drop := Label.new()
-			drop.text = line
-			gacha_list.add_child(drop)
+		for r in _mutant_last_drops:
+			gacha_list.add_child(_make_drop_row(r, true))
 
 	# === АРТЕФАКТЫ ===
 	gacha_list.add_child(_make_star_section(Loc.t("gacha.artifacts_header")))
@@ -1234,7 +1271,5 @@ func _rebuild_gacha_panel():
 		gacha_list.add_child(art_stats)
 	if not _artifact_last_drops.is_empty():
 		gacha_list.add_child(_make_star_section(Loc.t("gacha.last_drops")))
-		for line in _artifact_last_drops:
-			var drop2 := Label.new()
-			drop2.text = line
-			gacha_list.add_child(drop2)
+		for r in _artifact_last_drops:
+			gacha_list.add_child(_make_drop_row(r, false))

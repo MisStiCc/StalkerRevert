@@ -159,6 +159,24 @@ static func display_name(type: String) -> String:
 	return DISPLAY_NAMES.get(type, type)
 
 
+# Цвета редкости для текста дропов
+const RARITY_COLORS := {
+	"common": Color(0.75, 0.75, 0.78),
+	"uncommon": Color(0.45, 0.85, 0.5),
+	"rare": Color(0.45, 0.65, 1.0),
+	"legendary": Color(1.0, 0.72, 0.25),
+}
+
+
+static func rarity_color(rarity: String) -> Color:
+	return RARITY_COLORS.get(rarity, Color.WHITE)
+
+
+## Путь к карточке-иконке (ui/cards/mut_*.svg / art_*.svg)
+static func card_icon_path(type: String, is_mutant: bool) -> String:
+	return "res://ui/cards/%s_%s.svg" % ["mut" if is_mutant else "art", type]
+
+
 static func get_default_unlocked_mutants() -> Array:
 	return DEFAULT_UNLOCKED_MUTANTS.duplicate()
 
