@@ -172,9 +172,10 @@ static func rarity_color(rarity: String) -> Color:
 	return RARITY_COLORS.get(rarity, Color.WHITE)
 
 
-## Путь к карточке-иконке (ui/cards/mut_*.svg / art_*.svg)
-static func card_icon_path(type: String, is_mutant: bool) -> String:
-	return "res://ui/cards/%s_%s.svg" % ["mut" if is_mutant else "art", type]
+## Путь к карточке-иконке (ui/cards/mut_*.svg / art_*.svg); gray=true - закрытая
+static func card_icon_path(type: String, is_mutant: bool, gray: bool = false) -> String:
+	var dir := "gray/" if gray else ""
+	return "res://ui/cards/%s%s_%s.svg" % [dir, "mut" if is_mutant else "art", type]
 
 
 static func get_default_unlocked_mutants() -> Array:

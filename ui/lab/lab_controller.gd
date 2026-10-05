@@ -78,6 +78,7 @@ func _ready():
 	_build_star_ui()
 	_build_farm_ui()
 	_build_gacha_ui()
+	_build_gallery_ui()
 	_build_language_button()
 	Loc.changed.connect(_apply_static_texts)
 	_show_last_run_result()
@@ -1273,3 +1274,159 @@ func _rebuild_gacha_panel():
 		gacha_list.add_child(_make_star_section(Loc.t("gacha.last_drops")))
 		for r in _artifact_last_drops:
 			gacha_list.add_child(_make_drop_row(r, false))
+
+
+# ==================== ГАЛЕРЕЯ ====================
+
+var gallery_panel: Control
+var gallery_list: VBoxContainer
+
+
+func _build_gallery_ui():
+	"""Кнопка ГАЛЕРЕЯ + панель коллекции: открытые цветные, закрытые серые"""
+	var bottom: HBoxContainer = get_node_or_null("VBox/BottomButtons")
+	if bottom:
+		var gal_btn := Button.new()
+		gal_btn.name = "GalleryButton"
+		gal_btn.text = Loc.t("lab.gallery")
+		gal_btn.pressed.connect(_on_gallery_pressed)
+		gal_btn.mouse_entered.connect(_play_hover_sound)
+		bottom.add_child(gal_btn)
+
+	gallery_panel = Control.new()
+	gallery_panel.name = "GalleryPanel"
+	gallery_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+	gallery_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	gallery_panel.visible = false
+	add_child(gallery_panel)
+
+	var shade := ColorRect.new()
+	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	shade.color = Color(0, 0, 0, 0.6)
+	gallery_panel.add_child(shade)
+
+	var panel := Panel.new()
+	panel.anchor_left = 0.5
+	panel.anchor_top = 0.5
+	panel.anchor_right = 0.5
+	panel.anchor_bottom = 0.5
+	panel.offset_left = -280.0
+	panel.offset_top = -210.0
+	panel.offset_right = 280.0
+	panel.offset_bottom = 210.0
+	gallery_panel.add_child(panel)
+
+	var title := Label.new()
+	title.text = Loc.t("gallery.title")
+	title.position = Vector2(0, 10)
+	title.size = Vector2(560, 25)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	panel.add_child(title)
+
+	var scroll := ScrollContainer.new()
+	scroll.position = Vector2(20, 44)
+	scroll.size = Vector2(520, 308)
+	panel.add_child(scroll)
+
+	gallery_list = VBoxContainer.new()
+	gallery_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	gallery_list.add_theme_constant_override("separation", 6)
+	scroll.add_child(gallery_list)
+
+	var close_btn := Button.new()
+	close_btn.text = Loc.t("lab.back")
+	close_btn.position = Vector2(200, 362)
+	close_btn.size = Vector2(160, 35)
+	close_btn.pressed.connect(_on_gallery_close_pressed)
+	close_btn.mouse_entered.connect(_play_hover_sound)
+	panel.add_child(close_btn)
+
+
+func _on_gallery_pressed():
+	_play_click_sound()
+	shop_panel.visible = false
+	farm_panel.visible = false
+	star_panel.visible = false
+	gacha_panel.visible = false
+	gallery_panel.visible = true
+	_rebuild_gallery_panel()
+
+
+func _on_gallery_close_pressed():
+	_play_click_sound()
+	gallery_panel.visible = false
+
+
+func _gallery_tile(type: String, is_mutant: bool) -> Control:
+	"""Плитка карточки: цветная если открыто, серая если нет"""
+	var unlocked: bool = lab_data.unlocked_mutants.has(type) if is_mutant else lab_data.won_artifacts.has(type)
+	var tile := VBoxContainer.new()
+	tile.custom_minimum_size = Vector2(82, 0)
+	tile.add_theme_constant_override("separation", 2)
+	tile.alignment = BoxContainer.ALIGNMENT_BEGIN
+
+	var rect := TextureRect.new()
+	rect.texture = load(GachaData.card_icon_path(type, is_mutant, not unlocked))
+	rect.custom_minimum_size = Vector2(72, 72)
+	rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	rect.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	if not unlocked:
+		rect.modulate = Color(0.85, 0.85, 0.9, 0.9)
+	tile.add_child(rect)
+
+	var name_label := Label.new()
+	name_label.text = Loc.type_name(type)
+	name_label.add_theme_font_size_override("font_size", 9)
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD
+	name_label.custom_minimum_size = Vector2(82, 0)
+	name_label.add_theme_color_override("font_color", GachaData.rarity_color(GachaData.get_artifact_rarity(type) if not is_mutant else GachaData.get_mutant_rarity(type)) if unlocked else Color(0.5, 0.5, 0.55))
+	tile.add_child(name_label)
+
+	var stars_label := Label.new()
+	var stars: int = lab_data.get_mutant_stars(type) if is_mutant else lab_data.get_artifact_stars(type)
+	stars_label.text = LabData.stars_text(stars) if unlocked else "🔒"
+	stars_label.add_theme_font_size_override("font_size", 9)
+	stars_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	stars_label.add_theme_color_override("font_color", Color(1.0, 0.72, 0.25) if unlocked else Color(0.5, 0.5, 0.55))
+	tile.add_child(stars_label)
+
+	var unlock_level: int = GachaData.get_unlock_campaign_level(type)
+	tile.tooltip_text = Loc.t("gallery.unlocked_tip") if unlocked else Loc.t("gallery.locked_tip", {"n": unlock_level})
+	return tile
+
+
+func _rebuild_gallery_panel():
+	"""Все мутанты и арты: открытые цветные, закрытые серые силуэты"""
+	for child in gallery_list.get_children():
+		child.queue_free()
+	if not lab_data:
+		return
+
+	gallery_list.add_child(_make_farm_section(Loc.t("lab.mutants")))
+	var mut_grid := GridContainer.new()
+	mut_grid.columns = 6
+	mut_grid.add_theme_constant_override("h_separation", 4)
+	mut_grid.add_theme_constant_override("v_separation", 4)
+	gallery_list.add_child(mut_grid)
+	for entry in GachaData.MUTANT_POOL.values():
+		for e in entry:
+			mut_grid.add_child(_gallery_tile(str(e[0]), true))
+
+	gallery_list.add_child(_gallery_section(" "))
+	gallery_list.add_child(_gallery_section(Loc.t("shop.artifacts_header").split(" (")[0]))
+	var art_grid := GridContainer.new()
+	art_grid.columns = 6
+	art_grid.add_theme_constant_override("h_separation", 4)
+	art_grid.add_theme_constant_override("v_separation", 4)
+	gallery_list.add_child(art_grid)
+	for rarity in GachaData.ARTIFACT_POOL.values():
+		for type in rarity:
+			art_grid.add_child(_gallery_tile(str(type), false))
+
+
+func _gallery_section(text: String) -> Label:
+	var label := Label.new()
+	label.text = text
+	return label
