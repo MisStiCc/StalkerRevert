@@ -71,10 +71,14 @@ func _ready():
 	
 	_load_data()
 	_setup_connections()
+	_apply_static_texts()
 	_refresh_ui()
 	_setup_campaign_selector()
 	_refresh_campaign_ui()
 	_build_star_ui()
+	_build_farm_ui()
+	_build_language_button()
+	Loc.changed.connect(_apply_static_texts)
 	_show_last_run_result()
 
 	print("lab_controller: initialized, GameManager найден: ", game_manager != null)
@@ -158,6 +162,60 @@ func _play_hover_sound():
 		sm.play_sound("ui_hover", 0.3)
 
 
+func _apply_static_texts():
+	"""Все статические надписи лаборатории по текущему языку (Loc.changed пере apply)"""
+	var title: Label = get_node_or_null("VBox/Header/Title")
+	if title:
+		title.text = Loc.t("lab.title")
+	var info: Label = get_node_or_null("VBox/InfoPanel/HBox/InfoLabel")
+	if info:
+		info.text = Loc.t("lab.info_header")
+	var biomass_prefix: Label = get_node_or_null("VBox/InfoPanel/HBox/BiomassLabel")
+	if biomass_prefix:
+		biomass_prefix.text = Loc.t("lab.biomass_prefix")
+	start_run_button.text = Loc.t("lab.start_run")
+	menu_button.text = Loc.t("lab.menu")
+	settings_button.text = Loc.t("lab.settings")
+	shop_button.text = Loc.t("lab.shop")
+	save_button.text = Loc.t("lab.save")
+	artifact_storage_button.text = Loc.t("lab.storage_open")
+	var storage_label: Label = get_node_or_null("VBox/StoragePanel/HBox/StorageLabel")
+	if storage_label:
+		storage_label.text = Loc.t("lab.storage")
+	var settings_title: Label = get_node_or_null("SettingsScreen/Panel/SettingsTitle")
+	if settings_title:
+		settings_title.text = Loc.t("lab.settings")
+	var music_label: Label = get_node_or_null("SettingsScreen/Panel/MusicLabel")
+	if music_label:
+		music_label.text = Loc.t("lab.settings_music")
+	var sfx_label: Label = get_node_or_null("SettingsScreen/Panel/SfxLabel")
+	if sfx_label:
+		sfx_label.text = Loc.t("lab.settings_sfx")
+	var settings_back: Button = get_node_or_null("SettingsScreen/Panel/BackButton")
+	if settings_back:
+		settings_back.text = Loc.t("lab.back")
+	var shop_title: Label = get_node_or_null("ShopPanel/Panel/ShopTitle")
+	if shop_title:
+		shop_title.text = Loc.t("shop.title")
+	var mutants_header: Label = get_node_or_null("ShopPanel/Panel/MutantsHeader")
+	if mutants_header:
+		mutants_header.text = Loc.t("shop.mutants_header")
+	var artifacts_header: Label = get_node_or_null("ShopPanel/Panel/ArtifactsHeader")
+	if artifacts_header:
+		artifacts_header.text = Loc.t("shop.artifacts_header")
+	var shop_close: Button = get_node_or_null("ShopPanel/Panel/ShopClose")
+	if shop_close:
+		shop_close.text = Loc.t("lab.back")
+	# Панели звёзд/фермы (строятся кодом) - перезаполнить
+	if star_panel and star_panel.visible:
+		_rebuild_star_panel()
+	if farm_panel and farm_panel.visible:
+		_rebuild_farm_panel()
+	# Языковая кнопка показывает текущий язык
+	if _lang_button:
+		_lang_button.text = Loc.t("menu.language")
+
+
 func _play_click_sound():
 	var sm = get_tree().get_first_node_in_group("sound_manager")
 	if sm and sm.has_method("play_sound"):
@@ -169,17 +227,17 @@ func _refresh_ui():
 		print("lab_data отсутствует, создаем новый")
 		lab_data = LabData.new()
 	
-	run_number_label.text = "День %d" % lab_data.run_number
+	run_number_label.text = Loc.t("lab.day", {"n": lab_data.run_number})
 	biomass_label.text = _format_number(lab_data.biomass)
 	
-	_update_station_button(anomaly_station, "АНОМАЛИИ", lab_data.get_total_anomaly_levels())
-	_update_station_button(mutant_station, "МУТАНТЫ", lab_data.get_total_mutant_levels())
-	_update_station_button(monolith_station, "МОНОЛИТ", lab_data.get_total_monolith_levels())
+	_update_station_button(anomaly_station, Loc.t("lab.anomalies"), lab_data.get_total_anomaly_levels())
+	_update_station_button(mutant_station, Loc.t("lab.mutants"), lab_data.get_total_mutant_levels())
+	_update_station_button(monolith_station, Loc.t("lab.monolith"), lab_data.get_total_monolith_levels())
 	
 	var common = lab_data.get_artifact_count("common")
 	var rare = lab_data.get_artifact_count("rare")
 	var legendary = lab_data.get_artifact_count("legendary")
-	artifact_counts_label.text = "Common: %d   Rare: %d   Legendary: %d" % [common, rare, legendary]
+	artifact_counts_label.text = Loc.t("lab.storage_counts", {"c": common, "r": rare, "l": legendary})
 	
 	if statistics:
 		stats_label.text = "Всего забегов: %d   Побед: %d   Поражений: %d\nСталкеров убито: %d   Артефактов украдено: %d\nРекорд выживания: %d волн" % [
@@ -199,7 +257,7 @@ func _update_station_button(station: Button, station_name: String, total_levels:
 	
 	var level_label = station.get_node_or_null("StationLevel")
 	if level_label and level_label is Label:
-		level_label.text = "Ур.%d" % total_levels
+		level_label.text = Loc.t("lab.level_short", {"n": total_levels})
 
 
 func _format_number(value: float) -> String:
@@ -433,7 +491,7 @@ func _rebuild_shop():
 	for child in artifact_grid.get_children():
 		child.queue_free()
 	var lab_biomass: float = lab_data.biomass if lab_data else 0.0
-	shop_biomass_label.text = "Биомасса лаборатории: " + str(int(lab_biomass))
+	shop_biomass_label.text = Loc.t("shop.biomass", {"n": int(lab_biomass)})
 	for entry in GachaData.get_shop_mutants():
 		var type: String = entry[0]
 		var price: float = entry[2]
@@ -441,7 +499,7 @@ func _rebuild_shop():
 		if lab_data and not lab_data.unlocked_mutants.has(type):
 			btn.disabled = true
 			btn.text = entry[1] + "
-🔒 уровень " + str(GachaData.get_unlock_campaign_level(type))
+" + Loc.t("shop.locked", {"n": GachaData.get_unlock_campaign_level(type)})
 		else:
 			btn.text = _shop_item_text(entry[1], type, true) + "
 🧬" + str(int(price))
@@ -455,7 +513,7 @@ func _rebuild_shop():
 		if lab_data and not lab_data.won_artifacts.has(type):
 			btn.disabled = true
 			btn.text = entry[1] + "
-🔒 уровень " + str(GachaData.get_unlock_campaign_level(type))
+" + Loc.t("shop.locked", {"n": GachaData.get_unlock_campaign_level(type)})
 		else:
 			btn.text = _shop_item_text(entry[1], type, false) + "
 🧬" + str(int(price))
@@ -487,7 +545,7 @@ func _on_shop_buy(kind: String, item_type: String, price: float):
 		_play_click_sound()
 		_rebuild_shop()
 	else:
-		_show_message("Недостаточно биомассы в лаборатории", 1.5)
+		_show_message(Loc.t("shop.not_enough"), 1.5)
 
 
 # ==================== ЗВЁЗДНОСТЬ ====================
@@ -503,7 +561,7 @@ func _build_star_ui():
 	if shop_inner:
 		var open_btn := Button.new()
 		open_btn.name = "StarOpenButton"
-		open_btn.text = "★ ЗВЁЗДЫ"
+		open_btn.text = Loc.t("shop.stars")
 		open_btn.position = Vector2(390, 8)
 		open_btn.size = Vector2(150, 30)
 		open_btn.pressed.connect(_on_stars_pressed)
@@ -534,7 +592,7 @@ func _build_star_ui():
 	star_panel.add_child(panel)
 
 	var title := Label.new()
-	title.text = "ПРОКАЧКА ЗВЁЗД - дубли гачи дают звезду, звёзды дают статы"
+	title.text = Loc.t("stars.title")
 	title.set_anchors_preset(Control.PRESET_TOP_WIDE)
 	title.position = Vector2(0, 10)
 	title.size = Vector2(560, 25)
@@ -585,7 +643,7 @@ func _rebuild_star_panel():
 		child.queue_free()
 	if not lab_data:
 		return
-	star_biomass_label.text = "Биомасса лаборатории: %d   (цена звезды: 500 → 1000 → 2000 → 4000)" % int(lab_data.biomass)
+	star_biomass_label.text = Loc.t("stars.biomass_line", {"n": int(lab_data.biomass)})
 
 	var mutants: Array[String] = []
 	for t in lab_data.unlocked_mutants:
@@ -598,16 +656,16 @@ func _rebuild_star_panel():
 
 	if mutants.is_empty() and artifacts.is_empty():
 		var empty := Label.new()
-		empty.text = "Коллекция пуста.\nВыигрывайте мутантов и артефакты в гаче и за вехи волн:\nдубликат уже имеющегося даёт +1 звезду автоматически."
+		empty.text = Loc.t("stars.empty")
 		star_list.add_child(empty)
 		return
 
 	if not mutants.is_empty():
-		star_list.add_child(_make_star_section("МУТАНТЫ (+20% HP и урона за звезду)"))
+		star_list.add_child(_make_star_section(Loc.t("stars.mutants_header")))
 	for type in mutants:
 		star_list.add_child(_make_star_row("mutant", type))
 	if not artifacts.is_empty():
-		star_list.add_child(_make_star_section("АРТЕФАКТЫ (+20% награды за звезду)"))
+		star_list.add_child(_make_star_section(Loc.t("stars.artifacts_header")))
 	for type in artifacts:
 		star_list.add_child(_make_star_row("artifact", type))
 
@@ -624,13 +682,13 @@ func _make_star_row(kind: String, type: String) -> Control:
 
 	var name_label := Label.new()
 	name_label.text = "%s  %s" % [GachaData.display_name(type), LabData.stars_text(stars)]
-	name_label.tooltip_text = "Множитель статов: x%.1f" % LabData.get_star_stat_mult(stars)
+	name_label.tooltip_text = Loc.t("stars.mult_tip", {"n": "%.1f" % LabData.get_star_stat_mult(stars)})
 	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(name_label)
 
 	if stars >= LabData.MAX_STARS:
 		var max_label := Label.new()
-		max_label.text = "МАКС"
+		max_label.text = Loc.t("stars.max")
 		row.add_child(max_label)
 	else:
 		var cost := lab_data.get_star_upgrade_cost(stars)
@@ -656,7 +714,7 @@ func _on_star_upgrade(kind: String, type: String):
 			_rebuild_shop()
 		_refresh_ui()
 	else:
-		_show_message("Недостаточно биомассы или звёзды максимальны", 1.5)
+		_show_message(Loc.t("stars.fail_msg"), 1.5)
 
 
 func _on_settings_pressed():
@@ -772,3 +830,208 @@ func _show_message(text: String, duration: float = 2.0):
 	await get_tree().create_timer(duration).timeout
 	if is_instance_valid(msg_label):
 		msg_label.queue_free()
+
+# ==================== ФЕРМА МУТАНТОВ ====================
+
+var farm_panel: Control
+var farm_list: VBoxContainer
+var farm_title_label: Label
+# Режим кормления: [fodder_type] или []
+var _feed_fodder: Array = []
+
+
+func _build_farm_ui():
+	"""Кнопка ФЕРМА в нижнем ряду + панель копий и кормления (строится кодом)"""
+	var bottom: HBoxContainer = get_node_or_null("VBox/BottomButtons")
+	if bottom:
+		var farm_btn := Button.new()
+		farm_btn.name = "FarmButton"
+		farm_btn.text = Loc.t("lab.farm")
+		farm_btn.pressed.connect(_on_farm_pressed)
+		farm_btn.mouse_entered.connect(_play_hover_sound)
+		bottom.add_child(farm_btn)
+
+	farm_panel = Control.new()
+	farm_panel.name = "FarmPanel"
+	farm_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+	farm_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	farm_panel.visible = false
+	add_child(farm_panel)
+
+	var shade := ColorRect.new()
+	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	shade.color = Color(0, 0, 0, 0.6)
+	farm_panel.add_child(shade)
+
+	var panel := Panel.new()
+	panel.anchor_left = 0.5
+	panel.anchor_top = 0.5
+	panel.anchor_right = 0.5
+	panel.anchor_bottom = 0.5
+	panel.offset_left = -280.0
+	panel.offset_top = -210.0
+	panel.offset_right = 280.0
+	panel.offset_bottom = 210.0
+	farm_panel.add_child(panel)
+
+	farm_title_label = Label.new()
+	farm_title_label.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	farm_title_label.position = Vector2(0, 10)
+	farm_title_label.size = Vector2(560, 25)
+	farm_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	panel.add_child(farm_title_label)
+
+	var scroll := ScrollContainer.new()
+	scroll.position = Vector2(20, 44)
+	scroll.size = Vector2(520, 308)
+	panel.add_child(scroll)
+
+	farm_list = VBoxContainer.new()
+	farm_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	farm_list.add_theme_constant_override("separation", 4)
+	scroll.add_child(farm_list)
+
+	var close_btn := Button.new()
+	close_btn.text = Loc.t("lab.back")
+	close_btn.position = Vector2(200, 362)
+	close_btn.size = Vector2(160, 35)
+	close_btn.pressed.connect(_on_farm_close_pressed)
+	close_btn.mouse_entered.connect(_play_hover_sound)
+	panel.add_child(close_btn)
+
+
+func _on_farm_pressed():
+	_play_click_sound()
+	shop_panel.visible = false
+	star_panel.visible = false
+	_feed_fodder.clear()
+	farm_panel.visible = true
+	_rebuild_farm_panel()
+
+
+func _on_farm_close_pressed():
+	_play_click_sound()
+	farm_panel.visible = false
+
+
+func _rebuild_farm_panel():
+	"""Копии на ферме: '+★' (копия того же типа) и 'кормить' (копия другому типу)"""
+	for child in farm_list.get_children():
+		child.queue_free()
+	if not lab_data:
+		return
+	farm_title_label.text = Loc.t("farm.title")
+
+	# Режим кормления: выбор цели для выбранного корма
+	if not _feed_fodder.is_empty():
+		var fodder_type: String = _feed_fodder[0]
+		var points: int = GachaData.get_fodder_value(fodder_type, true)
+		farm_list.add_child(_make_farm_section(Loc.t("farm.pick_target", {"fodder": Loc.type_name(fodder_type), "points": points})))
+		var cancel := Button.new()
+		cancel.text = Loc.t("lab.back")
+		cancel.pressed.connect(_on_feed_cancel)
+		farm_list.add_child(cancel)
+		for type in lab_data.unlocked_mutants:
+			if type == fodder_type:
+				continue
+			var row := HBoxContainer.new()
+			var stars: int = lab_data.get_mutant_stars(type)
+			var name_label := Label.new()
+			name_label.text = "%s %s (%s)" % [Loc.type_name(type), LabData.stars_text(stars), Loc.t("farm.progress", {"cur": lab_data.get_star_progress(type), "need": GachaData.get_star_feed_cost(stars)})]
+			name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			row.add_child(name_label)
+			var btn := Button.new()
+			btn.text = Loc.t("farm.feed_btn")
+			btn.pressed.connect(_on_feed_confirm.bind(type))
+			row.add_child(btn)
+			farm_list.add_child(row)
+		return
+
+	var copies_found := false
+	for type in lab_data.unlocked_mutants:
+		var copies: int = lab_data.get_farm_copies(type)
+		if copies <= 0:
+			continue
+		copies_found = true
+		var row := HBoxContainer.new()
+		var stars: int = lab_data.get_mutant_stars(type)
+		var name_label := Label.new()
+		name_label.text = "%s %s - %s" % [Loc.type_name(type), LabData.stars_text(stars), Loc.t("farm.copies", {"n": copies})]
+		name_label.tooltip_text = Loc.t("farm.value_tip", {"points": GachaData.get_fodder_value(type, true)})
+		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(name_label)
+		if stars < LabData.MAX_STARS:
+			var star_btn := Button.new()
+			star_btn.text = Loc.t("farm.star_btn")
+			star_btn.pressed.connect(_on_farm_same_star.bind(type))
+			row.add_child(star_btn)
+		if copies > 1:
+			var feed_btn := Button.new()
+			feed_btn.text = Loc.t("farm.feed_btn")
+			feed_btn.pressed.connect(_on_farm_feed_pressed.bind(type))
+			row.add_child(feed_btn)
+		farm_list.add_child(row)
+
+	if not copies_found:
+		var empty := Label.new()
+		empty.text = Loc.t("farm.empty")
+		farm_list.add_child(empty)
+
+
+func _make_farm_section(text: String) -> Label:
+	var label := Label.new()
+	label.text = text
+	return label
+
+
+func _on_farm_same_star(type: String):
+	_play_click_sound()
+	var msg: String = game_manager.feed_same_copy(type)
+	print("Ферма: ", msg)
+	_rebuild_farm_panel()
+	_refresh_ui()
+
+
+func _on_farm_feed_pressed(type: String):
+	_play_click_sound()
+	_feed_fodder = [type]
+	_rebuild_farm_panel()
+
+
+func _on_feed_cancel():
+	_play_click_sound()
+	_feed_fodder.clear()
+	_rebuild_farm_panel()
+
+
+func _on_feed_confirm(target_type: String):
+	_play_click_sound()
+	var msg: String = game_manager.feed_fodder(_feed_fodder[0], target_type)
+	_show_message(msg, 2.0)
+	_feed_fodder.clear()
+	_rebuild_farm_panel()
+	_refresh_ui()
+
+
+# ==================== ЯЗЫК ====================
+
+var _lang_button: Button = null
+
+
+func _build_language_button():
+	"""Кнопка RU/EN в настройках лаборатории"""
+	var panel = get_node_or_null("SettingsScreen/Panel")
+	if not panel:
+		return
+	_lang_button = Button.new()
+	_lang_button.text = Loc.t("menu.language")
+	_lang_button.position = Vector2(30, 240)
+	_lang_button.size = Vector2(340, 36)
+	_lang_button.pressed.connect(_on_language_pressed)
+	_lang_button.mouse_entered.connect(_play_hover_sound)
+	panel.add_child(_lang_button)
+
+
+func _on_language_pressed():
+	_play_click_sound()
+	Loc.toggle()

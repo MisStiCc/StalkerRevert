@@ -510,6 +510,13 @@ func _on_wave_started(wave_number: int, count: int):
 	Signals.wave_started.emit(wave_number, count, progression_manager.get_current_difficulty())
 	
 	print("Волна " + str(wave_number) + " началась, сталкеров: " + str(count))
+	
+	# Анонс события выживания (волна уже усилена в _on_wave_ended прошлой волны)
+	if run_params.get("run_mode", "") == "survival" and _pending_event:
+		var hud = get_tree().get_first_node_in_group("hud")
+		if hud and hud.has_method("show_event_note"):
+			hud.show_event_note(_pending_event)
+		_pending_event = {}
 
 
 func _on_wave_ended(wave_number: int, survivors: int):
@@ -523,6 +530,46 @@ func _on_wave_ended(wave_number: int, survivors: int):
 		_apply_survival_wave(
 			SurvivalData.get_wave_params(wave_number + 1, run_params.get("campaign_mode", CampaignData.MODE_NORMAL)))
 		_grant_wave_milestone(wave_number)
+		_grant_survival_event_reward(wave_number)
+		_prepare_survival_event(wave_number + 1)
+
+
+# ==================== СОБЫТИЯ ВЫЖИВАНИЯ ====================
+
+var _pending_event: Dictionary = {}
+
+
+## Волна-событие отбита: усиленная награда (биомасса x множитель + жирная гача)
+func _grant_survival_event_reward(wave_number: int):
+	if is_run_finished or not ZoneEvents.is_event_wave(wave_number):
+		return
+	var event: Dictionary = ZoneEvents.get_event(wave_number)
+	var reward: float = 150.0 * float(event.get("reward_mult", 1.0))
+	if resource_manager:
+		resource_manager.add_biomass(reward)
+	print("=== СОБЫТИЕ ОТБИТО: ", event.get("title_ru", ""), " - награда ", reward, " биомассы ===")
+	# Гача события с бонусом уровня: выше волна - жирнее дроп
+	var gacha_level: int = 1
+	var gm = get_tree().get_first_node_in_group("game_manager")
+	if gm:
+		gacha_level = gm.get_campaign_level()
+	_grant_gacha_rewards(clampi(gacha_level + int(event.get("gacha_bonus", 0)), 1, 100))
+
+
+## Следующая волна - событие: усиливаем состав и статы поверх эскалации выживания
+func _prepare_survival_event(next_wave: int):
+	if not ZoneEvents.is_event_wave(next_wave):
+		return
+	var event: Dictionary = ZoneEvents.get_event(next_wave)
+	spawn_manager.set_rank_weights(event.get("mix", [50, 50, 0]))
+	spawn_manager.min_stalkers_per_wave = int(float(spawn_manager.min_stalkers_per_wave) * float(event.get("count_mult", 1.0)))
+	spawn_manager.max_stalkers_per_wave = int(float(spawn_manager.max_stalkers_per_wave) * float(event.get("count_mult", 1.0)))
+	spawn_manager.set_campaign_scaling(
+		spawn_manager.campaign_hp_mult * float(event.get("hp_mult", 1.0)),
+		spawn_manager.campaign_damage_mult * float(event.get("dmg_mult", 1.0)),
+		spawn_manager.campaign_speed_mult)
+	_pending_event = event
+	print("=== СОБЫТИЕ (волна ", next_wave, "): ", event.get("title_ru", ""), " - враг сильнее, награда щедрее ===")
 
 
 func _grant_wave_milestone(waves: int):

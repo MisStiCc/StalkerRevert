@@ -76,9 +76,32 @@ func _ready():
 	_connect_buttons()
 	_setup_sounds()
 	_load_minimap()
-	_apply_prices()
-	
+	_apply_language_and_prices()
+	Loc.changed.connect(_apply_language_and_prices)
+
 	print("HUD инициализирован")
+
+
+## Локализация кнопок/подписей + ценники поверх них. При смене языка
+## тексты переустанавливаются с нуля (цены не должны задваиваться)
+func _apply_language_and_prices():
+	var energy_label: Label = get_node_or_null("Resources/EnergyLabel")
+	var biomass_label: Label = get_node_or_null("Resources/BiomassLabel")
+	if energy_label:
+		energy_label.text = Loc.t("hud.energy")
+	if biomass_label:
+		biomass_label.text = Loc.t("hud.biomass")
+	stalker_count_label.text = Loc.t("hud.stalkers", {"n": 0})
+	wave_label.text = Loc.t("hud.wave", {"n": 0})
+	emission_button.text = Loc.t("hud.emission")
+	start_run_button.text = Loc.t("hud.start")
+	var anomaly_header: Label = get_node_or_null("AnomalyPanel/Header")
+	if anomaly_header:
+		anomaly_header.text = Loc.t("hud.anomalies")
+	var mutant_header: Label = get_node_or_null("MutantPanel/Header")
+	if mutant_header:
+		mutant_header.text = Loc.t("hud.mutants")
+	_apply_prices()
 
 
 func _load_minimap():
@@ -92,36 +115,38 @@ func _load_minimap():
 
 
 func _apply_prices():
-	"""Ценники на кнопках из реальных цен менеджеров (со скидками лаборатории)"""
+	"""Ценники на кнопках из реальных цен менеджеров (со скидками лаборатории).
+	Текст устанавливается с нуля: локализованное имя + цена (не append!)"""
 	if not zone_controller:
 		return
 	var am = zone_controller.get("anomaly_manager")
 	var sm = zone_controller.get("spawn_manager")
 	var anomalies = {
-		fire_button: "heat_anomaly", electric_button: "electric_anomaly",
-		acid_button: "acid_anomaly", vortex_button: "gravity_vortex",
-		lift_button: "gravity_lift", whirlwind_button: "gravity_whirlwind",
-		steam_button: "thermal_steam", comet_button: "thermal_comet",
-		jelly_button: "chemical_jelly", gas_button: "chemical_gas",
-		acid_cloud_button: "chemical_acid_cloud", radiation_button: "radiation_hotspot",
-		time_button: "time_dilation", teleport_button: "teleport",
-		tesla_button: "electric_tesla", fluff_button: "bio_burning_fluff",
+		fire_button: ["heat_anomaly", "an.heat"], electric_button: ["electric_anomaly", "an.electric"],
+		acid_button: ["acid_anomaly", "an.acid"], vortex_button: ["gravity_vortex", "an.vortex"],
+		lift_button: ["gravity_lift", "an.lift"], whirlwind_button: ["gravity_whirlwind", "an.whirlwind"],
+		steam_button: ["thermal_steam", "an.steam"], comet_button: ["thermal_comet", "an.comet"],
+		jelly_button: ["chemical_jelly", "an.jelly"], gas_button: ["chemical_gas", "an.gas"],
+		acid_cloud_button: ["chemical_acid_cloud", "an.acid_cloud"], radiation_button: ["radiation_hotspot", "an.radiation"],
+		time_button: ["time_dilation", "an.time"], teleport_button: ["teleport", "an.teleport"],
+		tesla_button: ["electric_tesla", "an.tesla"], fluff_button: ["bio_burning_fluff", "an.fluff"],
 	}
 	var mutants = {
-		dog_button: "dog_mutant", flesh_button: "flesh", snork_button: "snork_mutant",
-		pseudodog_button: "pseudodog", controller_button: "controller_mutant",
-		poltergeist_button: "poltergeist", bloodsucker_button: "bloodsucker",
-		chimera_button: "chimera", zombie_button: "zombie",
+		dog_button: ["dog_mutant", "mu.dog"], flesh_button: ["flesh", "mu.flesh"], snork_button: ["snork_mutant", "mu.snork"],
+		pseudodog_button: ["pseudodog", "mu.pseudodog"], controller_button: ["controller_mutant", "mu.controller"],
+		poltergeist_button: ["poltergeist", "mu.poltergeist"], bloodsucker_button: ["bloodsucker", "mu.bloodsucker"],
+		chimera_button: ["chimera", "mu.chimera"], zombie_button: ["zombie", "mu.zombie"],
 	}
-	_mutant_buttons = mutants
+	_mutant_buttons = {}
 	for btn in anomalies:
-		var cost: int = int(am.get_anomaly_cost(anomalies[btn])) if am else 0
-		btn.text = btn.text + "
+		var cost: int = int(am.get_anomaly_cost(anomalies[btn][0])) if am else 0
+		btn.text = Loc.t(anomalies[btn][1]) + "
 ⚡" + str(cost)
 	for btn in mutants:
-		var cost: int = int(sm.get_mutant_cost(mutants[btn])) if sm else 0
-		btn.text = btn.text + "
+		var cost: int = int(sm.get_mutant_cost(mutants[btn][0])) if sm else 0
+		btn.text = Loc.t(mutants[btn][1]) + "
 🧬" + str(cost)
+		_mutant_buttons[btn] = mutants[btn][0]
 	refresh_mutant_unlocks()
 
 
@@ -132,7 +157,7 @@ func refresh_mutant_unlocks():
 		var type: String = _mutant_buttons[btn]
 		var unlocked: bool = gm.is_mutant_unlocked(type) if gm else true
 		btn.disabled = not unlocked
-		btn.tooltip_text = "Не разблокирован: откройте кампанией или гачей" if not unlocked else ""
+		btn.tooltip_text = Loc.t("hud.locked_tip") if not unlocked else ""
 		if not unlocked and not btn.text.begins_with("🔒"):
 			btn.text = "🔒" + btn.text
 
@@ -215,7 +240,7 @@ func _process(delta):
 		_break_time_left -= delta
 		wave_label.visible = true
 		wave_label.modulate = Color(1, 0.8, 0.2)
-		wave_label.text = "⏳ Волна %d/%d через %dс" % [_break_next_wave, _get_max_waves(), int(ceil(_break_time_left))]
+		wave_label.text = Loc.t("hud.break_countdown", {"cur": _break_next_wave, "max": _get_max_waves(), "sec": int(ceil(_break_time_left))})
 	
 	if zone_controller:
 		var status = zone_controller.get_status()
@@ -243,7 +268,7 @@ func _get_max_waves() -> int:
 
 func _on_wave_started(wave_number: int, _count: int):
 	_break_time_left = 0.0
-	wave_label.text = "🌊 ВОЛНА %d/%d" % [wave_number, _get_max_waves()]
+	wave_label.text = Loc.t("hud.wave_announce", {"cur": wave_number, "max": _get_max_waves()})
 	wave_label.modulate = Color.YELLOW
 	wave_label.visible = true
 	
@@ -255,7 +280,7 @@ func _on_wave_started(wave_number: int, _count: int):
 func _on_emission_started(_level: int):
 	is_emission_active = true
 	emission_button.disabled = true
-	emission_label.text = "⚠️ ВЫБРОС! ⚠️"
+	emission_label.text = Loc.t("hud.emission_active")
 	emission_label.modulate = Color.RED
 	emission_timer = 0
 	emission_timer_label.visible = false
@@ -281,14 +306,14 @@ func _on_emission_pressed():
 	# has_method("start_radiation_pulse") у ZoneController был ВСЕГДА false
 	# (метод живёт в EventManager) - кнопка никогда не срабатывала
 	if not zone_controller or not zone_controller.can_start_pulse():
-		_show_emission_note("Выброс уже идёт!")
+		_show_emission_note(Loc.t("hud.emission_running"))
 		return
 	
 	if zone_controller.spend_energy(1000):
 		emission_requested.emit()
 		zone_controller.start_radiation_pulse()
 	else:
-		_show_emission_note("Нужно 1000 энергии (полная шкала)!")
+		_show_emission_note(Loc.t("hud.no_energy"))
 
 
 var _note_timer: SceneTreeTimer = null
@@ -415,3 +440,28 @@ func show_anomaly_panel(shown: bool):
 
 func show_mutant_panel(shown: bool):
 	mutant_panel.visible = shown
+
+
+## Нота события выживания: заголовок + описание в панели выброса
+func show_event_note(event: Dictionary):
+	var title: String = str(event.get("title_ru" if Loc.lang == "ru" else "title_en", ""))
+	var desc: String = str(event.get("desc_ru" if Loc.lang == "ru" else "desc_en", ""))
+	emission_label.text = Loc.t("hud.event_incoming", {"title": title})
+	emission_label.modulate = Color(1.0, 0.6, 0.1)
+	if _note_timer:
+		_note_timer.timeout.disconnect(_on_note_expired)
+	_note_timer = get_tree().create_timer(4.0)
+	_note_timer.timeout.connect(_on_note_expired.bind(desc))
+
+
+func _on_note_expired(desc: String = ""):
+	if is_emission_active:
+		return
+	if not desc.is_empty():
+		# Сначала описание, затем очистка
+		emission_label.text = Loc.t("hud.event_desc", {"desc": desc})
+		_note_timer = get_tree().create_timer(3.0)
+		_note_timer.timeout.connect(_on_note_expired)
+		return
+	emission_label.text = ""
+	emission_label.modulate = Color.WHITE

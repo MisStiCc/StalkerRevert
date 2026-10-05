@@ -78,6 +78,12 @@ const SHOP_ARTIFACTS := [
 ]
 
 
+# КОРМ ЗВЁЗД: дубликат того же типа даёт звезду сразу; слабые типы можно
+# ПОЖЕРТВОВАТЬ - они покидают коллекцию, давая очки корма цели.
+# Ценность корма по редкости и очковая цена следующей звезды (текущие звёзды -> очков).
+const FODDER_VALUE := {"common": 1, "uncommon": 2, "rare": 3, "legendary": 5}
+const STAR_FEED_COST := {1: 2, 2: 4, 3: 6, 4: 8}
+
 # Русские имена всех типов коллекции (панель звёзд, логи)
 const DISPLAY_NAMES := {
 	"zombie": "Зомби", "dog_mutant": "Собака", "flesh": "Плоть",
@@ -119,6 +125,32 @@ static func get_unlock_campaign_level(type: String) -> int:
 		if entry.get("mutants", []).has(type) or entry.get("artifacts", []).has(type):
 			return int(level)
 	return 0
+
+
+static func get_mutant_rarity(type: String) -> String:
+	for rarity in MUTANT_POOL:
+		for e in MUTANT_POOL[rarity]:
+			if e[0] == type:
+				return rarity
+	return "common"
+
+
+static func get_artifact_rarity(type: String) -> String:
+	for rarity in ARTIFACT_POOL:
+		if ARTIFACT_POOL[rarity].has(type):
+			return rarity
+	return "common"
+
+
+## Очки корма за пожертвованный тип
+static func get_fodder_value(type: String, is_mutant: bool) -> int:
+	var rarity: String = get_mutant_rarity(type) if is_mutant else get_artifact_rarity(type)
+	return int(FODDER_VALUE.get(rarity, 1))
+
+
+## Очков корма до следующей звезды при текущих звёздах
+static func get_star_feed_cost(current_stars: int) -> int:
+	return int(STAR_FEED_COST.get(maxi(current_stars, 1), 8))
 
 
 static func get_shop_mutants() -> Array:

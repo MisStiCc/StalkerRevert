@@ -42,6 +42,13 @@ var campaign_level_reached: int = 1
 @export var mutant_stars: Dictionary = {}
 @export var artifact_stars: Dictionary = {}
 
+# ФЕРМА МУТАНТОВ: копии, выпавшие дублями из гачи/вех. Копия того же типа
+# повышает звезду, копии других типов - корм (очки звезды).
+@export var farm_copies: Dictionary = {}
+
+# Накопленные очки корма к следующей звезде (тип -> очки)
+@export var mutant_star_progress: Dictionary = {}
+
 # Хранилище артефактов
 @export var artifacts_common: Array[Dictionary] = []
 @export var artifacts_rare: Array[Dictionary] = []
@@ -369,6 +376,37 @@ static func get_star_stat_mult(stars: int) -> float:
     return 1.0 + float(maxi(stars, 1) - 1) * STAR_STAT_BONUS
 
 
+func get_star_progress(type: String) -> int:
+    return int(mutant_star_progress.get(type, 0))
+
+
+func add_star_progress(type: String, points: int) -> int:
+    mutant_star_progress[type] = get_star_progress(type) + points
+    return int(mutant_star_progress[type])
+
+
+func clear_star_progress(type: String):
+    mutant_star_progress.erase(type)
+
+
+func get_farm_copies(type: String) -> int:
+    return int(farm_copies.get(type, 0))
+
+
+func add_farm_copy(type: String) -> int:
+    farm_copies[type] = get_farm_copies(type) + 1
+    return int(farm_copies[type])
+
+
+func consume_farm_copy(type: String) -> bool:
+    if get_farm_copies(type) <= 0:
+        return false
+    farm_copies[type] = get_farm_copies(type) - 1
+    if int(farm_copies[type]) <= 0:
+        farm_copies.erase(type)
+    return true
+
+
 ## "★★★☆☆" для UI
 static func stars_text(stars: int) -> String:
     var text := ""
@@ -399,3 +437,5 @@ func reset():
     artifacts_legendary.clear()
     mutant_stars.clear()
     artifact_stars.clear()
+    farm_copies.clear()
+    mutant_star_progress.clear()
