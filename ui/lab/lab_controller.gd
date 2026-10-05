@@ -1687,12 +1687,11 @@ func _rebuild_upgrade_dialog():
 	copies_label.text = Loc.t("up.copies_slot", {"have": _up_copies, "need": copies_have})
 	copies_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	copies_row.add_child(copies_label)
-	if _up_copies < copies_have:
-		var copies_need: int = stars + 1
+	if _up_copies < stars + 1:
 		var add_copies := Button.new()
-		add_copies.text = Loc.t("up.copies_btn", {"n": copies_need})
-		add_copies.tooltip_text = Loc.t("up.copies_slot", {"have": copies_have, "need": copies_need})
-		add_copies.pressed.connect(_on_up_add_copies.bind(copies_need))
+		add_copies.text = Loc.t("up.copies_btn", {"n": stars + 1})
+		add_copies.tooltip_text = Loc.t("up.copies_slot", {"have": copies_have, "need": stars + 1})
+		add_copies.pressed.connect(_on_up_add_copies.bind(stars + 1))
 		copies_row.add_child(add_copies)
 	elif _up_copies > 0:
 		var done1 := Label.new()
@@ -1755,7 +1754,8 @@ func _rebuild_upgrade_dialog():
 	var ok_btn := Button.new()
 	ok_btn.text = Loc.t("up.ok")
 	ok_btn.custom_minimum_size = Vector2(0, 40)
-	var has_enough: bool = _up_copies >= copies_have and (int(req.get("star_have")) >= 1 or not _up_star_feed.is_empty()) and simple_total >= int(req.get("simple_need"))
+	var copies_need: int = stars + 1
+	var has_enough: bool = _up_copies >= copies_need and (int(req.get("star_have")) >= 1 or not _up_star_feed.is_empty()) and simple_total >= int(req.get("simple_need"))
 	ok_btn.disabled = not has_enough
 	ok_btn.pressed.connect(_on_up_confirm)
 	up_body.add_child(ok_btn)
