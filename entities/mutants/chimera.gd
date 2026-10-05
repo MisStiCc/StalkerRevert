@@ -79,6 +79,13 @@ func _chase(_delta):
 			current_state = State.PATROL
 			return
 	
+	# Поводок: прыжки за жертвой через всю карту запрещены
+	if _spawn_position.distance_to(global_position) > leash_radius:
+		target_stalker = null
+		current_state = State.PATROL
+		print("Химера: добыча увела от территории, возврат")
+		return
+	
 	var direction = (target_stalker.global_position - global_position).normalized()
 	velocity = direction * speed
 	

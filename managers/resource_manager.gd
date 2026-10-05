@@ -6,7 +6,6 @@ class_name ResourceManager
 
 signal energy_changed(current: float, max_value: float)
 signal biomass_changed(current: float, max_value: float)
-signal critical_energy_reached(percent: float)
 signal critical_biomass_reached(percent: float)
 
 # Параметры

@@ -74,7 +74,6 @@ signal energy_changed(current: float, max_value: float, percent: float)
 @warning_ignore("unused_signal")  # глобальная шина: подключается извне
 signal biomass_changed(current: float, max_value: float, percent: float)
 @warning_ignore("unused_signal")  # глобальная шина: подключается извне
-signal critical_energy_reached(percent: float)
 @warning_ignore("unused_signal")  # глобальная шина: подключается извне
 signal critical_biomass_reached(percent: float)
 

@@ -128,6 +128,13 @@ func _chase(_delta):
 		current_state = State.PATROL
 		return
 	
+	# Поводок: невидимка не уходит далеко от своей территории
+	if _spawn_position.distance_to(global_position) > leash_radius:
+		target_stalker = null
+		current_state = State.PATROL
+		print("Кровосос: добыча увела от территории, возврат")
+		return
+	
 	var direction = (target_stalker.global_position - global_position).normalized()
 	velocity.x = direction.x * speed
 	velocity.z = direction.z * speed

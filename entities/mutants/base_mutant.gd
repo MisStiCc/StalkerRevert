@@ -239,6 +239,9 @@ func _attack(_delta):
 
 
 func _find_best_target():
+	# У кромки повадка новую цель не берём: сначала возвращаемся к дому
+	if _spawn_position.distance_to(global_position) > leash_radius * 0.85:
+		return
 	var stalkers = get_tree().get_nodes_in_group("stalkers")
 	var nearest = null
 	var nearest_dist = INF
