@@ -146,6 +146,12 @@ func _physics_process(delta):
 		State.ATTACK:
 			_attack(delta)
 	
+	# Плавный разворот в сторону движения (для моделей)
+	var horizontal := Vector2(velocity.x, velocity.z)
+	if horizontal.length() > 0.5:
+		var target_yaw := atan2(-horizontal.x, -horizontal.y)
+		rotation.y = lerp_angle(rotation.y, target_yaw, 8.0 * delta)
+	
 	move_and_slide()
 
 
