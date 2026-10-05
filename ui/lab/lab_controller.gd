@@ -1688,10 +1688,11 @@ func _rebuild_upgrade_dialog():
 	copies_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	copies_row.add_child(copies_label)
 	if _up_copies < copies_have:
+		var copies_need: int = stars + 1
 		var add_copies := Button.new()
-		add_copies.text = Loc.t("up.copies_btn", {"n": copies_have})
-		add_copies.tooltip_text = Loc.t("up.copies_slot", {"have": copies_have, "need": copies_have})
-		add_copies.pressed.connect(_on_up_add_copies.bind(copies_have))
+		add_copies.text = Loc.t("up.copies_btn", {"n": copies_need})
+		add_copies.tooltip_text = Loc.t("up.copies_slot", {"have": copies_have, "need": copies_need})
+		add_copies.pressed.connect(_on_up_add_copies.bind(copies_need))
 		copies_row.add_child(add_copies)
 	elif _up_copies > 0:
 		var done1 := Label.new()
@@ -1768,7 +1769,9 @@ func _rebuild_upgrade_dialog():
 
 func _on_up_add_copies(max_copies: int):
 	_play_click_sound()
-	_up_copies = max_copies
+	# Кламп к потребности рецепта: лишние копии не сжигаем
+	var stars: int = game_manager.get_lab_data().get_mutant_stars(_up_target)
+	_up_copies = mini(max_copies, stars + 1)
 	_rebuild_upgrade_dialog()
 
 
