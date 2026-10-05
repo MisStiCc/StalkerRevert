@@ -157,6 +157,13 @@ func apply_star_recipe(target: String, copies: int, star_feed: String, simple: D
 			total += int(simple[t])
 		if total < simple_need:
 			return "Нужно простых кормов: %d/%d" % [total, simple_need]
+	# Бюджет копий цели: слот копий + звёздный корм + простые из себя - не больше запаса
+	var self_needed: int = copies
+	if star_feed == target:
+		self_needed += 1
+	self_needed += int(simple.get(target, 0))
+	if self_needed > lab.get_farm_copies(target):
+		return "Не хватает копий цели: нужно %d, на ферме %d" % [self_needed, lab.get_farm_copies(target)]
 	
 	# Списываем копии цели
 	for i in range(copies):
@@ -289,8 +296,6 @@ func spin_artifact_gacha(times: int) -> Array:
 ## Корм должен быть с тем же числом звёзд, что у цели (звёздная пирамида)
 func feed_fodder(fodder_type: String, target_type: String) -> String:
 	var lab = get_lab_data()
-	if fodder_type == target_type:
-		return "Копии цели идут в рецепт повышения, не в корм"
 	if lab.get_farm_copies(fodder_type) <= 0:
 		return "Нет копий корма на ферме"
 	var stars: int = lab.get_mutant_stars(target_type)

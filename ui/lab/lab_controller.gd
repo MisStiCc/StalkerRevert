@@ -1844,6 +1844,43 @@ func _rebuild_upgrade_chooser():
 				max_btn.pressed.connect(_on_up_choose_simple.bind(type, mini(available, remaining)))
 				row.add_child(max_btn)
 		up_body.add_child(row)
+	# Копии самого мутанта тоже годятся в корм (бюджет проверит ОК)
+	var self_copies: int = lab.get_farm_copies(_up_target)
+	var self_ok := false
+	if self_copies > 0:
+		if _up_chooser == "simple":
+			self_ok = true
+		elif _up_chooser == "star" and target_stars == lab.get_mutant_stars(_up_target):
+			self_ok = true  # цель всегда своей звёздности
+	if self_ok:
+		var srow := HBoxContainer.new()
+		srow.add_theme_constant_override("separation", 6)
+		srow.add_child(_make_icon_rect(_up_target, true, 26))
+		var slabel := Label.new()
+		slabel.text = "%s %s - %s %s" % [Loc.type_name(_up_target), LabData.stars_text(lab.get_mutant_stars(_up_target)), Loc.t("farm.copies", {"n": self_copies}), Loc.t("up.self_mark")]
+		slabel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		srow.add_child(slabel)
+		if _up_chooser == "star":
+			var pick := Button.new()
+			pick.text = Loc.t("up.ok").replace("★ ", "")
+			pick.pressed.connect(_on_up_choose_star.bind(_up_target))
+			srow.add_child(pick)
+		else:
+			var available: int = lab.get_farm_copies(_up_target)
+			var remaining: int = _up_remaining_simple() - _up_pending_simple_total()
+			for qty in [1, 5]:
+				if qty <= available and qty <= remaining:
+					var q_btn := Button.new()
+					q_btn.text = "+%d" % qty
+					q_btn.pressed.connect(_on_up_choose_simple.bind(_up_target, qty))
+					srow.add_child(q_btn)
+			if available > 0 and remaining > 0:
+				var max_btn := Button.new()
+				max_btn.text = Loc.t("up.qty_max")
+				max_btn.pressed.connect(_on_up_choose_simple.bind(_up_target, mini(available, remaining)))
+				srow.add_child(max_btn)
+		up_body.add_child(srow)
+		found = true
 	if not found:
 		var none := Label.new()
 		none.text = Loc.t("farm.empty")
@@ -1896,7 +1933,7 @@ func _on_up_auto():
 	# 1. Копии цели - ровно потребность (не больше, лишние копии не сжигаем)
 	_up_copies = mini(int(req.get("copies_have")), stars + 1)
 
-	# 2. Звёздный корм: тот же звёздный уровень, побольше копий, слабее редкость
+	# 2. Звёздный корм: чужие той же звёздности; если их нет - копии самого типа
 	if int(req.get("star_have")) < 1:
 		var cands: Array[String] = []
 		for t in lab.unlocked_mutants:
@@ -1908,7 +1945,10 @@ func _on_up_auto():
 			if ca != cb:
 				return ca > cb
 			return GachaData.get_fodder_value(a, true) < GachaData.get_fodder_value(b, true))
-		_up_star_feed = cands[0] if not cands.is_empty() else ""
+		if not cands.is_empty():
+			_up_star_feed = cands[0]
+		elif lab.get_farm_copies(_up_target) > _up_copies:
+			_up_star_feed = _up_target  # свои копии в звёздный бак
 
 	# 3. Простой корм: сначала 1★-кормовые по запасам, затем прочие не-звёздные
 	var remaining: int = _up_remaining_simple() - _up_pending_simple_total()
@@ -1940,5 +1980,13 @@ func _on_up_auto():
 		if take > 0:
 			_up_simple[t] = int(_up_simple.get(t, 0)) + take
 			remaining -= take
+	# Резерв: копии самого мутанта (не занятые слотом копий и звёздным)
+	if remaining > 0:
+		var self_used: int = int(_up_simple.get(_up_target, 0))
+		if _up_star_feed == _up_target:
+			self_used += 1
+		var spare: int = lab.get_farm_copies(_up_target) - _up_copies - self_used
+		if spare > 0:
+			_up_simple[_up_target] = int(_up_simple.get(_up_target, 0)) + mini(spare, remaining)
 
 	_rebuild_upgrade_dialog()

@@ -200,6 +200,7 @@ const STRINGS := {
 	"up.not_ready": {"ru": "Заполните все слоты", "en": "Fill all slots first"},
 	"up.qty_max": {"ru": "МАКС", "en": "MAX"},
 	"up.done_mark": {"ru": "готово", "en": "done"},
+	"up.self_mark": {"ru": "(цель)", "en": "(target)"},
 	"up.auto": {"ru": "АВТО - собрать из слабых и многочисленных", "en": "AUTO - gather from weak and plentiful"},
 	"result.artifacts": {"ru": "Собрано артефактов:", "en": "Artifacts collected:"},
 	"result.gacha_header": {"ru": "НАГРАДЫ ЗАБЕГА:", "en": "RUN REWARDS:"},
