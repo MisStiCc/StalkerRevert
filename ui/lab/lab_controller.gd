@@ -1007,7 +1007,6 @@ func _rebuild_farm_panel():
 			up_btn.text = "↑%d★" % (stars + 1)
 			up_btn.tooltip_text = Loc.t("farm.upgrade_btn", {"n": stars + 1})
 			up_btn.custom_minimum_size = Vector2(52, 0)
-			up_btn.disabled = not bool(req.get("ready"))
 			up_btn.pressed.connect(_on_farm_upgrade.bind(type))
 			row.add_child(up_btn)
 			if lab_data.get_farm_copies(type) > 0:
@@ -1572,3 +1571,315 @@ func _gallery_section(text: String) -> Label:
 	var label := Label.new()
 	label.text = text
 	return label
+
+
+# ==================== ДИАЛОГ ПОВЫШЕНИЯ ЗВЕЗДЫ ====================
+
+var up_panel: Control
+var up_title: Label
+var up_body: VBoxContainer
+# Состояние сбора рецепта
+var _up_target: String = ""
+var _up_copies: int = 0
+var _up_star_feed: String = ""
+var _up_simple: Dictionary = {}
+var _up_chooser: String = ""  # "" | "star" | "simple"
+
+
+func _build_upgrade_dialog():
+	"""Окно повышения: слоты копий/звёздного/простого корма с '+', ОК применяет"""
+	up_panel = Control.new()
+	up_panel.name = "UpgradeStarDialog"
+	up_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+	up_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	up_panel.visible = false
+	add_child(up_panel)
+
+	var shade := ColorRect.new()
+	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	shade.color = Color(0, 0, 0, 0.7)
+	shade.gui_input.connect(func(ev):
+		if ev is InputEventMouseButton and ev.pressed:
+			_close_upgrade_dialog())
+	up_panel.add_child(shade)
+
+	var panel := Panel.new()
+	panel.anchor_left = 0.5
+	panel.anchor_top = 0.5
+	panel.anchor_right = 0.5
+	panel.anchor_bottom = 0.5
+	panel.offset_left = -240.0
+	panel.offset_top = -210.0
+	panel.offset_right = 240.0
+	panel.offset_bottom = 210.0
+	up_panel.add_child(panel)
+
+	up_title = Label.new()
+	up_title.position = Vector2(20, 12)
+	up_title.size = Vector2(440, 24)
+	up_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	up_title.add_theme_font_size_override("font_size", 14)
+	panel.add_child(up_title)
+
+	var scroll := ScrollContainer.new()
+	scroll.position = Vector2(20, 44)
+	scroll.size = Vector2(440, 300)
+	panel.add_child(scroll)
+
+	up_body = VBoxContainer.new()
+	up_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	up_body.add_theme_constant_override("separation", 6)
+	scroll.add_child(up_body)
+
+	var back := Button.new()
+	back.text = Loc.t("lab.back")
+	back.position = Vector2(160, 356)
+	back.size = Vector2(160, 34)
+	back.pressed.connect(_close_upgrade_dialog)
+	panel.add_child(back)
+
+
+func _on_farm_upgrade(type: String):
+	"""↑N★ - открыть окно сбора рецепта по этому мутанту"""
+	_play_click_sound()
+	_up_target = type
+	_up_copies = 0
+	_up_star_feed = ""
+	_up_simple.clear()
+	_up_chooser = ""
+	if not up_panel:
+		_build_upgrade_dialog()
+	farm_panel.visible = false
+	up_panel.visible = true
+	_rebuild_upgrade_dialog()
+
+
+func _close_upgrade_dialog():
+	up_panel.visible = false
+	_up_target = ""
+	_up_chooser = ""
+
+
+func _up_remaining_simple() -> int:
+	var req: Dictionary = game_manager.get_star_requirements(_up_target)
+	return maxi(0, int(req.get("simple_need")) - int(req.get("simple_have")))
+
+
+func _up_pending_simple_total() -> int:
+	var total := 0
+	for t in _up_simple:
+		total += int(_up_simple[t])
+	return total
+
+
+func _rebuild_upgrade_dialog():
+	for child in up_body.get_children():
+		child.queue_free()
+	if _up_target.is_empty():
+		return
+	var lab = get_tree().get_first_node_in_group("game_manager").get_lab_data()
+	var stars: int = lab.get_mutant_stars(_up_target)
+	var req: Dictionary = game_manager.get_star_requirements(_up_target)
+	up_title.text = Loc.t("up.title", {"name": Loc.type_name(_up_target), "n": stars + 1})
+
+	# Режим выбора корма
+	if _up_chooser != "":
+		_rebuild_upgrade_chooser()
+		return
+
+	# --- Слот 1: копии цели ---
+	var copies_row := HBoxContainer.new()
+	copies_row.add_theme_constant_override("separation", 6)
+	var copies_label := Label.new()
+	var copies_have: int = int(req.get("copies_have"))
+	copies_label.text = Loc.t("up.copies_slot", {"have": _up_copies, "need": copies_have})
+	copies_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	copies_row.add_child(copies_label)
+	if _up_copies < copies_have:
+		var add_copies := Button.new()
+		add_copies.text = Loc.t("up.copies_btn", {"n": copies_have})
+		add_copies.tooltip_text = Loc.t("up.copies_slot", {"have": copies_have, "need": copies_have})
+		add_copies.pressed.connect(_on_up_add_copies.bind(copies_have))
+		copies_row.add_child(add_copies)
+	elif _up_copies > 0:
+		var done1 := Label.new()
+		done1.text = Loc.t("up.done_mark")
+		copies_row.add_child(done1)
+	up_body.add_child(copies_row)
+
+	# --- Слот 2: звёздный корм ---
+	var star_row := HBoxContainer.new()
+	star_row.add_theme_constant_override("separation", 6)
+	var star_label := Label.new()
+	var star_text: String = Loc.t("up.star_slot", {"n": stars})
+	if int(req.get("star_have")) >= 1:
+		star_text += Loc.t("up.star_filled")
+	elif not _up_star_feed.is_empty():
+		star_text += Loc.type_name(_up_star_feed)
+	star_label.text = star_text
+	star_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	star_row.add_child(star_label)
+	if int(req.get("star_have")) < 1:
+		var add_star := Button.new()
+		add_star.text = Loc.t("farm.star_btn")
+		add_star.pressed.connect(_on_up_pick_star)
+		star_row.add_child(add_star)
+	up_body.add_child(star_row)
+
+	# --- Слот 3: простой корм ---
+	var simple_row := HBoxContainer.new()
+	simple_row.add_theme_constant_override("separation", 6)
+	var simple_label := Label.new()
+	var simple_total: int = int(req.get("simple_have")) + _up_pending_simple_total()
+	var simple_text: String = Loc.t("up.simple_slot", {"have": simple_total, "need": int(req.get("simple_need"))})
+	var parts := []
+	for t in _up_simple:
+		parts.append("%s x%d" % [Loc.type_name(str(t)), int(_up_simple[t])])
+	if not parts.is_empty():
+		simple_text += "   " + " · ".join(parts)
+	simple_label.text = simple_text
+	simple_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	simple_row.add_child(simple_label)
+	var add_simple := Button.new()
+	add_simple.text = Loc.t("farm.star_btn")
+	add_simple.pressed.connect(_on_up_pick_simple)
+	simple_row.add_child(add_simple)
+	if not _up_simple.is_empty():
+		var reset_btn := Button.new()
+		reset_btn.text = Loc.t("up.reset")
+		reset_btn.pressed.connect(_on_up_reset_simple)
+		simple_row.add_child(reset_btn)
+	up_body.add_child(simple_row)
+
+	# --- ОК ---
+	var ok_btn := Button.new()
+	ok_btn.text = Loc.t("up.ok")
+	ok_btn.custom_minimum_size = Vector2(0, 40)
+	var ready: bool = _up_copies >= copies_have and (int(req.get("star_have")) >= 1 or not _up_star_feed.is_empty()) and simple_total >= int(req.get("simple_need"))
+	ok_btn.disabled = not ready
+	ok_btn.pressed.connect(_on_up_confirm)
+	up_body.add_child(ok_btn)
+	if not ready:
+		var hint := Label.new()
+		hint.text = Loc.t("up.not_ready")
+		hint.add_theme_font_size_override("font_size", 9)
+		hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		up_body.add_child(hint)
+
+
+func _on_up_add_copies(max_copies: int):
+	_play_click_sound()
+	_up_copies = max_copies
+	_rebuild_upgrade_dialog()
+
+
+func _on_up_pick_star():
+	_play_click_sound()
+	_up_chooser = "star"
+	_rebuild_upgrade_dialog()
+
+
+func _on_up_pick_simple():
+	_play_click_sound()
+	_up_chooser = "simple"
+	_rebuild_upgrade_dialog()
+
+
+func _on_up_reset_simple():
+	_play_click_sound()
+	_up_simple.clear()
+	_rebuild_upgrade_dialog()
+
+
+func _on_up_confirm():
+	_play_click_sound()
+	var msg: String = game_manager.apply_star_recipe(_up_target, _up_copies, _up_star_feed, _up_simple)
+	_show_message(msg, 2.0)
+	_close_upgrade_dialog()
+	_rebuild_farm_panel()
+	_refresh_ui()
+
+
+func _rebuild_upgrade_chooser():
+	var lab = get_tree().get_first_node_in_group("game_manager").get_lab_data()
+	var target_stars: int = lab.get_mutant_stars(_up_target)
+	var header := Label.new()
+	if _up_chooser == "star":
+		header.text = Loc.t("up.pick_star", {"n": target_stars})
+	else:
+		header.text = Loc.t("up.pick_simple")
+	up_body.add_child(header)
+
+	var found := false
+	for type in lab.unlocked_mutants:
+		if type == _up_target or lab.get_farm_copies(type) <= 0:
+			continue
+		var t_stars: int = lab.get_mutant_stars(type)
+		if _up_chooser == "star" and t_stars != target_stars:
+			continue
+		found = true
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 6)
+		row.add_child(_make_icon_rect(type, true, 26))
+		var name_label := Label.new()
+		name_label.text = "%s %s - %s" % [Loc.type_name(type), LabData.stars_text(t_stars), Loc.t("farm.copies", {"n": lab.get_farm_copies(type)})]
+		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(name_label)
+		if _up_chooser == "star":
+			var pick := Button.new()
+			pick.text = Loc.t("up.ok").replace("★ ", "")
+			pick.pressed.connect(_on_up_choose_star.bind(type))
+			row.add_child(pick)
+		else:
+			var available: int = lab.get_farm_copies(type)
+			var remaining: int = _up_remaining_simple() - _up_pending_simple_total()
+			for qty in [1, 5]:
+				if qty <= available and qty <= remaining:
+					var q_btn := Button.new()
+					q_btn.text = "+%d" % qty
+					q_btn.pressed.connect(_on_up_choose_simple.bind(type, qty))
+					row.add_child(q_btn)
+			if available > 0 and remaining > 0:
+				var max_btn := Button.new()
+				max_btn.text = Loc.t("up.qty_max")
+				max_btn.pressed.connect(_on_up_choose_simple.bind(type, mini(available, remaining)))
+				row.add_child(max_btn)
+		up_body.add_child(row)
+	if not found:
+		var none := Label.new()
+		none.text = Loc.t("farm.empty")
+		up_body.add_child(none)
+
+	var cancel := Button.new()
+	cancel.text = Loc.t("lab.back")
+	cancel.pressed.connect(_on_up_cancel_chooser)
+	up_body.add_child(cancel)
+
+
+func _on_up_choose_star(type: String):
+	_play_click_sound()
+	_up_star_feed = type
+	_up_chooser = ""
+	_rebuild_upgrade_dialog()
+
+
+func _on_up_choose_simple(type: String, qty: int):
+	_play_click_sound()
+	_up_simple[type] = int(_up_simple.get(type, 0)) + qty
+	# Если больше нечего выбирать - вернуться к слотам
+	var lab = get_tree().get_first_node_in_group("game_manager").get_lab_data()
+	var remaining: int = _up_remaining_simple() - _up_pending_simple_total()
+	var any_left := false
+	for t in lab.unlocked_mutants:
+		if t != _up_target and lab.get_farm_copies(t) > 0:
+			any_left = true
+			break
+	if remaining <= 0 or not any_left:
+		_up_chooser = ""
+	_rebuild_upgrade_dialog()
+
+
+func _on_up_cancel_chooser():
+	_play_click_sound()
+	_up_chooser = ""
+	_rebuild_upgrade_dialog()

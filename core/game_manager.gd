@@ -136,6 +136,55 @@ func get_star_requirements(mutant_type: String) -> Dictionary:
 
 
 ## Повысить звезду по полному рецепту (кнопка на ферме)
+## Применить собранный в диалоге рецепт разом: копии цели + звёздный корм +
+## словарь простых кормов {тип: количество}. Всё проверяется и списывается здесь.
+func apply_star_recipe(target: String, copies: int, star_feed: String, simple: Dictionary) -> String:
+	var lab = get_lab_data()
+	var req: Dictionary = get_star_requirements(target)
+	if bool(req.get("max")):
+		return "Звёзды уже максимальны"
+	var copies_need: int = int(req.get("copies_need"))
+	if copies < copies_need:
+		return "Нужно копий цели: %d/%d" % [copies, copies_need]
+	if lab.get_star_feed(target) < 1 and star_feed.is_empty():
+		return "Нужен звёздный корм - копия мутанта с %d★" % int(req.get("stars"))
+	if lab.get_star_feed(target) < 1 and not star_feed.is_empty() and lab.get_mutant_stars(star_feed) != int(req.get("stars")):
+		return "Звёздный корм должен быть с %d★ (у %s %d★)" % [int(req.get("stars")), GachaData.display_name(star_feed), lab.get_mutant_stars(star_feed)]
+	var simple_need: int = int(req.get("simple_need"))
+	if lab.get_star_progress(target) < simple_need:
+		var total: int = lab.get_star_progress(target)
+		for t in simple:
+			total += int(simple[t])
+		if total < simple_need:
+			return "Нужно простых кормов: %d/%d" % [total, simple_need]
+	
+	# Списываем копии цели
+	for i in range(copies):
+		lab.consume_farm_copy(target)
+	# Звёздный корм (если ещё не заполнен быстрым кормлением)
+	if lab.get_star_feed(target) < 1 and not star_feed.is_empty():
+		lab.consume_farm_copy(star_feed)
+		lab.add_star_feed(target)
+	# Простые корма с клампом до потребности
+	for t in simple:
+		var remaining: int = simple_need - lab.get_star_progress(target)
+		if remaining <= 0:
+			break
+		var cnt: int = mini(int(simple[t]), lab.get_farm_copies(str(t)))
+		cnt = mini(cnt, remaining)
+		for i in range(cnt):
+			lab.consume_farm_copy(str(t))
+			lab.add_star_progress(target, 1)
+	
+	lab.clear_star_progress(target)
+	lab.star_feed_progress.erase(target)
+	lab.add_mutant_star(target)
+	var new_stars: int = lab.get_mutant_stars(target)
+	print("Ферма: рецепт применён - %s -> %d/%d★" % [target, new_stars, LabData.MAX_STARS])
+	save_to_active_slot()
+	return "ЗВЕЗДА! %s теперь %d/%d★" % [GachaData.display_name(target), new_stars, LabData.MAX_STARS]
+
+
 func try_upgrade_star(mutant_type: String) -> String:
 	var lab = get_lab_data()
 	var req: Dictionary = get_star_requirements(mutant_type)
