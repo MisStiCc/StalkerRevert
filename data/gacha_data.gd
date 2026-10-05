@@ -42,6 +42,14 @@ static func get_artifact_for_anomaly(anomaly_type: String) -> String:
 	return ANOMALY_ARTIFACT_MAP.get(anomaly_type, "")
 
 
+## Какую аномалию открывает артефакт (пусто - никакую)
+static func get_anomaly_for_artifact(artifact_type: String) -> String:
+	for anomaly in ANOMALY_ARTIFACT_MAP:
+		if ANOMALY_ARTIFACT_MAP[anomaly] == artifact_type:
+			return str(anomaly)
+	return ""
+
+
 ## Награда крутками за пройденный уровень кампании:
 ## каждый 5-й уровень +3, каждый 10-й +5 (10-й перекрывает пятёрку), остальные 0
 static func campaign_roll_reward(completed_level: int) -> int:

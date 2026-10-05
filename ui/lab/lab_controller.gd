@@ -1396,7 +1396,139 @@ func _gallery_tile(type: String, is_mutant: bool) -> Control:
 
 	var unlock_level: int = GachaData.get_unlock_campaign_level(type)
 	tile.tooltip_text = Loc.t("gallery.unlocked_tip") if unlocked else Loc.t("gallery.locked_tip", {"n": unlock_level})
+	tile.mouse_filter = Control.MOUSE_FILTER_STOP
+	tile.gui_input.connect(_on_gallery_tile_input.bind(type, is_mutant, unlocked))
 	return tile
+
+
+func _on_gallery_tile_input(event: InputEvent, type: String, is_mutant: bool, unlocked: bool):
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		_play_click_sound()
+		_show_card_detail(type, is_mutant, unlocked)
+
+
+# ==================== КАРТОЧКА-ПРОСМОТР ====================
+
+var detail_panel: Control
+var detail_image: TextureRect
+var detail_name: Label
+var detail_meta: Label
+var detail_desc: Label
+
+
+func _build_card_detail():
+	"""Большая карточка: арт художника (PNG) + описание. Открывается кликом по плитке"""
+	detail_panel = Control.new()
+	detail_panel.name = "CardDetail"
+	detail_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+	detail_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	detail_panel.visible = false
+	add_child(detail_panel)
+
+	var shade := ColorRect.new()
+	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	shade.color = Color(0, 0, 0, 0.7)
+	shade.gui_input.connect(func(ev):
+		if ev is InputEventMouseButton and ev.pressed:
+			detail_panel.visible = false)
+	detail_panel.add_child(shade)
+
+	var panel := Panel.new()
+	panel.anchor_left = 0.5
+	panel.anchor_top = 0.5
+	panel.anchor_right = 0.5
+	panel.anchor_bottom = 0.5
+	panel.offset_left = -230.0
+	panel.offset_top = -230.0
+	panel.offset_right = 230.0
+	panel.offset_bottom = 230.0
+	detail_panel.add_child(panel)
+
+	detail_image = TextureRect.new()
+	detail_image.position = Vector2(110, 16)
+	detail_image.size = Vector2(240, 240)
+	detail_image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	detail_image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	panel.add_child(detail_image)
+
+	detail_name = Label.new()
+	detail_name.position = Vector2(20, 262)
+	detail_name.size = Vector2(420, 26)
+	detail_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	detail_name.add_theme_font_size_override("font_size", 17)
+	panel.add_child(detail_name)
+
+	detail_meta = Label.new()
+	detail_meta.position = Vector2(20, 290)
+	detail_meta.size = Vector2(420, 20)
+	detail_meta.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	detail_meta.add_theme_font_size_override("font_size", 11)
+	panel.add_child(detail_meta)
+
+	detail_desc = Label.new()
+	detail_desc.position = Vector2(30, 318)
+	detail_desc.size = Vector2(400, 90)
+	detail_desc.autowrap_mode = TextServer.AUTOWRAP_WORD
+	detail_desc.add_theme_font_size_override("font_size", 11)
+	detail_desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	panel.add_child(detail_desc)
+
+	var close := Button.new()
+	close.text = Loc.t("lab.back")
+	close.position = Vector2(150, 412)
+	close.size = Vector2(160, 34)
+	close.pressed.connect(func(): _play_click_sound(); detail_panel.visible = false)
+	panel.add_child(close)
+
+
+func _show_card_detail(type: String, is_mutant: bool, unlocked: bool):
+	"""Заполнить карточку: большой арт (PNG художника или SVG), имя, редкость,
+	звёзды, описание, открываемая аномалия"""
+	if not detail_panel:
+		_build_card_detail()
+	var rarity: String = GachaData.get_mutant_rarity(type) if is_mutant else GachaData.get_artifact_rarity(type)
+	var rarity_color: Color = GachaData.rarity_color(rarity)
+
+	detail_image.texture = load(GachaData.card_icon_path(type, is_mutant, not unlocked))
+	detail_image.modulate = Color(1, 1, 1, 1) if unlocked else Color(0.85, 0.85, 0.9, 0.9)
+
+	detail_name.text = Loc.type_name(type)
+	detail_name.add_theme_color_override("font_color", rarity_color if unlocked else Color(0.6, 0.6, 0.65))
+
+	var meta_parts: Array[String] = [Loc.t("card.rarity", {"r": Loc.t("rarity." + rarity)})]
+	if unlocked:
+		var stars: int = lab_data.get_mutant_stars(type) if is_mutant else lab_data.get_artifact_stars(type)
+		meta_parts.append("%s %s" % [LabData.stars_text(stars), Loc.t("stars.mult_tip", {"n": "%.1f" % LabData.get_star_stat_mult(stars)})])
+	else:
+		meta_parts.append(Loc.t("card.locked"))
+	if not is_mutant:
+		var anomaly: String = GachaData.get_anomaly_for_artifact(type)
+		if not anomaly.is_empty():
+			meta_parts.append(Loc.t("card.opens_anomaly", {"n": Loc.t("an." + _anomaly_loc_key(anomaly))}))
+	detail_meta.text = "   ".join(meta_parts)
+	detail_meta.add_theme_color_override("font_color", Color(0.8, 0.8, 0.85))
+
+	detail_desc.text = Loc.t("desc." + type)
+	detail_panel.visible = true
+
+
+## anomaly_type "heat_anomaly" -> ключ локализации "heat"
+func _anomaly_loc_key(anomaly_type: String) -> String:
+	var suffixes := ["_anomaly", "gravity_", "thermal_", "chemical_", "radiation_", "time_", "teleport", "electric_", "bio_"]
+	var key: String = anomaly_type
+	for suf in ["gravity_", "thermal_", "chemical_", "electric_", "bio_"]:
+		key = key.trim_prefix(suf)
+	key = key.trim_suffix("_anomaly")
+	match key:
+		"radiation_hotspot":
+			key = "radiation"
+		"time_dilation":
+			key = "time"
+		"teleport":
+			key = "teleport"
+		"acid_cloud":
+			key = "acid_cloud"
+	return key
 
 
 func _rebuild_gallery_panel():
