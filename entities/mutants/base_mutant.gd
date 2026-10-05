@@ -32,6 +32,9 @@ var _spawn_position: Vector3 = Vector3.ZERO
 # Процедурная анимация статичной модели (models/*.glb)
 var _model_base_y: float = 0.0
 var _model_skeletal: bool = false  # у модели есть риг и AnimationPlayer
+var _air_time: float = 0.0
+var _stuck_pos: Vector3 = Vector3.ZERO
+var _stuck_time: float = 0.0
 
 # Множители статов (лаборатория + звёздность), задаётся до add_child,
 # применяются в _ready() после статов наследника
@@ -161,13 +164,30 @@ func _physics_process(delta):
 		var target_yaw := atan2(-horizontal.x, -horizontal.y)
 		rotation.y = lerp_angle(rotation.y, target_yaw, 8.0 * delta)
 	
+	# Антизастревание: 6 секунд на месте (в т.ч. на крыше дома) - телепорт домой
+	if global_position.distance_to(_stuck_pos) < 0.15 and current_state != State.DEAD:
+		_stuck_time += delta
+	else:
+		_stuck_pos = global_position
+		_stuck_time = 0.0
+	if _stuck_time > 6.0:
+		_stuck_time = 0.0
+		global_position = _spawn_position + Vector3(randf_range(-2, 2), 1.0, randf_range(-2, 2))
+		if navigation_component:
+			navigation_component.stop()
+		current_state = State.PATROL
+		patrol_points.clear()
+		_generate_patrol_points()
+		print("Мутант: застрял - возвращён на точку спавна")
+	
 	# Процедурная анимация статичной модели (скелетная анимирует сама себя)
 	var model := get_node_or_null("Model")
 	if model and not _model_skeletal:
 		var t := Time.get_ticks_msec() / 1000.0
-		if not is_on_floor():
-			# в воздухе нос идёт по вертикальной скорости
-			model.rotation.x = lerp_angle(model.rotation.x, clampf(velocity.y * 0.06, -0.35, 0.35), 4.0 * delta)
+		# Воздух-наклон после 0.3с в воздухе: у земли is_on_floor мигает на кочках
+		_air_time = 0.0 if is_on_floor() else _air_time + delta
+		if _air_time > 0.3:
+			model.rotation.x = lerp_angle(model.rotation.x, clampf(velocity.y * 0.04, -0.2, 0.2), 2.0 * delta)
 		elif horizontal.length() > 0.5:
 			# бег: подпрыгивание + крен + лёгкий наклон носа вниз
 			var gait: float = clampf(horizontal.length() / 6.0, 0.4, 1.5)

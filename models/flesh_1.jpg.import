@@ -2,20 +2,20 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://fgp1gng4tgap"
-path.s3tc="res://.godot/imported/chimera_1.jpg-a816367ef7217c8e89e0a6083dbd133d.s3tc.ctex"
+uid="uid://diaeoyij3sd26"
+path.s3tc="res://.godot/imported/flesh_1.jpg-d42c421b99e1c1947b7ee836c3c12c91.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
 }
 generator_parameters={
-"md5": "c819b82dd344a1864b18e577962283c5"
+"md5": "d8d5578b1b7854e191e1467dc23f218c"
 }
 
 [deps]
 
-source_file="res://models/chimera_1.jpg"
-dest_files=["res://.godot/imported/chimera_1.jpg-a816367ef7217c8e89e0a6083dbd133d.s3tc.ctex"]
+source_file="res://models/flesh_1.jpg"
+dest_files=["res://.godot/imported/flesh_1.jpg-d42c421b99e1c1947b7ee836c3c12c91.s3tc.ctex"]
 
 [params]
 

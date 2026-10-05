@@ -2,20 +2,20 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://fgp1gng4tgap"
-path.s3tc="res://.godot/imported/chimera_1.jpg-a816367ef7217c8e89e0a6083dbd133d.s3tc.ctex"
+uid="uid://bd01cv14ln5sf"
+path.s3tc="res://.godot/imported/snork_mutant_1.jpg-959593233d7b1c0ede407039cb4981a8.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
 }
 generator_parameters={
-"md5": "c819b82dd344a1864b18e577962283c5"
+"md5": "a40d27fc0f2d6837ff1e45395b3791cb"
 }
 
 [deps]
 
-source_file="res://models/chimera_1.jpg"
-dest_files=["res://.godot/imported/chimera_1.jpg-a816367ef7217c8e89e0a6083dbd133d.s3tc.ctex"]
+source_file="res://models/snork_mutant_1.jpg"
+dest_files=["res://.godot/imported/snork_mutant_1.jpg-959593233d7b1c0ede407039cb4981a8.s3tc.ctex"]
 
 [params]
 

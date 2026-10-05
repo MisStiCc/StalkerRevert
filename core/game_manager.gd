@@ -150,7 +150,7 @@ func recycle_copies(batch: Dictionary) -> Dictionary:
 			lab.consume_farm_copy(type)
 			points += GachaData.get_fodder_value(type, true)
 			consumed += 1
-	var rolls: int = points / 10
+	var rolls: int = int(points / 10.0)
 	lab.recycle_points = points % 10
 	if rolls > 0:
 		grant_anomaly_rolls(rolls, "утилизация копий")
@@ -835,7 +835,7 @@ func process_run_result(result: Dictionary):
 	if result.has("artifacts_collected"):
 		var artifacts = result["artifacts_collected"]
 		for artifact in artifacts:
-			lab.add_artifact(artifact.get("type", "common"), artifact.get("value", 10))
+			lab.add_artifact(str(artifact.get("type", "common")), int(artifact.get("value", 10)))
 		print("Добавлено артефактов: " + str(artifacts.size()))
 	
 	if result.has("statistics"):

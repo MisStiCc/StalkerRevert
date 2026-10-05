@@ -125,9 +125,9 @@ func _process(delta):
 	# === ОТЛАДКА КАЖДЫЕ 2 СЕКУНДЫ ===
 	if _debug_enabled and _log_timer > 2.0:
 		_log_timer = 0.0
-		var next = nav_agent.get_next_path_position()
-		var dist_to_target = entity.global_position.distance_to(target_position) if target_position != Vector3.ZERO else 0.0
-		var path_size = nav_agent.get_current_navigation_path().size()
+		var _next = nav_agent.get_next_path_position()
+		var _dist_to_target = entity.global_position.distance_to(target_position) if target_position != Vector3.ZERO else 0.0
+		var _path_size = nav_agent.get_current_navigation_path().size()
 		# print("Navigation: entity=", entity.name, 
 			  # " moving=", is_moving,
 			  # " pos=", Vector3(entity.global_position.x, 0, entity.global_position.z),

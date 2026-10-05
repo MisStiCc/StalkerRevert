@@ -83,6 +83,9 @@ func _setup_animations():
 				if not _anim.has_animation(anim_name):
 					_anim.get_animation_library("").add_animation(anim_name, (ap as AnimationPlayer).get_animation(anim_name))
 		run_inst.queue_free()
+	# Meshy не зацикливает анимации - Walking/Running должны крутиться бесконечно
+	for anim_name in _anim.get_animation_list():
+		_anim.get_animation(anim_name).loop_mode = Animation.LOOP_LINEAR
 	# Разворот модели: Meshy смотрит в +Z
 	model.rotation.y = PI
 

@@ -351,6 +351,7 @@ func _initialize_run():
 	_shop_artifacts_pending.clear()
 
 	_gacha_rewards_log.clear()
+	_trophy_artifacts.clear()
 	# Фаза подготовки: спавн сталкеров начнётся по кнопке СТАРТ в HUD
 	var run_label: String = "Забег #" + str(run_number)
 	if run_params.has("campaign_params"):
@@ -698,7 +699,18 @@ func _grant_gacha_rewards(level: int):
 			"text": Loc.type_name(mutant_roll["type"]) + " + " + Loc.type_name(artifact_roll["type"])}))
 
 
+# Трофеи: артефакты с убитых сталкеров-носителей идут в хранилище
+var _trophy_artifacts: Array = []
+
+
 func _on_stalker_died(stalker: Node, biomass_returned: float):
+	if stalker and stalker.has_method("has_artifact") and stalker.has_artifact():
+		var rarity: String = stalker.get_artifact_rarity() if stalker.has_method("get_artifact_rarity") else "common"
+		var value: int = int(stalker.get_artifact_value()) if stalker.has_method("get_artifact_value") else 10
+		if rarity == "":
+			rarity = "common"
+		_trophy_artifacts.append({"type": rarity, "value": value})
+		print("Трофей: артефакт (", rarity, ", ", value, ") убитого сталкера - в хранилище")
 	# Биомассу начисляет ТОЛЬКО BaseStalker._on_died -> on_stalker_died:
 	# здесь был второй счёт (плюс третий в SpawnManager) - доход завышался втрое
 	progression_manager.record_stalker_killed()
@@ -975,7 +987,7 @@ func _collect_run_result(success: bool) -> Dictionary:
 		"reward": reward,
 		"statistics": stats,
 		"gacha_rewards": _gacha_rewards_log.duplicate(),
-		"artifacts_collected": _collect_artifacts()
+		"artifacts_collected": _collect_artifacts() + _trophy_artifacts
 	}
 
 
