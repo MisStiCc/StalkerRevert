@@ -77,6 +77,7 @@ func _ready():
 	_refresh_campaign_ui()
 	_build_star_ui()
 	_build_farm_ui()
+	_build_gacha_ui()
 	_build_language_button()
 	Loc.changed.connect(_apply_static_texts)
 	_show_last_run_result()
@@ -1030,3 +1031,199 @@ func _build_language_button():
 func _on_language_pressed():
 	_play_click_sound()
 	Loc.toggle()
+
+
+# ==================== ГАЧА ====================
+
+var gacha_panel: Control
+var gacha_list: VBoxContainer
+# Сессионная статистика шансов: [всего, common, uncommon, rare, legendary]
+var _mutant_spin_stats: Array = [0, 0, 0, 0, 0]
+var _artifact_spin_stats: Array = [0, 0, 0, 0, 0]
+# Последние дропы для показа
+var _mutant_last_drops: Array[String] = []
+var _artifact_last_drops: Array[String] = []
+
+
+func _build_gacha_ui():
+	"""Кнопка ГАЧА в нижнем ряду + панель круток со статистикой шансов"""
+	var bottom: HBoxContainer = get_node_or_null("VBox/BottomButtons")
+	if bottom:
+		var gacha_btn := Button.new()
+		gacha_btn.name = "GachaButton"
+		gacha_btn.text = "ГАЧА"
+		gacha_btn.pressed.connect(_on_gacha_pressed)
+		gacha_btn.mouse_entered.connect(_play_hover_sound)
+		bottom.add_child(gacha_btn)
+
+	gacha_panel = Control.new()
+	gacha_panel.name = "GachaPanel"
+	gacha_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+	gacha_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	gacha_panel.visible = false
+	add_child(gacha_panel)
+
+	var shade := ColorRect.new()
+	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	shade.color = Color(0, 0, 0, 0.6)
+	gacha_panel.add_child(shade)
+
+	var panel := Panel.new()
+	panel.anchor_left = 0.5
+	panel.anchor_top = 0.5
+	panel.anchor_right = 0.5
+	panel.anchor_bottom = 0.5
+	panel.offset_left = -280.0
+	panel.offset_top = -210.0
+	panel.offset_right = 280.0
+	panel.offset_bottom = 210.0
+	gacha_panel.add_child(panel)
+
+	var title := Label.new()
+	title.text = Loc.t("gacha.title")
+	title.position = Vector2(0, 10)
+	title.size = Vector2(560, 25)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	panel.add_child(title)
+
+	var scroll := ScrollContainer.new()
+	scroll.position = Vector2(20, 44)
+	scroll.size = Vector2(520, 308)
+	panel.add_child(scroll)
+
+	gacha_list = VBoxContainer.new()
+	gacha_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	gacha_list.add_theme_constant_override("separation", 4)
+	scroll.add_child(gacha_list)
+
+	var close_btn := Button.new()
+	close_btn.text = Loc.t("lab.back")
+	close_btn.position = Vector2(200, 362)
+	close_btn.size = Vector2(160, 35)
+	close_btn.pressed.connect(_on_gacha_close_pressed)
+	close_btn.mouse_entered.connect(_play_hover_sound)
+	panel.add_child(close_btn)
+
+
+func _on_gacha_pressed():
+	_play_click_sound()
+	shop_panel.visible = false
+	farm_panel.visible = false
+	star_panel.visible = false
+	gacha_panel.visible = true
+	_rebuild_gacha_panel()
+
+
+func _on_gacha_close_pressed():
+	_play_click_sound()
+	gacha_panel.visible = false
+
+
+func _gacha_spin_buttons(kind: String) -> Control:
+	"""Ряд кнопок круток x1/x10/x100/x1000"""
+	var row := HBoxContainer.new()
+	for times in [1, 10, 100, 1000]:
+		var btn := Button.new()
+		btn.text = "x%d" % times
+		btn.custom_minimum_size = Vector2(70, 30)
+		btn.pressed.connect(_on_gacha_spin.bind(kind, times))
+		btn.mouse_entered.connect(_play_hover_sound)
+		row.add_child(btn)
+	return row
+
+
+func _on_gacha_spin(kind: String, times: int):
+	_play_click_sound()
+	var results: Array = []
+	if kind == "mutants":
+		results = game_manager.spin_mutant_gacha(times)
+		for r in results:
+			_mutant_spin_stats[0] += 1
+			var idx: int = {"common": 1, "uncommon": 2, "rare": 3, "legendary": 4}.get(str(r.get("rarity")), 1)
+			_mutant_spin_stats[idx] += 1
+			_mutant_last_drops.push_front(_format_drop(r))
+			while _mutant_last_drops.size() > 8:
+				_mutant_last_drops.pop_back()
+	else:
+		results = game_manager.spin_artifact_gacha(times)
+		for r in results:
+			_artifact_spin_stats[0] += 1
+			var idx: int = {"common": 1, "uncommon": 2, "rare": 3, "legendary": 4}.get(str(r.get("rarity")), 1)
+			_artifact_spin_stats[idx] += 1
+			_artifact_last_drops.push_front(_format_drop(r))
+			while _artifact_last_drops.size() > 8:
+				_artifact_last_drops.pop_back()
+	if results.is_empty():
+		_show_message(Loc.t("gacha.no_rolls"), 1.5)
+	_rebuild_gacha_panel()
+	_refresh_ui()
+
+
+func _format_drop(r: Dictionary) -> String:
+	var rarity: String = str(r.get("rarity", "common"))
+	var line: String = "[%s] %s" % [Loc.t("rarity." + rarity), Loc.type_name(str(r.get("type")))]
+	match str(r.get("status", "")):
+		"new":
+			line += " - " + Loc.t("gacha.new_mark")
+		"dup":
+			line += " - " + Loc.t("gacha.dup_mark")
+		"star":
+			line += " - " + Loc.t("gacha.star_mark")
+	return line
+
+
+func _gacha_stats_line(stats: Array, has_uncommon: bool) -> String:
+	var total: int = stats[0]
+	if total <= 0:
+		return ""
+	var pct := func(n: int) -> String:
+		return "%.1f" % (100.0 * float(n) / float(total))
+	if has_uncommon:
+		return Loc.t("gacha.stats", {"n": total, "cp": pct.call(stats[1]), "up": pct.call(stats[2]), "rp": pct.call(stats[3]), "lp": pct.call(stats[4])})
+	return Loc.t("gacha.stats_short", {"n": total, "cp": pct.call(stats[1]), "rp": pct.call(stats[3]), "lp": pct.call(stats[4])})
+
+
+func _rebuild_gacha_panel():
+	"""Два рукава гачи: крутки, кнопки, статистика шансов, последние дропы"""
+	for child in gacha_list.get_children():
+		child.queue_free()
+	if not lab_data or not game_manager:
+		return
+
+	var level_line := Label.new()
+	level_line.text = Loc.t("gacha.level_used", {"n": game_manager.get_campaign_level()})
+	gacha_list.add_child(level_line)
+
+	# === МУТАНТЫ ===
+	gacha_list.add_child(_make_star_section(Loc.t("gacha.mutants_header")))
+	var mut_rolls := Label.new()
+	mut_rolls.text = Loc.t("gacha.rolls", {"n": lab_data.gacha_rolls_mutants})
+	gacha_list.add_child(mut_rolls)
+	gacha_list.add_child(_gacha_spin_buttons("mutants"))
+	var mut_stats := Label.new()
+	mut_stats.text = _gacha_stats_line(_mutant_spin_stats, true)
+	if not mut_stats.text.is_empty():
+		gacha_list.add_child(mut_stats)
+	if not _mutant_last_drops.is_empty():
+		gacha_list.add_child(_make_star_section(Loc.t("gacha.last_drops")))
+		for line in _mutant_last_drops:
+			var drop := Label.new()
+			drop.text = line
+			gacha_list.add_child(drop)
+
+	# === АРТЕФАКТЫ ===
+	gacha_list.add_child(_make_star_section(Loc.t("gacha.artifacts_header")))
+	var art_rolls := Label.new()
+	art_rolls.text = Loc.t("gacha.rolls", {"n": lab_data.gacha_rolls_artifacts})
+	gacha_list.add_child(art_rolls)
+	gacha_list.add_child(_gacha_spin_buttons("artifacts"))
+	var art_stats := Label.new()
+	art_stats.text = _gacha_stats_line(_artifact_spin_stats, false)
+	if not art_stats.text.is_empty():
+		gacha_list.add_child(art_stats)
+	if not _artifact_last_drops.is_empty():
+		gacha_list.add_child(_make_star_section(Loc.t("gacha.last_drops")))
+		for line in _artifact_last_drops:
+			var drop2 := Label.new()
+			drop2.text = line
+			gacha_list.add_child(drop2)

@@ -49,6 +49,11 @@ var campaign_level_reached: int = 1
 # Накопленные очки корма к следующей звезде (тип -> очки)
 @export var mutant_star_progress: Dictionary = {}
 
+# КРУТКИ ГАЧИ. DEV: по запросу игрока выдан миллион на обе гачи для
+# просмотра шансов - для релиза вернуть 0.
+@export var gacha_rolls_mutants: int = 1000000
+@export var gacha_rolls_artifacts: int = 1000000
+
 # Хранилище артефактов
 @export var artifacts_common: Array[Dictionary] = []
 @export var artifacts_rare: Array[Dictionary] = []

@@ -128,6 +128,64 @@ func feed_same_copy(mutant_type: String) -> String:
 	return "ЗВЕЗДА! %s теперь %d/%d★" % [GachaData.display_name(mutant_type), stars + 1, LabData.MAX_STARS]
 
 
+# ==================== ГАЧА: КРУТКИ ====================
+
+## Батч-крутка гачи мутантов: новый -> коллекция, дубль -> копия на ферму.
+## Возвращает список {type, rarity, status}, status: new/dup
+func spin_mutant_gacha(times: int) -> Array:
+	var results: Array = []
+	if times <= 0 or not current_save_data or not current_save_data.lab_data:
+		return results
+	var lab = current_save_data.lab_data
+	times = mini(times, int(lab.gacha_rolls_mutants))
+	if times <= 0:
+		print("Гача: крутки мутантов закончились")
+		return results
+	var level := get_campaign_level()
+	for i in range(times):
+		var roll: Dictionary = GachaData.roll_mutant_gacha(level)
+		if lab.unlocked_mutants.has(roll["type"]):
+			lab.add_farm_copy(roll["type"])
+			roll["status"] = "dup"
+		else:
+			lab.unlocked_mutants.append(roll["type"])
+			roll["status"] = "new"
+		results.append(roll)
+	lab.gacha_rolls_mutants -= times
+	print("Гача мутантов: %d круток (ур. %d), осталось %d" % [times, level, lab.gacha_rolls_mutants])
+	save_to_active_slot()
+	return results
+
+
+## Батч-крутка гачи артефактов: новый -> коллекция, дубль -> +1 звезда.
+## status: new/star/dup_max
+func spin_artifact_gacha(times: int) -> Array:
+	var results: Array = []
+	if times <= 0 or not current_save_data or not current_save_data.lab_data:
+		return results
+	var lab = current_save_data.lab_data
+	times = mini(times, int(lab.gacha_rolls_artifacts))
+	if times <= 0:
+		print("Гача: крутки артефактов закончились")
+		return results
+	var level := get_campaign_level()
+	for i in range(times):
+		var roll: Dictionary = GachaData.roll_artifact_gacha(level)
+		if lab.won_artifacts.has(roll["type"]):
+			if lab.add_artifact_star(roll["type"]):
+				roll["status"] = "star"
+			else:
+				roll["status"] = "dup_max"
+		else:
+			lab.won_artifacts.append(roll["type"])
+			roll["status"] = "new"
+		results.append(roll)
+	lab.gacha_rolls_artifacts -= times
+	print("Гача артефактов: %d круток (ур. %d), осталось %d" % [times, level, lab.gacha_rolls_artifacts])
+	save_to_active_slot()
+	return results
+
+
 ## Скормить копию ДРУГОГО типа как корм: очки по редкости корма,
 ## при наборе порога (2/4/6/8) - звезда цели
 func feed_fodder(fodder_type: String, target_type: String) -> String:

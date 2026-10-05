@@ -188,12 +188,15 @@ static func get_shop_artifacts() -> Array:
 
 
 static func rarity_weights(level: int) -> Dictionary:
-	# Легендарки: ~4% на старте, до 10% к концу кампании
+	# Легендарки: ~4% на старте, до 12% к концу кампании.
+	# Необычный тир обязателен - без него снорк/псевдопёс/полтергейст
+	# не выпадают из гачи вовсе (баг, найденный прогоном 10000 круток)
 	var legendary := minf(4.0 + float(level) * 0.06, 12.0)
-	var rare := 20.0 + float(level) * 0.1
-	if rare > 35.0: rare = 35.0
+	var rare := minf(20.0 + float(level) * 0.1, 35.0)
+	var uncommon := minf(15.0 + float(level) * 0.1, 25.0)
 	return {
-		"common": 100.0 - legendary - rare,
+		"common": 100.0 - legendary - rare - uncommon,
+		"uncommon": uncommon,
 		"rare": rare,
 		"legendary": legendary,
 	}
@@ -213,7 +216,10 @@ static func _pick_weighted(pool: Array) -> String:
 
 static func roll_rarity(level: int) -> String:
 	var w := rarity_weights(level)
-	return _pick_weighted([["common", w["common"]], ["rare", w["rare"]], ["legendary", w["legendary"]]])
+	var pool := []
+	for key in w:
+		pool.append([key, w[key]])
+	return _pick_weighted(pool)
 
 
 static func roll_mutant_gacha(level: int) -> Dictionary:
@@ -229,7 +235,9 @@ static func roll_mutant_gacha(level: int) -> Dictionary:
 
 
 static func roll_artifact_gacha(level: int) -> Dictionary:
-	var rarity := roll_rarity(level)
+	var w := rarity_weights(level)
+	# У артефактов нет необычного тира: его доля уходит редким
+	var rarity := _pick_weighted([["common", w["common"]], ["rare", w["rare"] + w["uncommon"]], ["legendary", w["legendary"]]])
 	var types: Array = ARTIFACT_POOL[rarity]
 	var type: String = types[randi() % types.size()]
 	var bonus: Array = ARTIFACT_BONUS[rarity]
