@@ -85,9 +85,8 @@ func get_energy_percent() -> float:
 
 
 func _check_critical_energy():
-    if current_energy >= max_energy * critical_threshold:
-        critical_energy_reached.emit(get_energy_percent())
-        print("Критический уровень энергии: " + str(get_energy_percent() * 100) + "%", "ResourceManager")
+    # Предупреждение убрано по запросу: критическая энергия не требует реакции
+    pass
 
 
 # ==================== БИОМАССА ====================

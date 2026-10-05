@@ -26,6 +26,8 @@ var current_patrol_index: int = 0
 # Патруль вокруг точки спавна
 @export var patrol_radius: float = 12.0
 @export var patrol_points_count: int = 5
+# Поводок: погоня дальше этого радиуса от точки спавна прекращается
+@export var leash_radius: float = 40.0
 var _spawn_position: Vector3 = Vector3.ZERO
 
 # Множители статов (лаборатория + звёздность), задаётся до add_child,

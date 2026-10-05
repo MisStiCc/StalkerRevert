@@ -108,6 +108,9 @@ func _process(delta):
 	
 	# Проверка переходов
 	_check_transitions()
+	
+	# Подобрать артефакт на бегу: проезжал мимо и не схватил - теперь схватит
+	_try_opportunistic_pickup()
 
 
 # ==================== ОБРАБОТЧИКИ СОСТОЯНИЙ ====================
@@ -304,7 +307,7 @@ func _check_transitions():
 							var flat_f = Vector2(flee_target.x, flee_target.z)
 							if flat_f.length() > 145.0:
 								flat_f = flat_f.normalized() * 145.0
-								flee_target = Vector3(flat_f.x, flee_target.y, flat_f.z)
+								flee_target = Vector3(flat_f.x, flee_target.y, flee_target.z)
 							navigation.move_to(flee_target)
 					return
 				elif behavior_strategy and behavior_strategy.should_attack(nearest_threat):
@@ -373,6 +376,20 @@ func _on_state_exited(state: GameEnums.StalkerState):
 
 
 # ==================== ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ====================
+
+## Артефакт рядом (3м по горизонтали) - подобрать независимо от состояния
+func _try_opportunistic_pickup():
+	if carry == null or carry.has_artifact():
+		return
+	if memory == null or not memory.has_artifacts():
+		return
+	var target = memory.get_nearest_artifact()
+	if target and is_instance_valid(target):
+		var to_target = target.global_position - stalker.global_position
+		if Vector2(to_target.x, to_target.z).length() < 3.0 and carry.can_pick_up(target):
+			print("StateMachine: подобрал артефакт на бегу - ", target.name)
+			carry.pick_up_artifact(target)
+
 
 func _get_attack_target() -> Node:
 	if current_state == GameEnums.StalkerState.ATTACK_ANOMALY and memory:
