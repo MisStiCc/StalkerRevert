@@ -237,6 +237,7 @@ func move_to(position: Vector3):
 	var distance_to_navmesh = target_xz.distance_to(closest_xz)
 	
 	if distance_to_navmesh > 5.0:
+		pass
 		# НЕ подменяем цель ближайшей точкой: при пустом или неполном навмеше
 		# ближайшая точка - это край карты, и сталкеры уйдут туда вместо цели.
 		# State machine периодически повторяет move_to, так что цель заработает,

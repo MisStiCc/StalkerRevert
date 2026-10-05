@@ -23,6 +23,7 @@ func _ready():
 	# Ищем монолит
 	_monolith = get_tree().get_first_node_in_group("monolith")
 	if not _monolith:
+		pass
 		# print("StalkerSpawner: Монолит не найден при инициализации!")
 
 
