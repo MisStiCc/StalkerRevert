@@ -976,7 +976,19 @@ func _rebuild_farm_panel():
 			farm_list.add_child(none)
 		return
 
+	# Режим утилизации
+	if _recycle_mode:
+		_rebuild_farm_recycle()
+		return
+
 	# Обычный режим: строки рецепта v3 (копии + звёздный корм + простой корм)
+	var recycle_row := HBoxContainer.new()
+	var recycle_btn := Button.new()
+	recycle_btn.text = Loc.t("farm.recycle_btn")
+	recycle_btn.custom_minimum_size = Vector2(0, 34)
+	recycle_btn.pressed.connect(_on_recycle_pressed)
+	recycle_row.add_child(recycle_btn)
+	farm_list.add_child(recycle_row)
 	farm_list.add_child(_make_farm_section(Loc.t("farm.recipe")))
 	var any_row := false
 	for type in lab_data.unlocked_mutants:
@@ -1996,3 +2008,136 @@ func _on_up_auto():
 			_up_simple[_up_target] = int(_up_simple.get(_up_target, 0)) + mini(spare, remaining)
 
 	_rebuild_upgrade_dialog()
+
+
+# ==================== УТИЛИЗАЦИЯ КОПИЙ ====================
+
+var _recycle_mode: bool = false
+var _recycle_batch: Dictionary = {}
+
+
+func _on_recycle_pressed():
+	_play_click_sound()
+	_recycle_mode = true
+	_recycle_batch.clear()
+	_rebuild_farm_panel()
+
+
+func _on_recycle_cancel():
+	_play_click_sound()
+	_recycle_mode = false
+	_recycle_batch.clear()
+	_rebuild_farm_panel()
+
+
+func _recycle_pending_points() -> int:
+	var points: int = 0
+	for t in _recycle_batch:
+		points += GachaData.get_fodder_value(str(t), true) * int(_recycle_batch[t])
+	return points
+
+
+func _rebuild_farm_recycle():
+	"""Сдача копий: очки по редкости, 10 очков = 1 крутка артефактов"""
+	for child in farm_list.get_children():
+		child.queue_free()
+	if not lab_data:
+		return
+
+	var pending: int = _recycle_pending_points()
+	var total: int = lab_data.recycle_points + pending
+	var header := Label.new()
+	header.text = Loc.t("farm.recycle_title")
+	farm_list.add_child(header)
+	var progress := Label.new()
+	progress.text = Loc.t("farm.recycle_progress", {"points": total % 10 if total < 10 else 10, "consumed": pending, "left": lab_data.recycle_points})
+	progress.add_theme_font_size_override("font_size", 10)
+	farm_list.add_child(progress)
+	# Прогресс полосой
+	var bar := ProgressBar.new()
+	bar.min_value = 0
+	bar.max_value = 10
+	bar.value = total % 10
+	bar.custom_minimum_size = Vector2(0, 16)
+	farm_list.add_child(bar)
+	# Уже гарантированные крутки из партии
+	var ready_rolls := total / 10
+	if ready_rolls > 0:
+		var ready_label := Label.new()
+		ready_label.text = Loc.t("farm.recycle_confirm", {"n": ready_rolls})
+		ready_label.add_theme_color_override("font_color", Color(1.0, 0.72, 0.25))
+		farm_list.add_child(ready_label)
+
+	var found := false
+	for type in lab_data.unlocked_mutants:
+		var copies: int = lab_data.get_farm_copies(type)
+		if copies <= 0:
+			continue
+		found = true
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 6)
+		row.add_child(_make_icon_rect(type, true, 26))
+		var name_label := Label.new()
+		var value: int = GachaData.get_fodder_value(type, true)
+		name_label.text = "%s - %s (+%d)" % [Loc.type_name(type), Loc.t("farm.copies", {"n": copies}), value]
+		name_label.tooltip_text = Loc.t("farm.value_tip", {"points": value})
+		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(name_label)
+		var pending_n: int = int(_recycle_batch.get(type, 0))
+		if pending_n > 0:
+			var mark := Label.new()
+			mark.text = "x%d" % pending_n
+			mark.add_theme_color_override("font_color", Color(1.0, 0.72, 0.25))
+			row.add_child(mark)
+		for qty in [1, 5, 10]:
+			if qty <= copies:
+				var q_btn := Button.new()
+				q_btn.text = "+%d" % qty
+				q_btn.pressed.connect(_on_recycle_add.bind(type, qty))
+				row.add_child(q_btn)
+		if pending_n > 0:
+			var sub_btn := Button.new()
+			sub_btn.text = "-%d" % pending_n
+			sub_btn.pressed.connect(_on_recycle_remove.bind(type))
+			row.add_child(sub_btn)
+		farm_list.add_child(row)
+	if not found:
+		var none := Label.new()
+		none.text = Loc.t("farm.recycle_nothing")
+		farm_list.add_child(none)
+
+	var confirm := Button.new()
+	confirm.text = Loc.t("farm.recycle_confirm", {"n": ready_rolls})
+	confirm.disabled = ready_rolls <= 0
+	confirm.custom_minimum_size = Vector2(0, 36)
+	confirm.pressed.connect(_on_recycle_confirm)
+	farm_list.add_child(confirm)
+
+	var cancel := Button.new()
+	cancel.text = Loc.t("lab.back")
+	cancel.pressed.connect(_on_recycle_cancel)
+	farm_list.add_child(cancel)
+
+
+func _on_recycle_add(type: String, qty: int):
+	_play_click_sound()
+	_recycle_batch[type] = int(_recycle_batch.get(type, 0)) + qty
+	_rebuild_farm_panel()
+
+
+func _on_recycle_remove(type: String):
+	_play_click_sound()
+	_recycle_batch.erase(type)
+	_rebuild_farm_panel()
+
+
+func _on_recycle_confirm():
+	_play_click_sound()
+	var result: Dictionary = game_manager.recycle_copies(_recycle_batch)
+	if int(result.get("rolls", 0)) > 0:
+		_show_message(Loc.t("farm.recycle_done", {"n": int(result.get("rolls", 0)), "c": int(result.get("consumed", 0))}), 2.5)
+	else:
+		_show_message(Loc.t("farm.recycle_zero"), 1.5)
+	_recycle_batch.clear()
+	_rebuild_farm_panel()
+	_refresh_ui()

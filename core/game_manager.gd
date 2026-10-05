@@ -136,6 +136,30 @@ func get_star_requirements(mutant_type: String) -> Dictionary:
 
 
 ## Повысить звезду по полному рецепту (кнопка на ферме)
+## Утилизация копий с фермы: очки по редкости (1/2/3/5),
+## каждые 10 очков = 1 крутка артефактов, остаток копится в lab.recycle_points
+func recycle_copies(batch: Dictionary) -> Dictionary:
+	var lab = get_lab_data()
+	var points: int = lab.recycle_points
+	var consumed := 0
+	for t in batch:
+		var type := str(t)
+		var have: int = lab.get_farm_copies(type)
+		var cnt: int = mini(int(batch[t]), have)
+		for i in range(cnt):
+			lab.consume_farm_copy(type)
+			points += GachaData.get_fodder_value(type, true)
+			consumed += 1
+	var rolls: int = points / 10
+	lab.recycle_points = points % 10
+	if rolls > 0:
+		grant_anomaly_rolls(rolls, "утилизация копий")
+	else:
+		save_to_active_slot()
+	print("Утилизация: %d копий = %d очков -> %d круток (остаток %d)" % [consumed, points, rolls, lab.recycle_points])
+	return {"rolls": rolls, "consumed": consumed, "points": points, "leftover": lab.recycle_points}
+
+
 ## Применить собранный в диалоге рецепт разом: копии цели + звёздный корм +
 ## словарь простых кормов {тип: количество}. Всё проверяется и списывается здесь.
 func apply_star_recipe(target: String, copies: int, star_feed: String, simple: Dictionary) -> String:

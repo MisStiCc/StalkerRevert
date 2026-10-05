@@ -52,6 +52,9 @@ var campaign_level_reached: int = 1
 # Звёздный корм: копия мутанта ТОЙ ЖЕ звёздности, что и цель (тип -> 0/1)
 @export var star_feed_progress: Dictionary = {}
 
+# Очки утилизации копий (10 очков = 1 крутка артефактов)
+@export var recycle_points: int = 0
+
 # КРУТКИ ГАЧИ. DEV: мутантные - миллион по запросу игрока (смотреть шансы),
 # аномалийные крутки - серьёзная валюта (30-й уровень/30 волн = +10), дефолт 0.
 @export var gacha_rolls_mutants: int = 1000000
@@ -457,3 +460,4 @@ func reset():
     farm_copies.clear()
     mutant_star_progress.clear()
     star_feed_progress.clear()
+    recycle_points = 0
