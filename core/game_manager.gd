@@ -124,14 +124,14 @@ func get_star_requirements(mutant_type: String) -> Dictionary:
 	var copies_have: int = lab.get_farm_copies(mutant_type)
 	var star_have: int = lab.get_star_feed(mutant_type)
 	var simple_have: int = lab.get_star_progress(mutant_type)
-	var ready := copies_have >= copies_need and star_have >= star_feed_need and simple_have >= simple_need
+	var has_enough := copies_have >= copies_need and star_have >= star_feed_need and simple_have >= simple_need
 	return {
 		"stars": stars,
 		"max": stars >= LabData.MAX_STARS,
 		"copies_have": copies_have, "copies_need": copies_need,
 		"star_have": star_have, "star_need": star_feed_need,
 		"simple_have": simple_have, "simple_need": simple_need,
-		"ready": ready,
+		"ready": has_enough,
 	}
 
 

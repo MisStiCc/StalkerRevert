@@ -891,7 +891,7 @@ func _build_farm_ui():
 
 	farm_title_label = Label.new()
 	farm_title_label.position = Vector2(0, 10)
-	farm_title_label.size = Vector2(560, 25)
+	farm_title_label.size = Vector2(370, 25)
 	farm_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	panel.add_child(farm_title_label)
 
@@ -940,7 +940,6 @@ func _rebuild_farm_panel():
 	if not _feed_fodder.is_empty():
 		var fodder_type: String = _feed_fodder[0]
 		var fodder_stars: int = lab_data.get_mutant_stars(fodder_type)
-		var bucket_hint: String = Loc.t("farm.star_feed_mark") if fodder_stars == fodder_stars and lab_data.get_star_feed(fodder_type) < 1 and false else ""
 		farm_list.add_child(_make_farm_section(Loc.t("farm.feed_hint")))
 		var cancel := Button.new()
 		cancel.text = Loc.t("lab.back")
@@ -1744,12 +1743,19 @@ func _rebuild_upgrade_dialog():
 		simple_row.add_child(reset_btn)
 	up_body.add_child(simple_row)
 
+	# --- АВТО: заполнить всё из слабых и многочисленных ---
+	var auto_btn := Button.new()
+	auto_btn.text = Loc.t("up.auto")
+	auto_btn.custom_minimum_size = Vector2(0, 34)
+	auto_btn.pressed.connect(_on_up_auto)
+	up_body.add_child(auto_btn)
+
 	# --- ОК ---
 	var ok_btn := Button.new()
 	ok_btn.text = Loc.t("up.ok")
 	ok_btn.custom_minimum_size = Vector2(0, 40)
-	var ready: bool = _up_copies >= copies_have and (int(req.get("star_have")) >= 1 or not _up_star_feed.is_empty()) and simple_total >= int(req.get("simple_need"))
-	ok_btn.disabled = not ready
+	var has_enough: bool = _up_copies >= copies_have and (int(req.get("star_have")) >= 1 or not _up_star_feed.is_empty()) and simple_total >= int(req.get("simple_need"))
+	ok_btn.disabled = not has_enough
 	ok_btn.pressed.connect(_on_up_confirm)
 	up_body.add_child(ok_btn)
 	if not ready:
@@ -1875,4 +1881,64 @@ func _on_up_choose_simple(type: String, qty: int):
 func _on_up_cancel_chooser():
 	_play_click_sound()
 	_up_chooser = ""
+	_rebuild_upgrade_dialog()
+
+
+## АВТО: копии цели + слабейший звёздный корм + простой корм из 1★ по запасам
+func _on_up_auto():
+	_play_click_sound()
+	var lab = game_manager.get_lab_data()
+	if _up_target.is_empty():
+		return
+	var stars: int = lab.get_mutant_stars(_up_target)
+	var req: Dictionary = game_manager.get_star_requirements(_up_target)
+
+	# 1. Копии цели - ровно потребность (не больше, лишние копии не сжигаем)
+	_up_copies = mini(int(req.get("copies_have")), stars + 1)
+
+	# 2. Звёздный корм: тот же звёздный уровень, побольше копий, слабее редкость
+	if int(req.get("star_have")) < 1:
+		var cands: Array[String] = []
+		for t in lab.unlocked_mutants:
+			if t != _up_target and lab.get_mutant_stars(t) == stars and lab.get_farm_copies(t) > 0:
+				cands.append(str(t))
+		cands.sort_custom(func(a, b):
+			var ca: int = lab.get_farm_copies(a)
+			var cb: int = lab.get_farm_copies(b)
+			if ca != cb:
+				return ca > cb
+			return GachaData.get_fodder_value(a, true) < GachaData.get_fodder_value(b, true))
+		_up_star_feed = cands[0] if not cands.is_empty() else ""
+
+	# 3. Простой корм: сначала 1★-кормовые по запасам, затем прочие не-звёздные
+	var remaining: int = _up_remaining_simple() - _up_pending_simple_total()
+	var simple_cands: Array[String] = []
+	var other_cands: Array[String] = []
+	for t in lab.unlocked_mutants:
+		if t == _up_target or t == _up_star_feed or lab.get_farm_copies(t) <= 0:
+			continue
+		if lab.get_mutant_stars(t) == 1:
+			simple_cands.append(str(t))
+		elif lab.get_mutant_stars(t) != stars:
+			other_cands.append(str(t))
+	simple_cands.sort_custom(func(a, b):
+		var ca: int = lab.get_farm_copies(a)
+		var cb: int = lab.get_farm_copies(b)
+		if ca != cb:
+			return ca > cb
+		return GachaData.get_fodder_value(a, true) < GachaData.get_fodder_value(b, true))
+	other_cands.sort_custom(func(a, b):
+		var ca: int = lab.get_farm_copies(a)
+		var cb: int = lab.get_farm_copies(b)
+		if ca != cb:
+			return ca > cb
+		return GachaData.get_fodder_value(a, true) < GachaData.get_fodder_value(b, true))
+	for t in simple_cands + other_cands:
+		if remaining <= 0:
+			break
+		var take: int = mini(lab.get_farm_copies(t), remaining)
+		if take > 0:
+			_up_simple[t] = int(_up_simple.get(t, 0)) + take
+			remaining -= take
+
 	_rebuild_upgrade_dialog()
