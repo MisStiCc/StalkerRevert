@@ -113,21 +113,25 @@ func upgrade_artifact_star(artifact_type: String) -> bool:
 
 # ==================== ФЕРМА: КОПИИ И КОРМ ====================
 
-## Рецепт новой звезды: копии x НОВАЯ звезда (2-я - 2 копии, 5-я - 5)
-## + очки корма (2/4/6/8) + корм должен быть с числом звёзд ЦЕЛИ
+## Рецепт новой звезды N: N копий цели + 1 звёздный корм (копия мутанта
+## той же звёздности, что и цель) + простые корма (2/4/6/8 копий 1★)
 func get_star_requirements(mutant_type: String) -> Dictionary:
 	var lab = get_lab_data()
 	var stars: int = lab.get_mutant_stars(mutant_type)
 	var copies_need: int = stars + 1
-	var points_need: int = GachaData.get_star_feed_cost(stars)
+	var star_feed_need := 1
+	var simple_need: int = GachaData.get_star_feed_cost(stars)
 	var copies_have: int = lab.get_farm_copies(mutant_type)
-	var points_have: int = lab.get_star_progress(mutant_type)
+	var star_have: int = lab.get_star_feed(mutant_type)
+	var simple_have: int = lab.get_star_progress(mutant_type)
+	var ready := copies_have >= copies_need and star_have >= star_feed_need and simple_have >= simple_need
 	return {
 		"stars": stars,
 		"max": stars >= LabData.MAX_STARS,
 		"copies_have": copies_have, "copies_need": copies_need,
-		"points_have": points_have, "points_need": points_need,
-		"ready": copies_have >= copies_need and points_have >= points_need,
+		"star_have": star_have, "star_need": star_feed_need,
+		"simple_have": simple_have, "simple_need": simple_need,
+		"ready": ready,
 	}
 
 
@@ -139,11 +143,14 @@ func try_upgrade_star(mutant_type: String) -> String:
 		return "Звёзды уже максимальны"
 	if int(req.get("copies_have")) < int(req.get("copies_need")):
 		return "Нужно копий: %d/%d" % [int(req.get("copies_have")), int(req.get("copies_need"))]
-	if int(req.get("points_have")) < int(req.get("points_need")):
-		return "Нужно корма: %d/%d" % [int(req.get("points_have")), int(req.get("points_need"))]
+	if int(req.get("star_have")) < int(req.get("star_need")):
+		return "Нужен звёздный корм: копия мутанта с %d★" % int(req.get("stars"))
+	if int(req.get("simple_have")) < int(req.get("simple_need")):
+		return "Нужно простых кормов: %d/%d" % [int(req.get("simple_have")), int(req.get("simple_need"))]
 	for i in range(int(req.get("copies_need"))):
 		lab.consume_farm_copy(mutant_type)
 	lab.clear_star_progress(mutant_type)
+	lab.star_feed_progress.erase(mutant_type)
 	lab.add_mutant_star(mutant_type)
 	var new_stars: int = lab.get_mutant_stars(mutant_type)
 	print("Ферма: %s -> %d/%d★ (копий списано %d)" % [mutant_type, new_stars, LabData.MAX_STARS, int(req.get("copies_need"))])
@@ -241,17 +248,21 @@ func feed_fodder(fodder_type: String, target_type: String) -> String:
 	if stars >= LabData.MAX_STARS:
 		return "У цели уже максимальные звёзды"
 	var fodder_stars: int = lab.get_mutant_stars(fodder_type)
-	if fodder_stars != stars:
-		return "Корм должен быть с %d★ (у %s сейчас %d★)" % [stars, GachaData.display_name(fodder_type), fodder_stars]
-	var points: int = GachaData.get_fodder_value(fodder_type, true)
 	lab.consume_farm_copy(fodder_type)
-	var progress: int = lab.add_star_progress(target_type, points)
+	# Маршрут по бакам: корм той же звёздности -> звёздный (нужен 1),
+	# всё остальное -> простой (2/4/6/8 копий)
+	if fodder_stars == stars and lab.get_star_feed(target_type) < 1:
+		var fed: int = lab.add_star_feed(target_type)
+		print("Ферма: %s (%d★) -> звёздный корм для %s (%d/1)" % [fodder_type, fodder_stars, target_type, fed])
+		save_to_active_slot()
+		return "Звёздный корм принят (%d/1)" % fed
+	var progress: int = lab.add_star_progress(target_type, 1)
 	var need: int = GachaData.get_star_feed_cost(stars)
-	print("Ферма: копия %s (+%d) -> %s, корм %d/%d" % [fodder_type, points, target_type, progress, need])
+	print("Ферма: копия %s (%d★) -> простой корм для %s (%d/%d)" % [fodder_type, fodder_stars, target_type, progress, need])
 	save_to_active_slot()
 	if progress >= need:
-		return "Корма достаточно (%d/%d) - теперь нужны копии: %d" % [progress, need, stars + 1]
-	return "Корм принят: %d/%d до звезды" % [progress, need]
+		return "Простых кормов достаточно (%d/%d)" % [progress, need]
+	return "Простой корм принят: %d/%d" % [progress, need]
 
 
 func buy_shop_mutant(mutant_type: String, price: float) -> bool:

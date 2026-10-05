@@ -50,6 +50,7 @@ signal start_run_requested
 @onready var bloodsucker_button: Button = $MutantPanel/BloodsuckerButton
 @onready var chimera_button: Button = $MutantPanel/ChimeraButton
 @onready var zombie_button: Button = $MutantPanel/ZombieButton
+@onready var pseudogiant_button: Button = $MutantPanel/PseudogiantButton
 
 var zone_controller: Node
 var emission_cooldown: float = 60.0
@@ -137,6 +138,7 @@ func _apply_prices():
 		pseudodog_button: ["pseudodog", "mu.pseudodog"], controller_button: ["controller_mutant", "mu.controller"],
 		poltergeist_button: ["poltergeist", "mu.poltergeist"], bloodsucker_button: ["bloodsucker", "mu.bloodsucker"],
 		chimera_button: ["chimera", "mu.chimera"], zombie_button: ["zombie", "mu.zombie"],
+		pseudogiant_button: ["pseudogiant", "mu.pseudogiant"],
 	}
 	_mutant_buttons = {}
 	_anomaly_buttons = {}
@@ -204,6 +206,7 @@ func _connect_buttons():
 	bloodsucker_button.pressed.connect(_on_bloodsucker_pressed)
 	chimera_button.pressed.connect(_on_chimera_pressed)
 	zombie_button.pressed.connect(_on_zombie_pressed)
+	pseudogiant_button.pressed.connect(_on_pseudogiant_pressed)
 	
 	emission_button.pressed.connect(_on_emission_pressed)
 	start_run_button.pressed.connect(_on_start_run_pressed)
@@ -445,6 +448,11 @@ func _on_chimera_pressed():
 func _on_zombie_pressed():
 	_play_click_sound()
 	mutant_requested.emit("zombie")
+
+
+func _on_pseudogiant_pressed():
+	_play_click_sound()
+	mutant_requested.emit("pseudogiant")
 
 
 func show_anomaly_panel(shown: bool):

@@ -936,30 +936,31 @@ func _rebuild_farm_panel():
 		return
 	farm_title_label.text = Loc.t("farm.title")
 
-	# Режим кормления: цель должна получать корм СВОЕЙ звёздности
+	# Режим кормления: маршрут бака виден заранее
 	if not _feed_fodder.is_empty():
 		var fodder_type: String = _feed_fodder[0]
-		var points: int = GachaData.get_fodder_value(fodder_type, true)
 		var fodder_stars: int = lab_data.get_mutant_stars(fodder_type)
-		farm_list.add_child(_make_farm_section(Loc.t("farm.fodder_star_rule", {"fodder": Loc.type_name(fodder_type), "points": points, "stars": fodder_stars})))
+		var bucket_hint: String = Loc.t("farm.star_feed_mark") if fodder_stars == fodder_stars and lab_data.get_star_feed(fodder_type) < 1 and false else ""
+		farm_list.add_child(_make_farm_section(Loc.t("farm.feed_hint")))
 		var cancel := Button.new()
 		cancel.text = Loc.t("lab.back")
 		cancel.pressed.connect(_on_feed_cancel)
 		farm_list.add_child(cancel)
-		var target_stars: int = fodder_stars
 		var found := false
 		for type in lab_data.unlocked_mutants:
 			if type == fodder_type or lab_data.get_farm_copies(type) <= 0:
 				continue
-			if lab_data.get_mutant_stars(type) != target_stars:
-				continue  # корм той же звёздности, что и цель
 			found = true
+			var t_stars: int = lab_data.get_mutant_stars(type)
+			var to_star_bucket: bool = fodder_stars == t_stars and lab_data.get_star_feed(type) < 1
 			var row := HBoxContainer.new()
 			row.add_theme_constant_override("separation", 6)
 			row.add_child(_make_icon_rect(type, true, 26))
-			var stars: int = lab_data.get_mutant_stars(type)
 			var name_label := Label.new()
-			name_label.text = "%s %s (%s)" % [Loc.type_name(type), LabData.stars_text(stars), Loc.t("farm.progress", {"cur": lab_data.get_star_progress(type), "need": GachaData.get_star_feed_cost(stars)})]
+			name_label.text = "%s %s (%s) - (%s)" % [
+				Loc.type_name(type), LabData.stars_text(t_stars),
+				Loc.t("farm.progress", {"cur": lab_data.get_star_progress(type), "need": GachaData.get_star_feed_cost(t_stars)}),
+				Loc.t("farm.star_feed_mark") if to_star_bucket else Loc.t("farm.simple_feed_mark")]
 			name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			row.add_child(name_label)
 			var btn := Button.new()
@@ -969,43 +970,51 @@ func _rebuild_farm_panel():
 			farm_list.add_child(row)
 		if not found:
 			var none := Label.new()
-			none.text = Loc.t("farm.no_matching_fodder", {"n": target_stars})
+			none.text = Loc.t("farm.empty")
 			farm_list.add_child(none)
 		return
 
-	# Обычный режим: строки с рецептом звезды
+	# Обычный режим: строки рецепта v3 (копии + звёздный корм + простой корм)
 	farm_list.add_child(_make_farm_section(Loc.t("farm.recipe")))
 	var any_row := false
 	for type in lab_data.unlocked_mutants:
 		var req: Dictionary = game_manager.get_star_requirements(type)
-		if int(req.get("copies_have")) <= 0 and int(req.get("points_have")) <= 0:
+		if int(req.get("copies_have")) <= 0 and int(req.get("star_have")) <= 0 and int(req.get("simple_have")) <= 0:
 			continue
 		any_row = true
 		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 6)
+		row.add_theme_constant_override("separation", 4)
 		row.add_child(_make_icon_rect(type, true, 26))
 		var stars: int = int(req.get("stars"))
 		var name_label := Label.new()
-		name_label.text = "%s %s - %s, %s" % [
-			Loc.type_name(type), LabData.stars_text(stars),
-			Loc.t("farm.copies_need", {"have": int(req.get("copies_have")), "need": int(req.get("copies_need"))}),
-			Loc.t("farm.points_need", {"have": int(req.get("points_have")), "need": int(req.get("points_need"))})]
-		name_label.tooltip_text = Loc.t("farm.value_tip", {"points": GachaData.get_fodder_value(type, true)})
+		name_label.text = "%s %s" % [Loc.type_name(type), LabData.stars_text(stars)]
 		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(name_label)
+		var req_label := Label.new()
+		req_label.text = "%s · %s · %s" % [
+			Loc.t("farm.copies_need", {"have": int(req.get("copies_have")), "need": int(req.get("copies_need"))}),
+			Loc.t("farm.star_feed", {"have": int(req.get("star_have")), "need": int(req.get("star_need"))}),
+			Loc.t("farm.simple_feed", {"have": int(req.get("simple_have")), "need": int(req.get("simple_need"))})]
+		req_label.add_theme_font_size_override("font_size", 9)
+		req_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(req_label)
 		if bool(req.get("max")):
 			var max_label := Label.new()
 			max_label.text = Loc.t("stars.max")
 			row.add_child(max_label)
 		else:
 			var up_btn := Button.new()
-			up_btn.text = Loc.t("farm.upgrade_btn", {"n": stars + 1})
+			up_btn.text = "↑%d★" % (stars + 1)
+			up_btn.tooltip_text = Loc.t("farm.upgrade_btn", {"n": stars + 1})
+			up_btn.custom_minimum_size = Vector2(52, 0)
 			up_btn.disabled = not bool(req.get("ready"))
 			up_btn.pressed.connect(_on_farm_upgrade.bind(type))
 			row.add_child(up_btn)
 			if lab_data.get_farm_copies(type) > 0:
 				var feed_btn := Button.new()
-				feed_btn.text = Loc.t("farm.feed_btn")
+				feed_btn.text = "🍽"
+				feed_btn.tooltip_text = Loc.t("farm.feed_btn")
+				feed_btn.custom_minimum_size = Vector2(36, 0)
 				feed_btn.pressed.connect(_on_farm_feed_pressed.bind(type))
 				row.add_child(feed_btn)
 		farm_list.add_child(row)
@@ -1514,7 +1523,6 @@ func _show_card_detail(type: String, is_mutant: bool, unlocked: bool):
 
 ## anomaly_type "heat_anomaly" -> ключ локализации "heat"
 func _anomaly_loc_key(anomaly_type: String) -> String:
-	var suffixes := ["_anomaly", "gravity_", "thermal_", "chemical_", "radiation_", "time_", "teleport", "electric_", "bio_"]
 	var key: String = anomaly_type
 	for suf in ["gravity_", "thermal_", "chemical_", "electric_", "bio_"]:
 		key = key.trim_prefix(suf)

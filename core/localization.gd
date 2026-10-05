@@ -213,6 +213,7 @@ const STRINGS := {
 	"mu.controller": {"ru": "Контролёр", "en": "Controller"},
 	"mu.poltergeist": {"ru": "Полтергейст", "en": "Poltergeist"},
 	"mu.bloodsucker": {"ru": "Кровосос", "en": "Bloodsucker"},
+	"mu.pseudogiant": {"ru": "Псевдогигант", "en": "Pseudo-giant"},
 	"mu.chimera": {"ru": "Химера", "en": "Chimera"},
 	"mu.zombie": {"ru": "Зомби", "en": "Zombie"},
 

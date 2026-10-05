@@ -46,8 +46,11 @@ var campaign_level_reached: int = 1
 # повышает звезду, копии других типов - корм (очки звезды).
 @export var farm_copies: Dictionary = {}
 
-# Накопленные очки корма к следующей звезде (тип -> очки)
+# Простой корм (копии 1★ и прочих типов) к следующей звезде (тип -> счёт)
 @export var mutant_star_progress: Dictionary = {}
+
+# Звёздный корм: копия мутанта ТОЙ ЖЕ звёздности, что и цель (тип -> 0/1)
+@export var star_feed_progress: Dictionary = {}
 
 # КРУТКИ ГАЧИ. DEV: мутантные - миллион по запросу игрока (смотреть шансы),
 # аномалийные крутки - серьёзная валюта (30-й уровень/30 волн = +10), дефолт 0.
@@ -394,6 +397,15 @@ func clear_star_progress(type: String):
     mutant_star_progress.erase(type)
 
 
+func get_star_feed(type: String) -> int:
+    return int(star_feed_progress.get(type, 0))
+
+
+func add_star_feed(type: String) -> int:
+    star_feed_progress[type] = get_star_feed(type) + 1
+    return int(star_feed_progress[type])
+
+
 func get_farm_copies(type: String) -> int:
     return int(farm_copies.get(type, 0))
 
@@ -444,3 +456,4 @@ func reset():
     artifact_stars.clear()
     farm_copies.clear()
     mutant_star_progress.clear()
+    star_feed_progress.clear()

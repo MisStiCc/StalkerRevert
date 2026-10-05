@@ -312,6 +312,14 @@ offset_bottom = 80.0
 theme_override_font_sizes/font_size = 9
 text = "Химера"
 
+[node name="PseudogiantButton" type="Button" parent="MutantPanel"]
+offset_left = 350.0
+offset_top = 48.0
+offset_right = 434.0
+offset_bottom = 80.0
+theme_override_font_sizes/font_size = 9
+text = "Псевдогигант"
+
 [node name="ZombieButton" type="Button" parent="MutantPanel"]
 offset_left = 263.0
 offset_top = 48.0
