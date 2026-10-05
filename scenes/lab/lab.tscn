@@ -437,6 +437,15 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("2_upgrade_panel")
 
+[node name="Shade" type="ColorRect" parent="UpgradePanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.6)
+
 [node name="Panel" type="Panel" parent="UpgradePanel" unique_id=265332345]
 layout_mode = 1
 anchors_preset = 8
@@ -488,6 +497,15 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("3_storage_panel")
+
+[node name="Shade" type="ColorRect" parent="StoragePanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.6)
 
 [node name="Panel" type="Panel" parent="StoragePanel" unique_id=1777116015]
 layout_mode = 1
@@ -560,6 +578,15 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("4_result_panel")
 
+[node name="Shade" type="ColorRect" parent="ResultPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.6)
+
 [node name="Panel" type="Panel" parent="ResultPanel" unique_id=2844269]
 layout_mode = 1
 anchors_preset = 8
@@ -568,9 +595,9 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -300.0
-offset_top = -200.0
+offset_top = -260.0
 offset_right = 300.0
-offset_bottom = 200.0
+offset_bottom = 260.0
 grow_horizontal = 2
 grow_vertical = 2
 
