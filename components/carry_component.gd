@@ -105,16 +105,7 @@ func steal_artifact() -> bool:
         return false
     
     # "Кража" - артефакт исчезает (уносится за пределы карты)
-    var value = 0
-    if carried_artifact.has_method("get_value"):
-        value = carried_artifact.get_value()
-    
-    var rarity = "common"
-    if carried_artifact.has_method("get_rarity_name"):
-        rarity = carried_artifact.get_rarity_name()
-    
     artifact_stolen.emit(carried_artifact)
-    pass # (лог отключён)
     
     carried_artifact.queue_free()
     carried_artifact = null
@@ -163,8 +154,7 @@ func get_carry_weight() -> float:
     if not has_artifact():
         return 0.0
     
-    var value = get_artifact_value()
-    return float(value) / 10.0  # Пример: 10 единиц ценности = 1 вес
+    return float(get_artifact_value()) / 10.0  # Пример: 10 единиц ценности = 1 вес
 
 
 func can_pick_up(artifact: Node) -> bool:

@@ -37,7 +37,7 @@ func _ready():
     _anomaly_manager = get_tree().get_first_node_in_group("anomaly_manager")
     _spawn_manager = get_tree().get_first_node_in_group("spawn_manager")
     add_to_group("event_manager")
-    print("EventManager инициализирован", "EventManager")
+    pass # print("EventManager инициализирован", "EventManager")
 
 
 # ==================== ВЫБРОСЫ ====================
@@ -67,7 +67,7 @@ func start_radiation_pulse() -> bool:
     pulse_count += 1
     current_difficulty += difficulty_increase_per_pulse
     
-    print("ВЫБРОС #" + str(pulse_count) + " | Сложность: " + str(current_difficulty), "EventManager")
+    pass # print("ВЫБРОС #" + str(pulse_count) + " | Сложность: " + str(current_difficulty), "EventManager")
     radiation_pulse_started.emit(pulse_count)
     
     # Останавливаем таймеры артефактов
@@ -95,7 +95,7 @@ func _end_pulse_later() -> void:
 
     is_radiating = false
     radiation_pulse_ended.emit()
-    print("Выброс закончен", "EventManager")
+    pass # print("Выброс закончен", "EventManager")
 
     # В выживании выбросы не приближают победу - её нет
     if not endless_mode and pulse_count >= pulses_to_win:
@@ -116,7 +116,7 @@ func _drop_all_artifacts():
                 s.drop_artifact()
                 dropped += 1
     
-    print("Сброшено артефактов во время выброса: " + str(dropped), "EventManager")
+    pass # print("Сброшено артефактов во время выброса: " + str(dropped), "EventManager")
 
 
 func _kill_all_stalkers():
@@ -126,7 +126,7 @@ func _kill_all_stalkers():
         if is_instance_valid(s) and s.has_method("take_damage") and s.is_alive():
             s.take_damage(999999.0, self)
             killed += 1
-    print("Выброс выжег сталкеров: " + str(killed), "EventManager")
+    pass # print("Выброс выжег сталкеров: " + str(killed), "EventManager")
 
 
 func _shuffle_all_anomalies():
@@ -155,7 +155,7 @@ func _shuffle_all_anomalies():
             var new_pos = _get_random_position_for_level(level)
             if new_pos != Vector3.ZERO:
                 a.global_position = new_pos
-                print("Аномалия ур." + str(level) + " перемещена", "EventManager")
+                pass # print("Аномалия ур." + str(level) + " перемещена", "EventManager")
 
 
 func _get_random_position_for_level(level: int) -> Vector3:
@@ -224,7 +224,7 @@ func trigger_game_over():
     if _run_over:
         return
     _run_over = true
-    print("GAME OVER - Сталкер коснулся Монолита!", "EventManager")
+    pass # print("GAME OVER - Сталкер коснулся Монолита!", "EventManager")
     game_over.emit()
 
 
@@ -233,7 +233,7 @@ func _win_game():
         return
     _run_over = true
     var reward = _calculate_reward()
-    print("ПОБЕДА! Забег #" + str(run_number) + " | Награда: " + str(reward), "EventManager")
+    pass # print("ПОБЕДА! Забег #" + str(run_number) + " | Награда: " + str(reward), "EventManager")
     game_won.emit(run_number, reward)
     get_tree().paused = true
 
@@ -266,7 +266,7 @@ func reset():
     pulse_count = 0
     current_difficulty = 1.0
     accumulated_biomass = 0.0
-    print("EventManager сброшен", "EventManager")
+    pass # print("EventManager сброшен", "EventManager")
 
 
 # ==================== ГЕТТЕРЫ ====================

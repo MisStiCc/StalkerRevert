@@ -35,7 +35,7 @@ func _ready():
     _setup_players()
     _register_dummy_sounds()  # Добавляем заглушки
     add_to_group("sound_manager")
-    print("SoundManager инициализирован", "SoundManager")
+    pass # print("SoundManager инициализирован", "SoundManager")
 
 
 func _setup_players():
@@ -62,7 +62,7 @@ func _setup_players():
         add_child(player)
         _sfx_players.append(player)
     
-    print("Аудиоплееры созданы: 1 музыка, 1 окружение, 5 SFX", "SoundManager")
+    pass # print("Аудиоплееры созданы: 1 музыка, 1 окружение, 5 SFX", "SoundManager")
 
 
 func _register_dummy_sounds():
@@ -103,14 +103,14 @@ func _register_dummy_sounds():
     footstep_sounds["stone"] = dummy_stream
     footstep_sounds["water"] = dummy_stream
     
-    print("Заглушки звуков созданы", "SoundManager")
+    pass # print("Заглушки звуков созданы", "SoundManager")
 
 
 # ==================== МУЗЫКА ====================
 
 func play_music(track_name: String, fade_time: float = 1.0):
     if not music_tracks.has(track_name):
-        print("Неизвестный трек: " + track_name, "SoundManager")
+        pass # print("Неизвестный трек: " + track_name, "SoundManager")
         return
     
     var track = music_tracks[track_name]
@@ -126,7 +126,7 @@ func play_music(track_name: String, fade_time: float = 1.0):
     _current_music_track = track_name
     
     music_changed.emit(track_name)
-    print("Смена музыки на: " + track_name, "SoundManager")
+    pass # print("Смена музыки на: " + track_name, "SoundManager")
 
 
 func stop_music(fade_time: float = 1.0):
@@ -134,7 +134,7 @@ func stop_music(fade_time: float = 1.0):
     _music_fade_timer = fade_time
     _target_music = null
     _current_music_track = ""
-    print("Музыка останавливается", "SoundManager")
+    pass # print("Музыка останавливается", "SoundManager")
 
 
 func _process(delta):
@@ -180,7 +180,7 @@ func play_sound(sound_name: String, volume_mod: float = 1.0, pitch_mod: float = 
     sound_played.emit(sound_name)
     # Убираем лишний лог для часто вызываемых звуков
     if not sound_name.begins_with("ui_"):
-        print("Звук воспроизведен: " + sound_name, "SoundManager")
+        pass # print("Звук воспроизведен: " + sound_name, "SoundManager")
 
 
 func _find_sound(sound_name: String) -> AudioStream:
@@ -245,7 +245,7 @@ func play_pulse_warning():
 func set_master_volume(value: float):
     master_volume = clamp(value, 0.0, 1.0)
     _update_volumes()
-    print("Громкость master: " + str(value), "SoundManager")
+    pass # print("Громкость master: " + str(value), "SoundManager")
 
 
 func set_music_volume(value: float):

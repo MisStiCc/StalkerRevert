@@ -62,7 +62,7 @@ var _run_mode_button: Button
 
 
 func _ready():
-	print("lab_controller: _ready started")
+	# print("lab_controller: _ready started")
 	
 	_load_cover_art()
 	
@@ -83,7 +83,7 @@ func _ready():
 	Loc.changed.connect(_apply_static_texts)
 	_show_last_run_result()
 
-	print("lab_controller: initialized, GameManager найден: ", game_manager != null)
+	# print("lab_controller: initialized, GameManager найден: ", game_manager != null)
 
 
 func _show_last_run_result():
@@ -105,26 +105,26 @@ func _load_cover_art():
 	const COVER_PATH := "res://ui/lab/lab_background.svg"
 	if ResourceLoader.exists(COVER_PATH):
 		cover.texture = load(COVER_PATH)
-		print("lab_controller: обложка лаборатории загружена")
+		# print("lab_controller: обложка лаборатории загружена")
 	else:
 		cover.visible = false
 
 
 func _load_data():
-	print("lab_controller: загрузка данных...")
+	# print("lab_controller: загрузка данных...")
 	
 	if game_manager:
-		print("GameManager НАЙДЕН!")
+		# print("GameManager НАЙДЕН!")
 		lab_data = game_manager.get_lab_data()
 		statistics = game_manager.get_statistics()
 		# Рубеж кампании для проверки разблокировки расширенных тиров
 		lab_data.campaign_level_reached = game_manager.get_campaign_level()
 	else:
-		print("GameManager НЕ НАЙДЕН! Создаем временные данные")
+		# print("GameManager НЕ НАЙДЕН! Создаем временные данные")
 		lab_data = LabData.new()
 		statistics = GameStatistics.new()
 	
-	print("lab_controller: данные загружены")
+	# print("lab_controller: данные загружены")
 
 
 func _setup_connections():
@@ -226,7 +226,7 @@ func _play_click_sound():
 
 func _refresh_ui():
 	if not lab_data:
-		print("lab_data отсутствует, создаем новый")
+		# print("lab_data отсутствует, создаем новый")
 		lab_data = LabData.new()
 	
 	run_number_label.text = Loc.t("lab.day", {"n": lab_data.run_number})
@@ -285,7 +285,7 @@ func _setup_campaign_selector():
 		_campaign_level = game_manager.get_campaign_level()
 	var header: HBoxContainer = get_node_or_null("VBox/Header")
 	if not header:
-		print("lab_controller: Header не найден, селектор кампании не построен")
+		# print("lab_controller: Header не найден, селектор кампании не построен")
 		return
 
 	var row := HBoxContainer.new()
@@ -417,11 +417,12 @@ func _on_start_run_pressed():
 	if game_manager:
 		# Выбранный в селекторе уровень кампании уходит в параметры забега
 		game_manager.selected_campaign_level = _campaign_level
-		print("Запуск забега через GameManager (уровень кампании %d)" % _campaign_level)
+		# print("Запуск забега через GameManager (уровень кампании %d)" % _campaign_level)
 		await get_tree().create_timer(0.2).timeout
 		game_manager.change_scene("run")
 	else:
-		print("GameManager не найден, не могу начать забег")
+		pass
+		# print("GameManager не найден, не могу начать забег")
 
 
 func _on_menu_pressed():
@@ -434,7 +435,7 @@ func _on_menu_pressed():
 		await get_tree().create_timer(0.2).timeout
 		game_manager.change_scene("main_menu")
 	else:
-		print("GameManager не найден, переходим напрямую")
+		# print("GameManager не найден, переходим напрямую")
 		get_tree().change_scene_to_file("res://scenes/ui/main_menu.tscn")
 
 
@@ -457,7 +458,7 @@ func _setup_save_slot_selector():
 	"""Выбор активного слота сохранения между слайдерами и кнопкой НАЗАД"""
 	var panel = get_node_or_null("SettingsScreen/Panel")
 	if not panel:
-		print("lab_controller: SettingsScreen/Panel не найден, селектор слота не построен")
+		# print("lab_controller: SettingsScreen/Panel не найден, селектор слота не построен")
 		return
 
 	var selector := SaveSlotSelector.new()
@@ -743,7 +744,8 @@ func _on_save_pressed():
 		game_manager.save_to_active_slot()
 		_show_message("Игра сохранена", 1.0)
 	else:
-		print("GameManager не найден, не могу сохранить")
+		pass
+		# print("GameManager не найден, не могу сохранить")
 
 
 func _on_storage_pressed():
@@ -777,7 +779,7 @@ func _open_upgrade_station(station_type: String):
 		upgrade_panel.setup(station_type, lab_data, _on_upgrade_purchased)
 		upgrade_panel.visible = true
 	else:
-		print("Upgrade panel not found or invalid")
+		# print("Upgrade panel not found or invalid")
 		_show_message("Панель улучшений не найдена", 1.0)
 
 
@@ -796,7 +798,7 @@ func _open_storage():
 		storage_panel.setup(lab_data, _on_artifact_exchanged)
 		storage_panel.visible = true
 	else:
-		print("Storage panel not found or invalid")
+		# print("Storage panel not found or invalid")
 		_show_message("Хранилище не найдено", 1.0)
 
 

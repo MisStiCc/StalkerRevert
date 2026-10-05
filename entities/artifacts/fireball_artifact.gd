@@ -15,7 +15,7 @@ func _ready_hook():
         mesh_instance.material_override.albedo_color = Color(1, 0.3, 0)
         mesh_instance.material_override.emission = Color(1, 0.3, 0)
     
-    print("FireballArtifact создан, ценность: " + str(artifact_value), "Artifact")
+    pass # print("FireballArtifact создан, ценность: " + str(artifact_value), "Artifact")
 
 
 func _collect_hook(collector: Node):
@@ -24,6 +24,6 @@ func _collect_hook(collector: Node):
     # Поджигает сталкера (наносит урон огнем)
     if collector.has_method("take_damage"):
         collector.take_damage(5, self)
-        print("FireballArtifact: нанесён урон огнём 5", "Artifact")
+        pass # print("FireballArtifact: нанесён урон огнём 5", "Artifact")
     
-    print("FireballArtifact собран! Даёт +" + str(energy_reward) + " энергии", "Artifact")
+    pass # print("FireballArtifact собран! Даёт +" + str(energy_reward) + " энергии", "Artifact")

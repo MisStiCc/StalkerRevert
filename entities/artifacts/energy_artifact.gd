@@ -15,7 +15,7 @@ func _ready_hook():
         mesh_instance.material_override.albedo_color = Color(0.2, 0.8, 1.0)
         mesh_instance.material_override.emission = Color(0.2, 0.8, 1.0)
     
-    print("EnergyArtifact создан, ценность: " + str(artifact_value), "Artifact")
+    pass # print("EnergyArtifact создан, ценность: " + str(artifact_value), "Artifact")
 
 
 func _collect_hook(collector: Node):
@@ -24,6 +24,6 @@ func _collect_hook(collector: Node):
     # Восстанавливает здоровье
     if collector.has_method("heal"):
         var healed = collector.heal(10)
-        print("EnergyArtifact: восстановлено " + str(healed) + " HP", "Artifact")
+        pass # print("EnergyArtifact: восстановлено " + str(healed) + " HP", "Artifact")
     
-    print("EnergyArtifact собран! Даёт +" + str(energy_reward) + " энергии", "Artifact")
+    pass # print("EnergyArtifact собран! Даёт +" + str(energy_reward) + " энергии", "Artifact")

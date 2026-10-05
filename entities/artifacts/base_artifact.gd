@@ -36,7 +36,7 @@ func _ready():
     _update_visual()
     _ready_hook()
     
-    print("Артефакт создан: " + artifact_name + " (" + get_rarity_name() + ") ценность: " + str(value))
+    pass # print("Артефакт создан: " + artifact_name + " (" + get_rarity_name() + ") ценность: " + str(value))
 
 
 func _process(delta):
@@ -61,7 +61,7 @@ func _collect_hook(collector: Node):
     if effect_duration > 0 and collector.has_method("apply_effect"):
         collector.apply_effect(artifact_name, effect_duration)
     
-    print("Эффект артефакта применен к " + str(collector))
+    pass # print("Эффект артефакта применен к " + str(collector))
 
 
 func _update_visual():
@@ -113,7 +113,7 @@ func set_rarity_and_value(new_rarity, new_value: float):
     value = int(new_value)
     add_to_group("artifacts_" + get_rarity_name())
     _update_visual()
-    print("Редкость изменена на " + get_rarity_name() + ", ценность: " + str(value))
+    pass # print("Редкость изменена на " + get_rarity_name() + ", ценность: " + str(value))
 
 
 func get_artifact_name() -> String:

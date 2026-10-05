@@ -84,7 +84,7 @@ func _ready():
 	# поэтому после готовности всей сцены перерисовываем ценники
 	_apply_language_and_prices.call_deferred()
 
-	print("HUD инициализирован")
+	# print("HUD инициализирован")
 
 
 ## Локализация кнопок/подписей + ценники поверх них. При смене языка
@@ -316,7 +316,7 @@ func _on_start_run_pressed():
 	start_run_requested.emit()
 	# Кнопка одноразовая: до конца забега панель не нужна
 	start_panel.visible = false
-	print("HUD: старт забега запрошен")
+	# print("HUD: старт забега запрошен")
 
 
 func _on_emission_pressed():

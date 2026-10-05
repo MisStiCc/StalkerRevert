@@ -41,7 +41,7 @@ func _ready():
     if label:
         label.text = "Монолит\nУровень " + str(current_level)
     
-    print("🔮 Monolith: инициализирован на уровне ", current_level)
+    pass # print("🔮 Monolith: инициализирован на уровне ", current_level)
 
 
 func get_max_energy() -> float:
@@ -79,7 +79,7 @@ func check_stalker_touch(stalker: Node3D):
     if global_position.distance_to(stalker.global_position) < 5.0:
         game_over.emit()
         get_tree().paused = true
-        print("💀 GAME OVER - Сталкер коснулся Монолита!")
+        pass # print("💀 GAME OVER - Сталкер коснулся Монолита!")
 
 
 func get_inner_radius() -> float:

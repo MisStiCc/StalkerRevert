@@ -60,14 +60,14 @@ var is_prep_phase: bool = true
 
 
 func _ready():
-	print("ZoneController: инициализация...")
+	pass # print("ZoneController: инициализация...")
 	add_to_group("zone_controller")
 	
 	# Загружаем параметры забега из GameManager
 	if get_tree().root.has_meta("run_params"):
 		run_params = get_tree().root.get_meta("run_params")
 		get_tree().root.remove_meta("run_params")
-		print("Параметры забега загружены: " + str(run_params))
+		pass # print("Параметры забега загружены: " + str(run_params))
 	
 	_setup_managers()
 	_connect_managers()
@@ -85,12 +85,12 @@ func _ready():
 	await _connect_to_hud()
 	
 	is_initialized = true
-	print("ZoneController: готов!")
+	pass # print("ZoneController: готов!")
 
 
 func _wait_for_terrain_generator():
 	"""Ждёт появления TerrainGenerator"""
-	print("ZoneController: ожидание TerrainGenerator...")
+	pass # print("ZoneController: ожидание TerrainGenerator...")
 	var attempts = 0
 	var max_attempts = 30
 	
@@ -99,24 +99,24 @@ func _wait_for_terrain_generator():
 		attempts += 1
 	
 	if get_tree().get_first_node_in_group("terrain_generator"):
-		print("ZoneController: TerrainGenerator НАЙДЕН!")
+		pass # print("ZoneController: TerrainGenerator НАЙДЕН!")
 	else:
-		print("ZoneController: TerrainGenerator НЕ НАЙДЕН после ", max_attempts, " попыток!")
+		pass # print("ZoneController: TerrainGenerator НЕ НАЙДЕН после ", max_attempts, " попыток!")
 
 
 func _force_initial_chunk_load():
 	"""Принудительно загружает чанки вокруг монолита при старте"""
 	var terrain = get_tree().get_first_node_in_group("terrain_generator")
 	if not terrain:
-		print("ZoneController: TerrainGenerator не найден, пропускаем загрузку чанков")
+		pass # print("ZoneController: TerrainGenerator не найден, пропускаем загрузку чанков")
 		return
 	
 	var monolith_node = get_tree().get_first_node_in_group("monolith")
 	if not monolith_node:
-		print("ZoneController: Монолит не найден!")
+		pass # print("ZoneController: Монолит не найден!")
 		return
 	
-	print("ZoneController: принудительная загрузка чанков вокруг монолита...")
+	pass # print("ZoneController: принудительная загрузка чанков вокруг монолита...")
 	
 	# Сохраняем позицию камеры
 	var camera = get_viewport().get_camera_3d()
@@ -142,8 +142,8 @@ func _force_initial_chunk_load():
 	if camera and original_pos != Vector3.ZERO:
 		camera.global_position = original_pos
 	
-	print("ZoneController: начальная загрузка чанков завершена. Загружено чанков: ", 
-		  terrain.get_loaded_chunks_count() if terrain.has_method("get_loaded_chunks_count") else 0)
+	pass # print("ZoneController: начальная загрузка чанков завершена. Загружено чанков: ", 
+		  # terrain.get_loaded_chunks_count() if terrain.has_method("get_loaded_chunks_count") else 0)
 
 
 func start_run():
@@ -151,7 +151,7 @@ func start_run():
 	if not is_prep_phase:
 		return
 	is_prep_phase = false
-	print("ZoneController: СТАРТ - сталкеры пошли!")
+	pass # print("ZoneController: СТАРТ - сталкеры пошли!")
 	spawn_manager.start_spawning()
 
 
@@ -163,7 +163,7 @@ func _on_all_waves_cleared():
 	"""Все 3 волны отбиты, сталкеров не осталось - победа"""
 	if is_run_finished:
 		return
-	print("ПОБЕДА: все волны отбиты!")
+	pass # print("ПОБЕДА: все волны отбиты!")
 	finish_run(true)
 
 
@@ -183,9 +183,9 @@ func _connect_to_hud():
 		hud.mutant_requested.connect(_on_hud_mutant_requested)
 		if hud.has_signal("start_run_requested"):
 			hud.start_run_requested.connect(start_run)
-		print("ZoneController: HUD подключен")
+		pass # print("ZoneController: HUD подключен")
 	else:
-		print("ZoneController: HUD не найден после ", max_attempts, " попыток")
+		pass # print("ZoneController: HUD не найден после ", max_attempts, " попыток")
 
 
 func _setup_managers():
@@ -195,7 +195,7 @@ func _setup_managers():
 	resource_manager.max_biomass = max_biomass
 	resource_manager.critical_threshold = critical_biomass_threshold
 	add_child(resource_manager)
-	print("ResourceManager создан")
+	pass # print("ResourceManager создан")
 	
 	# AnomalyManager
 	anomaly_manager = AnomalyManager.new()
@@ -204,7 +204,7 @@ func _setup_managers():
 	anomaly_manager.artifact_values = artifact_values
 	anomaly_manager.difficulty_to_rarity = difficulty_to_rarity
 	add_child(anomaly_manager)
-	print("AnomalyManager создан")
+	pass # print("AnomalyManager создан")
 	
 	# SpawnManager
 	spawn_manager = SpawnManager.new()
@@ -215,34 +215,34 @@ func _setup_managers():
 	}
 	spawn_manager.mutant_scenes = mutant_scenes
 	add_child(spawn_manager)
-	print("SpawnManager создан")
+	pass # print("SpawnManager создан")
 	
 	# EventManager
 	event_manager = EventManager.new()
 	event_manager.pulse_duration = pulse_duration
 	add_child(event_manager)
-	print("EventManager создан")
+	pass # print("EventManager создан")
 	
 	# ProgressionManager
 	progression_manager = ProgressionManager.new()
 	add_child(progression_manager)
-	print("ProgressionManager создан")
+	pass # print("ProgressionManager создан")
 	
 	# FogManager
 	fog_manager = FogManager.new()
 	fog_manager.enabled = true
 	add_child(fog_manager)
-	print("FogManager создан")
+	pass # print("FogManager создан")
 	
 	# ParticleManager
 	particle_manager = ParticleManager.new()
 	add_child(particle_manager)
-	print("ParticleManager создан")
+	pass # print("ParticleManager создан")
 	
 	# SoundManager
 	sound_manager = SoundManager.new()
 	add_child(sound_manager)
-	print("SoundManager создан")
+	pass # print("SoundManager создан")
 
 
 func _connect_managers():
@@ -347,7 +347,7 @@ func _initialize_run():
 	for a in _shop_artifacts_pending:
 		if anomaly_manager:
 			anomaly_manager.create_artifact(a, Vector3(8.0, 1.8, 8.0), "common", 0.0)
-			print("Магазин: артефакт ", a, " размещён у монолита")
+			pass # print("Магазин: артефакт ", a, " размещён у монолита")
 	_shop_artifacts_pending.clear()
 
 	_gacha_rewards_log.clear()
@@ -359,7 +359,7 @@ func _initialize_run():
 	elif run_params.get("run_mode", "") == "survival":
 		run_label = "ВЫЖИВАНИЕ: волны без предела"
 	Signals.run_started.emit(run_number, run_difficulty, pulses)
-	print(run_label + " в фазе подготовки (множитель врагов: " + str(run_difficulty) + "). Расставьте защиты и нажмите СТАРТ.")
+	pass # print(run_label + " в фазе подготовки (множитель врагов: " + str(run_difficulty) + "). Расставьте защиты и нажмите СТАРТ.")
 
 
 func _apply_lab_bonuses():
@@ -388,7 +388,7 @@ func _apply_lab_bonuses():
 		if hud_prices and hud_prices.has_method("_apply_prices"):
 			hud_prices._apply_prices.call_deferred()
 	
-	print("Бонусы лаборатории применены: " + str(bonuses))
+	pass # print("Бонусы лаборатории применены: " + str(bonuses))
 
 
 ## Параметры волны выживания: тот же формат, что у уровня кампании
@@ -401,12 +401,12 @@ func _apply_survival_wave(params: Dictionary):
 		float(params.get("hp_mult", 1.0)),
 		float(params.get("damage_mult", 1.0)),
 		float(params.get("speed_mult", 1.0)))
-	print("Волна выживания %d: сталкеров %d-%d, состав н/в/м %s, множитель x%.2f" % [
-		int(params.get("wave", 1)),
-		int(params.get("count_min", 8)),
-		int(params.get("count_max", 10)),
-		str(params.get("mix", [])),
-		float(params.get("hp_mult", 1.0))])
+	pass # print("Волна выживания %d: сталкеров %d-%d, состав н/в/м %s, множитель x%.2f" % [
+		# int(params.get("wave", 1)),
+		# int(params.get("count_min", 8)),
+		# int(params.get("count_max", 10)),
+		# str(params.get("mix", [])),
+		# float(params.get("hp_mult", 1.0))])
 
 
 # ==================== ОБРАБОТЧИКИ HUD ====================
@@ -419,23 +419,23 @@ func _on_hud_anomaly_requested(anomaly_type: String):
 		var hud_locked = get_tree().get_first_node_in_group("hud")
 		if hud_locked and hud_locked.has_method("show_reward_note"):
 			hud_locked.show_reward_note(Loc.t("hud.anomaly_locked", {"artifact": Loc.type_name(artifact_key)}))
-	print("Запрос аномалии: " + anomaly_type)
+	pass # print("Запрос аномалии: " + anomaly_type)
 	var pos = _get_spawn_position_from_camera()
 	var anomaly = create_anomaly(anomaly_type, pos, 1)
 	if anomaly:
-		print("Аномалия создана: " + anomaly_type)
+		pass # print("Аномалия создана: " + anomaly_type)
 	else:
-		print("Не удалось создать аномалию: " + anomaly_type)
+		pass # print("Не удалось создать аномалию: " + anomaly_type)
 
 
 func _on_hud_mutant_requested(mutant_type: String):
-	print("Запрос мутанта: " + mutant_type)
+	pass # print("Запрос мутанта: " + mutant_type)
 	var pos = _get_spawn_position_from_camera() + Vector3.UP * 1.0
 	var mutant = spawn_mutant(mutant_type, pos)
 	if mutant:
-		print("Мутант создан: " + mutant_type)
+		pass # print("Мутант создан: " + mutant_type)
 	else:
-		print("Не удалось создать мутанта: " + mutant_type)
+		pass # print("Не удалось создать мутанта: " + mutant_type)
 
 
 func _get_spawn_position_from_camera() -> Vector3:
@@ -488,7 +488,7 @@ func _on_critical_biomass(_percent: float):
 	# Аргумент обязателен: сигнал critical_biomass_reached передаёт процент,
 	# и вызов без параметра отклонялся Godot - выброс никогда не запускался
 	# Канон: выброс запускается ТОЛЬКО кнопкой за 1000 энергии
-	print("Критический уровень биомассы! (Выброс - только за 1000 энергии)")
+	pass # print("Критический уровень биомассы! (Выброс - только за 1000 энергии)")
 
 
 func _on_radiation_pulse_started(level: int):
@@ -506,7 +506,7 @@ func _on_radiation_pulse_started(level: int):
 	if sound_manager:
 		sound_manager.play_pulse_warning()
 
-	print("ВЫБРОС начался! Уровень: " + str(level))
+	pass # print("ВЫБРОС начался! Уровень: " + str(level))
 
 
 func _on_radiation_pulse_ended():
@@ -517,14 +517,14 @@ func _on_radiation_pulse_ended():
 	resource_manager.current_biomass = safe_level
 	radiation_pulse_ended.emit()
 	Signals.radiation_pulse_ended.emit()
-	print("Выброс закончился")
+	pass # print("Выброс закончился")
 
 
 func _on_wave_started(wave_number: int, count: int):
 	wave_started.emit(wave_number, count)
 	Signals.wave_started.emit(wave_number, count, progression_manager.get_current_difficulty())
 	
-	print("Волна " + str(wave_number) + " началась, сталкеров: " + str(count))
+	pass # print("Волна " + str(wave_number) + " началась, сталкеров: " + str(count))
 	
 	# Анонс события выживания (волна уже усилена в _on_wave_ended прошлой волны)
 	if run_params.get("run_mode", "") == "survival" and _pending_event:
@@ -538,7 +538,7 @@ func _on_wave_ended(wave_number: int, survivors: int):
 	wave_ended.emit(wave_number, survivors)
 	Signals.wave_ended.emit(wave_number, survivors, spawn_manager.get_stalker_count())
 
-	print("Волна " + str(wave_number) + " закончилась, выжило: " + str(survivors))
+	pass # print("Волна " + str(wave_number) + " закончилась, выжило: " + str(survivors))
 
 	# Выживание: следующая волна сильнее текущей
 	if run_params.get("run_mode", "") == "survival":
@@ -601,7 +601,7 @@ func _grant_survival_event_reward(wave_number: int):
 	var reward: float = 150.0 * float(event.get("reward_mult", 1.0))
 	if resource_manager:
 		resource_manager.add_biomass(reward)
-	print("=== СОБЫТИЕ ОТБИТО: ", event.get("title_ru", ""), " - награда ", reward, " биомассы ===")
+	pass # print("=== СОБЫТИЕ ОТБИТО: ", event.get("title_ru", ""), " - награда ", reward, " биомассы ===")
 	# Гача события с бонусом уровня: выше волна - жирнее дроп
 	var gacha_level: int = 1
 	var gm = get_tree().get_first_node_in_group("game_manager")
@@ -623,7 +623,7 @@ func _prepare_survival_event(next_wave: int):
 		spawn_manager.campaign_damage_mult * float(event.get("dmg_mult", 1.0)),
 		spawn_manager.campaign_speed_mult)
 	_pending_event = event
-	print("=== СОБЫТИЕ (волна ", next_wave, "): ", event.get("title_ru", ""), " - враг сильнее, награда щедрее ===")
+	pass # print("=== СОБЫТИЕ (волна ", next_wave, "): ", event.get("title_ru", ""), " - враг сильнее, награда щедрее ===")
 
 
 func _grant_wave_milestone(waves: int):
@@ -631,7 +631,7 @@ func _grant_wave_milestone(waves: int):
 	var reward: Dictionary = GachaData.milestone_wave_reward(waves)
 	if reward.is_empty() or is_run_finished:
 		return
-	print("=== ВЕХА ВЫЖИВАНИЯ: ", reward.get("label", ""), " ===")
+	pass # print("=== ВЕХА ВЫЖИВАНИЯ: ", reward.get("label", ""), " ===")
 	if reward.has("mutant"):
 		spawn_manager.queue_reward_mutant(reward["mutant"])
 		# Мутант мог открыться впервые - обновляем замки в HUD
@@ -663,7 +663,7 @@ func _grant_artifact_reward(artifact_type: String, source_label: String):
 		resource_manager.add_biomass(bonus[1])
 	var monolith = get_tree().get_first_node_in_group("monolith")
 	var drop_pos: Vector3 = monolith.global_position + Vector3(6.0, 0.0, 6.0) if monolith else Vector3(6.0, 0.0, 6.0)
-	print("=== НАГРАДА (", source_label, "): артефакт ", artifact_type, " (", rarity, ", ", stars, "★) +", bonus[0], " энергии, +", bonus[1], " биомассы ===")
+	pass # print("=== НАГРАДА (", source_label, "): артефакт ", artifact_type, " (", rarity, ", ", stars, "★) +", bonus[0], " энергии, +", bonus[1], " биомассы ===")
 	_gacha_rewards_log.append(Loc.t("reward.gacha_artifact", {"name": Loc.type_name(artifact_type)}))
 	# Новый арт открывает свою аномалию - обновляем замки HUD
 	var hud_unlock = get_tree().get_first_node_in_group("hud")
@@ -690,7 +690,7 @@ func _grant_gacha_rewards(level: int):
 		if spawn_manager and gm.get_lab_data():
 			spawn_manager.set_mutant_stars(gm.get_lab_data().mutant_stars)
 	spawn_manager.queue_reward_mutant(mutant_roll["type"])
-	print("=== ГАЧА МУТАНТОВ (ур. ", level, "): ", mutant_roll["type"], " [", mutant_roll["rarity"], "] ", unlocked_msg, " ===")
+	pass # print("=== ГАЧА МУТАНТОВ (ур. ", level, "): ", mutant_roll["type"], " [", mutant_roll["rarity"], "] ", unlocked_msg, " ===")
 	_gacha_rewards_log.append(Loc.t("reward.gacha_mutant", {"name": Loc.type_name(mutant_roll["type"])}))
 	
 	_grant_artifact_reward(artifact_roll["type"], "гача ур. " + str(level))
@@ -714,7 +714,7 @@ func _on_stalker_died(stalker: Node, biomass_returned: float):
 		if rarity == "":
 			rarity = "common"
 		_trophy_artifacts.append({"type": rarity, "value": value})
-		print("Трофей: артефакт (", rarity, ", ", value, ") убитого сталкера - в хранилище")
+		pass # print("Трофей: артефакт (", rarity, ", ", value, ") убитого сталкера - в хранилище")
 	# Биомассу начисляет ТОЛЬКО BaseStalker._on_died -> on_stalker_died:
 	# здесь был второй счёт (плюс третий в SpawnManager) - доход завышался втрое
 	progression_manager.record_stalker_killed()
@@ -729,7 +729,7 @@ func _on_stalker_died(stalker: Node, biomass_returned: float):
 
 func _on_mutant_spawned(_mutant: Node, mutant_type: String):
 	progression_manager.record_mutant_spawned()
-	print("Мутант заспавнен: " + mutant_type)
+	pass # print("Мутант заспавнен: " + mutant_type)
 
 
 func _on_anomaly_created(anomaly: Node, anomaly_type: String, _difficulty: int):
@@ -739,7 +739,7 @@ func _on_anomaly_created(anomaly: Node, anomaly_type: String, _difficulty: int):
 		sound_manager.play_anomaly_sound(anomaly_type)
 	
 	progression_manager.record_anomaly_created()
-	print("Аномалия создана: " + anomaly_type)
+	pass # print("Аномалия создана: " + anomaly_type)
 
 
 func _on_anomaly_destroyed(anomaly_type: String, position: Vector3, difficulty: int):
@@ -754,14 +754,14 @@ func _on_anomaly_destroyed(anomaly_type: String, position: Vector3, difficulty: 
 	if particle_manager:
 		particle_manager.spawn_particles_at(position, "spark", 1.0)
 	
-	print("Аномалия уничтожена, создан артефакт: " + artifact_type)
+	pass # print("Аномалия уничтожена, создан артефакт: " + artifact_type)
 
 
 func _on_artifact_created(_artifact: Node, artifact_type: String, position: Vector3):
 	if particle_manager:
 		particle_manager.spawn_particles_at(position, "spark", 0.5)
 	
-	print("Артефакт создан: " + artifact_type)
+	pass # print("Артефакт создан: " + artifact_type)
 
 
 func _on_artifact_stolen(artifact: Node, stalker: Node):
@@ -773,14 +773,14 @@ func _on_artifact_stolen(artifact: Node, stalker: Node):
 	progression_manager.record_artifact_stolen()
 	
 	Signals.artifact_stolen.emit(artifact, stalker, loss)
-	print("Артефакт украден! Потеряно биомассы: " + str(loss))
+	pass # print("Артефакт украден! Потеряно биомассы: " + str(loss))
 
 
 func _on_game_over():
 	game_over.emit()
 	Signals.game_over.emit(false, progression_manager.get_current_run(), 0)
 	
-	print("GAME OVER")
+	pass # print("GAME OVER")
 	finish_run(false)
 
 
@@ -792,7 +792,7 @@ func _on_game_won(run_number: int, reward: float):
 	game_won.emit(run_number, reward)
 	Signals.game_won.emit(run_number, reward)
 	
-	print("ПОБЕДА! Забег #" + str(run_number) + " награда: " + str(reward))
+	pass # print("ПОБЕДА! Забег #" + str(run_number) + " награда: " + str(reward))
 	# Гача по уровню КАМПАНИИ, а не по номеру забега
 	var gacha_level := run_number
 	if run_params.has("campaign_params"):
@@ -835,12 +835,12 @@ func create_anomaly(type: String, position: Vector3, difficulty: int = 1) -> Nod
 	var artifact_key: String = GachaData.get_artifact_for_anomaly(type)
 	var gm_guard = get_tree().get_first_node_in_group("game_manager")
 	if gm_guard and not artifact_key.is_empty() and not gm_guard.is_artifact_unlocked(artifact_key):
-		print("Зона: аномалия закрыта - нужен её артефакт (", artifact_key, ")")
+		pass # print("Зона: аномалия закрыта - нужен её артефакт (", artifact_key, ")")
 		return null
 	
 	var cost = anomaly_manager.get_anomaly_cost(type)
 	if not resource_manager.spend_energy(cost):
-		print("Недостаточно энергии для " + type + " (нужно: " + str(cost) + ")")
+		pass # print("Недостаточно энергии для " + type + " (нужно: " + str(cost) + ")")
 		return null
 	
 	return anomaly_manager.create_anomaly(type, position, difficulty, cost)
@@ -860,12 +860,12 @@ func spawn_mutant(mutant_type: String, position: Vector3) -> Node:
 	# Наградные мутанты идут мимо (spawn_manager напрямую) - они уже разблокированы.
 	var gm = get_tree().get_first_node_in_group("game_manager")
 	if gm and not gm.is_mutant_unlocked(mutant_type):
-		print("Зона: мутант не разблокирован - откройте его кампанией или гачей: " + mutant_type)
+		pass # print("Зона: мутант не разблокирован - откройте его кампанией или гачей: " + mutant_type)
 		return null
 	
 	var cost = spawn_manager.get_mutant_cost(mutant_type)
 	if not resource_manager.spend_biomass(cost):
-		print("Недостаточно биомассы для " + mutant_type + " (нужно: " + str(cost) + ")")
+		pass # print("Недостаточно биомассы для " + mutant_type + " (нужно: " + str(cost) + ")")
 		return null
 	
 	return spawn_manager.spawn_mutant(mutant_type, position, cost)
@@ -935,7 +935,7 @@ func finish_run(success: bool):
 		return
 	is_run_finished = true
 	
-	print("Завершение забега. Успех: " + str(success))
+	pass # print("Завершение забега. Успех: " + str(success))
 	
 	# Останавливаем спавн
 	if spawn_manager:

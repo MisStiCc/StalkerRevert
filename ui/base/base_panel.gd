@@ -51,7 +51,7 @@ func open():
         _play_open_animation()
     
     opened.emit()
-    print("Панель открыта: " + panel_name, "BasePanel")
+    pass # print("Панель открыта: " + panel_name, "BasePanel")
 
 
 func close():
@@ -65,7 +65,7 @@ func close():
     
     visible = false
     closed.emit()
-    print("Панель закрыта: " + panel_name, "BasePanel")
+    pass # print("Панель закрыта: " + panel_name, "BasePanel")
 
 
 func toggle():

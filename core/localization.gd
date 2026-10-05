@@ -274,7 +274,7 @@ func _ready():
 		var l: String = str(cfg.get_value("ui", "lang", "ru"))
 		if l in LANGS:
 			lang = l
-	print("Loc: язык интерфейса - ", lang)
+	# print("Loc: язык интерфейса - ", lang)
 
 
 ## Перевод по ключу; args подставляются в плейсхолдеры {имя}
@@ -301,7 +301,7 @@ func set_lang(new_lang: String):
 		cfg.set_value("ui", "lang", lang)
 		cfg.save("user://settings.cfg")
 		changed.emit()
-		print("Loc: язык переключён на ", lang)
+		# print("Loc: язык переключён на ", lang)
 
 
 func toggle():

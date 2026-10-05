@@ -41,7 +41,7 @@ const STALKER_HEIGHT: float = 1.8
 
 
 func _ready():
-	print("TerrainGenerator: _ready() START")
+	# print("TerrainGenerator: _ready() START")
 	_setup_noise()
 	add_to_group("terrain_generator")
 
@@ -49,11 +49,11 @@ func _ready():
 	await get_tree().process_frame
 
 	camera = get_viewport().get_camera_3d()
-	print("TerrainGenerator: камера найдена = ", camera != null)
+	# print("TerrainGenerator: камера найдена = ", camera != null)
 
 	_update_chunks()
 
-	print("TerrainGenerator: _ready() DONE, загружено чанков: ", loaded_chunks.size())
+	# print("TerrainGenerator: _ready() DONE, загружено чанков: ", loaded_chunks.size())
 
 
 func _setup_noise():
@@ -537,5 +537,5 @@ func clear_all_chunks():
 
 func force_rebuild_navigation():
 	"""Совместимость: у чанков свои навмеши, пересборка не нужна"""
-	print("TerrainGenerator: навигация на чанковых навмешах, чанков: ", loaded_chunks.size(),
-		  ", полигонов: ", get_nav_polygons_total())
+	# print("TerrainGenerator: навигация на чанковых навмешах, чанков: ", loaded_chunks.size(),
+		  # ", полигонов: ", get_nav_polygons_total())

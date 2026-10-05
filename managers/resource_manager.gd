@@ -50,7 +50,7 @@ func _ready():
     current_energy = max_energy * 0.5
     current_biomass = max_biomass * 0.3
     set_process(true)
-    print("ResourceManager инициализирован", "ResourceManager")
+    pass # print("ResourceManager инициализирован", "ResourceManager")
 
 
 func _process(delta):
@@ -71,7 +71,7 @@ func spend_energy(amount: float) -> bool:
         current_energy -= amount
         # (лог отключён)
         return true
-    print("Недостаточно энергии: нужно " + str(amount) + ", есть " + str(current_energy), "ResourceManager")
+    pass # print("Недостаточно энергии: нужно " + str(amount) + ", есть " + str(current_energy), "ResourceManager")
     return false
 
 
@@ -101,7 +101,7 @@ func spend_biomass(amount: float) -> bool:
         current_biomass -= amount
         # (лог отключён)
         return true
-    print("Недостаточно биомассы: нужно " + str(amount) + ", есть " + str(current_biomass), "ResourceManager")
+    pass # print("Недостаточно биомассы: нужно " + str(amount) + ", есть " + str(current_biomass), "ResourceManager")
     return false
 
 
@@ -139,7 +139,7 @@ func reset():
     current_energy = max_energy * 0.5
     current_biomass = max_biomass * 0.3
     accumulated_biomass = 0.0
-    print("Ресурсы сброшены", "ResourceManager")
+    pass # print("Ресурсы сброшены", "ResourceManager")
 
 
 func get_status() -> Dictionary:

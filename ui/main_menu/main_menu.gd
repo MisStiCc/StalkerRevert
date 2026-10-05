@@ -38,7 +38,7 @@ func _ready():
 	
 	# Ищем GameManager один раз при старте
 	game_manager = get_tree().get_first_node_in_group("game_manager")
-	print("MainMenu: инициализирован, GameManager найден: ", game_manager != null)
+	# print("MainMenu: инициализирован, GameManager найден: ", game_manager != null)
 
 
 	_apply_static_texts()
@@ -52,7 +52,7 @@ func _load_cover_art():
 	if ResourceLoader.exists(COVER_PATH):
 		cover_art.texture = load(COVER_PATH)
 		title_label.visible = false
-		print("MainMenu: фон-обложка загружена")
+		# print("MainMenu: фон-обложка загружена")
 
 
 func _setup_buttons():
@@ -85,7 +85,7 @@ func _setup_save_slot_selector():
 	"""Выбор активного слота сохранения между слайдерами и кнопкой НАЗАД"""
 	var panel = get_node_or_null("SettingsScreen/Panel")
 	if not panel:
-		print("MainMenu: SettingsScreen/Panel не найден, селектор слота не построен")
+		# print("MainMenu: SettingsScreen/Panel не найден, селектор слота не построен")
 		return
 
 	var selector := SaveSlotSelector.new()
@@ -129,15 +129,15 @@ func _on_new_game_pressed():
 	new_game_pressed.emit()
 	
 	if game_manager:
-		print("GameManager найден! Запускаем новую игру")
+		# print("GameManager найден! Запускаем новую игру")
 		game_manager.start_new_game()
 	else:
-		print("GameManager НЕ НАЙДЕН! Ищем снова...")
+		# print("GameManager НЕ НАЙДЕН! Ищем снова...")
 		game_manager = get_tree().get_first_node_in_group("game_manager")
 		if game_manager:
 			game_manager.start_new_game()
 		else:
-			print("GameManager не найден, переходим напрямую в ЛК")
+			# print("GameManager не найден, переходим напрямую в ЛК")
 			get_tree().change_scene_to_file("res://scenes/lab/lab.tscn")
 
 
@@ -170,7 +170,7 @@ func _refresh_save_slots():
 		game_manager = get_tree().get_first_node_in_group("game_manager")
 	
 	if not game_manager:
-		print("GameManager не найден, не могу загрузить сохранения")
+		# print("GameManager не найден, не могу загрузить сохранения")
 		# Показываем пустые слоты
 		for i in range(3):
 			var slot_container = HBoxContainer.new()
@@ -231,7 +231,8 @@ func _load_slot(slot: int):
 		await get_tree().create_timer(0.2).timeout
 		game_manager.change_scene("lab")
 	else:
-		print("Не удалось загрузить слот ", slot)
+		pass
+		# print("Не удалось загрузить слот ", slot)
 
 
 func _delete_slot(slot: int):

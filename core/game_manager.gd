@@ -36,7 +36,7 @@ var active_save_slot: int = 0
 
 func _ready():
 	add_to_group("game_manager")
-	print("GameManager: инициализирован")
+	pass # print("GameManager: инициализирован")
 	_create_save_directory()
 	_load_settings()
 	_load_boot_save()
@@ -74,19 +74,19 @@ func upgrade_mutant_star(mutant_type: String) -> bool:
 	"""Лаборатория: поднять звезду мутанта за биомассу (500 * 2^(звёзды-1))"""
 	var lab = get_lab_data()
 	if not lab.unlocked_mutants.has(mutant_type):
-		print("Звёзды: мутант не в коллекции: " + mutant_type)
+		pass # print("Звёзды: мутант не в коллекции: " + mutant_type)
 		return false
 	var stars: int = lab.get_mutant_stars(mutant_type)
 	if stars >= LabData.MAX_STARS:
-		print("Звёзды: у " + mutant_type + " уже максимальные звёзды")
+		pass # print("Звёзды: у " + mutant_type + " уже максимальные звёзды")
 		return false
 	var cost: float = lab.get_star_upgrade_cost(stars)
 	if lab.biomass < cost:
-		print("Звёзды: недостаточно биомассы (нужно %.0f, есть %.0f)" % [cost, lab.biomass])
+		pass # print("Звёзды: недостаточно биомассы (нужно %.0f, есть %.0f)" % [cost, lab.biomass])
 		return false
 	lab.biomass -= cost
 	lab.add_mutant_star(mutant_type)
-	print("Звёзды: %s теперь %d/%d★ (за %.0f биомассы)" % [mutant_type, stars + 1, LabData.MAX_STARS, cost])
+	pass # print("Звёзды: %s теперь %d/%d★ (за %.0f биомассы)" % [mutant_type, stars + 1, LabData.MAX_STARS, cost])
 	save_to_active_slot()
 	return true
 
@@ -94,19 +94,19 @@ func upgrade_mutant_star(mutant_type: String) -> bool:
 func upgrade_artifact_star(artifact_type: String) -> bool:
 	var lab = get_lab_data()
 	if not lab.won_artifacts.has(artifact_type):
-		print("Звёзды: артефакт не в коллекции: " + artifact_type)
+		pass # print("Звёзды: артефакт не в коллекции: " + artifact_type)
 		return false
 	var stars: int = lab.get_artifact_stars(artifact_type)
 	if stars >= LabData.MAX_STARS:
-		print("Звёзды: у " + artifact_type + " уже максимальные звёзды")
+		pass # print("Звёзды: у " + artifact_type + " уже максимальные звёзды")
 		return false
 	var cost: float = lab.get_star_upgrade_cost(stars)
 	if lab.biomass < cost:
-		print("Звёзды: недостаточно биомассы (нужно %.0f, есть %.0f)" % [cost, lab.biomass])
+		pass # print("Звёзды: недостаточно биомассы (нужно %.0f, есть %.0f)" % [cost, lab.biomass])
 		return false
 	lab.biomass -= cost
 	lab.add_artifact_star(artifact_type)
-	print("Звёзды: %s теперь %d/%d★ (за %.0f биомассы)" % [artifact_type, stars + 1, LabData.MAX_STARS, cost])
+	pass # print("Звёзды: %s теперь %d/%d★ (за %.0f биомассы)" % [artifact_type, stars + 1, LabData.MAX_STARS, cost])
 	save_to_active_slot()
 	return true
 
@@ -156,7 +156,7 @@ func recycle_copies(batch: Dictionary) -> Dictionary:
 		grant_anomaly_rolls(rolls, "утилизация копий")
 	else:
 		save_to_active_slot()
-	print("Утилизация: %d копий = %d очков -> %d круток (остаток %d)" % [consumed, points, rolls, lab.recycle_points])
+	pass # print("Утилизация: %d копий = %d очков -> %d круток (остаток %d)" % [consumed, points, rolls, lab.recycle_points])
 	return {"rolls": rolls, "consumed": consumed, "points": points, "leftover": lab.recycle_points}
 
 
@@ -211,7 +211,7 @@ func apply_star_recipe(target: String, copies: int, star_feed: String, simple: D
 	lab.star_feed_progress.erase(target)
 	lab.add_mutant_star(target)
 	var new_stars: int = lab.get_mutant_stars(target)
-	print("Ферма: рецепт применён - %s -> %d/%d★" % [target, new_stars, LabData.MAX_STARS])
+	pass # print("Ферма: рецепт применён - %s -> %d/%d★" % [target, new_stars, LabData.MAX_STARS])
 	save_to_active_slot()
 	return "ЗВЕЗДА! %s теперь %d/%d★" % [GachaData.display_name(target), new_stars, LabData.MAX_STARS]
 
@@ -233,7 +233,7 @@ func try_upgrade_star(mutant_type: String) -> String:
 	lab.star_feed_progress.erase(mutant_type)
 	lab.add_mutant_star(mutant_type)
 	var new_stars: int = lab.get_mutant_stars(mutant_type)
-	print("Ферма: %s -> %d/%d★ (копий списано %d)" % [mutant_type, new_stars, LabData.MAX_STARS, int(req.get("copies_need"))])
+	pass # print("Ферма: %s -> %d/%d★ (копий списано %d)" % [mutant_type, new_stars, LabData.MAX_STARS, int(req.get("copies_need"))])
 	save_to_active_slot()
 	return "ЗВЕЗДА! %s теперь %d/%d★" % [GachaData.display_name(mutant_type), new_stars, LabData.MAX_STARS]
 
@@ -244,7 +244,7 @@ func grant_mutant_rolls(count: int, source: String = ""):
 		return
 	var lab = current_save_data.lab_data
 	lab.gacha_rolls_mutants += count
-	print("Крутки гачи мутантов +", count, " (", source, "), всего ", lab.gacha_rolls_mutants)
+	pass # print("Крутки гачи мутантов +", count, " (", source, "), всего ", lab.gacha_rolls_mutants)
 	save_to_active_slot()
 
 
@@ -254,7 +254,7 @@ func grant_anomaly_rolls(count: int, source: String = ""):
 		return
 	var lab = current_save_data.lab_data
 	lab.gacha_rolls_artifacts += count
-	print("Аномалийные крутки +", count, " (", source, "), всего ", lab.gacha_rolls_artifacts)
+	pass # print("Аномалийные крутки +", count, " (", source, "), всего ", lab.gacha_rolls_artifacts)
 	save_to_active_slot()
 
 
@@ -269,7 +269,7 @@ func spin_mutant_gacha(times: int) -> Array:
 	var lab = current_save_data.lab_data
 	times = mini(times, int(lab.gacha_rolls_mutants))
 	if times <= 0:
-		print("Гача: крутки мутантов закончились")
+		pass # print("Гача: крутки мутантов закончились")
 		return results
 	var level := get_campaign_level()
 	for i in range(times):
@@ -282,7 +282,7 @@ func spin_mutant_gacha(times: int) -> Array:
 			roll["status"] = "new"
 		results.append(roll)
 	lab.gacha_rolls_mutants -= times
-	print("Гача мутантов: %d круток (ур. %d), осталось %d" % [times, level, lab.gacha_rolls_mutants])
+	pass # print("Гача мутантов: %d круток (ур. %d), осталось %d" % [times, level, lab.gacha_rolls_mutants])
 	save_to_active_slot()
 	return results
 
@@ -296,7 +296,7 @@ func spin_artifact_gacha(times: int) -> Array:
 	var lab = current_save_data.lab_data
 	times = mini(times, int(lab.gacha_rolls_artifacts))
 	if times <= 0:
-		print("Гача: крутки артефактов закончились")
+		pass # print("Гача: крутки артефактов закончились")
 		return results
 	var level := get_campaign_level()
 	for i in range(times):
@@ -311,7 +311,7 @@ func spin_artifact_gacha(times: int) -> Array:
 			roll["status"] = "new"
 		results.append(roll)
 	lab.gacha_rolls_artifacts -= times
-	print("Гача артефактов: %d круток (ур. %d), осталось %d" % [times, level, lab.gacha_rolls_artifacts])
+	pass # print("Гача артефактов: %d круток (ур. %d), осталось %d" % [times, level, lab.gacha_rolls_artifacts])
 	save_to_active_slot()
 	return results
 
@@ -331,12 +331,12 @@ func feed_fodder(fodder_type: String, target_type: String) -> String:
 	# всё остальное -> простой (2/4/6/8 копий)
 	if fodder_stars == stars and lab.get_star_feed(target_type) < 1:
 		var fed: int = lab.add_star_feed(target_type)
-		print("Ферма: %s (%d★) -> звёздный корм для %s (%d/1)" % [fodder_type, fodder_stars, target_type, fed])
+		pass # print("Ферма: %s (%d★) -> звёздный корм для %s (%d/1)" % [fodder_type, fodder_stars, target_type, fed])
 		save_to_active_slot()
 		return "Звёздный корм принят (%d/1)" % fed
 	var progress: int = lab.add_star_progress(target_type, 1)
 	var need: int = GachaData.get_star_feed_cost(stars)
-	print("Ферма: копия %s (%d★) -> простой корм для %s (%d/%d)" % [fodder_type, fodder_stars, target_type, progress, need])
+	pass # print("Ферма: копия %s (%d★) -> простой корм для %s (%d/%d)" % [fodder_type, fodder_stars, target_type, progress, need])
 	save_to_active_slot()
 	if progress >= need:
 		return "Простых кормов достаточно (%d/%d)" % [progress, need]
@@ -349,10 +349,10 @@ func buy_shop_mutant(mutant_type: String, price: float) -> bool:
 		return false
 	var lab = current_save_data.lab_data
 	if not is_mutant_unlocked(mutant_type):
-		print("Магазин: мутант не разблокирован (кампания): " + mutant_type)
+		pass # print("Магазин: мутант не разблокирован (кампания): " + mutant_type)
 		return false
 	if lab.biomass < price:
-		print("Магазин: недостаточно биомассы (нужно ", price, ")")
+		pass # print("Магазин: недостаточно биомассы (нужно ", price, ")")
 		return false
 	lab.biomass -= price
 	lab.pending_mutants.append(mutant_type)
@@ -365,17 +365,17 @@ func buy_shop_artifact(artifact_type: String, price: float) -> bool:
 		return false
 	var lab = current_save_data.lab_data
 	if not is_artifact_unlocked(artifact_type):
-		print("Магазин: артефакт не разблокирован (кампания): " + artifact_type)
+		pass # print("Магазин: артефакт не разблокирован (кампания): " + artifact_type)
 		return false
 	if lab.biomass < price:
-		print("Магазин: недостаточно биомассы (нужно ", price, ")")
+		pass # print("Магазин: недостаточно биомассы (нужно ", price, ")")
 		return false
 	lab.biomass -= price
 	lab.pending_artifacts.append(artifact_type)
 	# Купленный арт получен - соответствующая аномалия открывается
 	if not lab.won_artifacts.has(artifact_type):
 		lab.won_artifacts.append(artifact_type)
-		print("КОЛЛЕКЦИЯ: открыт артефакт из магазина - аномалия доступна: " + artifact_type)
+		pass # print("КОЛЛЕКЦИЯ: открыт артефакт из магазина - аномалия доступна: " + artifact_type)
 	save_game(0)
 	return true
 
@@ -430,7 +430,7 @@ func sync_collection_unlocks():
 		if _grant_campaign_unlocks(lab, l):
 			changed = true
 	if changed:
-		print("Коллекция синхронизирована с кампанией (уровень ", level, ")")
+		pass # print("Коллекция синхронизирована с кампанией (уровень ", level, ")")
 
 
 ## Открыть всё, что положено на уровне кампании. True - если что-то открылось
@@ -440,12 +440,12 @@ func _grant_campaign_unlocks(lab, level: int) -> bool:
 	for type in entry.get("mutants", []):
 		if not lab.unlocked_mutants.has(type):
 			lab.unlocked_mutants.append(type)
-			print("КОЛЛЕКЦИЯ: открыт мутант ", type, " (уровень кампании ", level, ")")
+			pass # print("КОЛЛЕКЦИЯ: открыт мутант ", type, " (уровень кампании ", level, ")")
 			changed = true
 	for type in entry.get("artifacts", []):
 		if not lab.won_artifacts.has(type):
 			lab.won_artifacts.append(type)
-			print("КОЛЛЕКЦИЯ: открыт артефакт ", type, " (уровень кампании ", level, ")")
+			pass # print("КОЛЛЕКЦИЯ: открыт артефакт ", type, " (уровень кампании ", level, ")")
 			changed = true
 	return changed
 
@@ -454,7 +454,7 @@ func _create_save_directory():
 	var dir = DirAccess.open("user://")
 	if not dir.dir_exists("saves"):
 		dir.make_dir("saves")
-	print("Директория сохранений создана")
+	pass # print("Директория сохранений создана")
 
 
 # ==================== НАСТРОЙКИ КЛИЕНТА ====================
@@ -464,7 +464,7 @@ func _load_settings():
 	if cfg.load(SETTINGS_PATH) == OK:
 		active_save_slot = clampi(int(cfg.get_value("game", "active_save_slot", AUTOSAVE_SLOT)), AUTOSAVE_SLOT, MANUAL_SLOTS)
 		selected_run_mode = str(cfg.get_value("game", "run_mode", "campaign"))
-	print("Активный слот сохранения: " + ("автосейв" if active_save_slot == AUTOSAVE_SLOT else str(active_save_slot)))
+	pass # print("Активный слот сохранения: " + ("автосейв" if active_save_slot == AUTOSAVE_SLOT else str(active_save_slot)))
 
 
 func _save_settings():
@@ -473,7 +473,7 @@ func _save_settings():
 	cfg.set_value("game", "run_mode", selected_run_mode)
 	var error = cfg.save(SETTINGS_PATH)
 	if error != OK:
-		print("Не удалось сохранить настройки: код " + str(error))
+		pass # print("Не удалось сохранить настройки: код " + str(error))
 
 
 ## Режим забега: кампания или выживание
@@ -515,15 +515,15 @@ func _load_boot_save():
 			current_save_data = save
 			_migrate_campaign_progress(save)
 			sync_collection_unlocks()
-			print("Сохранение активного слота загружено: " + str(active_save_slot))
+			pass # print("Сохранение активного слота загружено: " + str(active_save_slot))
 		else:
-			print("Файл сохранения активного слота поврежден: " + path)
+			pass # print("Файл сохранения активного слота поврежден: " + path)
 	else:
-		print("Сохранение активного слота не найдено: " + path)
+		pass # print("Сохранение активного слота не найдено: " + path)
 
 
 func change_scene(scene_name: String, params: Dictionary = {}):
-	print("Смена сцены на: " + scene_name)
+	pass # print("Смена сцены на: " + scene_name)
 	current_scene_name = scene_name
 	scene_changed.emit(scene_name)
 	
@@ -539,14 +539,14 @@ func change_scene(scene_name: String, params: Dictionary = {}):
 			_setup_run_params(params)
 			_transition_to_scene("res://scenes/main/main.tscn")
 		_:
-			print("Неизвестная сцена: " + scene_name)
+			pass # print("Неизвестная сцена: " + scene_name)
 
 
 func _transition_to_scene(scene_path: String):
 	is_loading = true
 	var error = get_tree().change_scene_to_file(scene_path)
 	if error != OK:
-		print("Ошибка загрузки сцены: " + scene_path + " код: " + str(error))
+		pass # print("Ошибка загрузки сцены: " + scene_path + " код: " + str(error))
 		Signals.error_occurred.emit(error, "Ошибка загрузки сцены", "GameManager")
 	is_loading = false
 
@@ -597,13 +597,13 @@ func _setup_run_params(params: Dictionary):
 		params["artifact_stars"] = current_save_data.lab_data.artifact_stars.duplicate()
 	
 	get_tree().root.set_meta("run_params", params)
-	print("Параметры забега установлены: " + str(params))
+	pass # print("Параметры забега установлены: " + str(params))
 
 
 func save_game(slot: int) -> bool:
 	if not current_save_data:
 		current_save_data = SaveData.new()
-		print("Создан новый SaveData")
+		pass # print("Создан новый SaveData")
 	
 	current_save_data.save_time = Time.get_datetime_string_from_system()
 	
@@ -613,16 +613,16 @@ func save_game(slot: int) -> bool:
 	if error == OK:
 		game_saved.emit(slot)
 		Signals.game_saved.emit(slot, current_save_data.save_time)
-		print("Игра сохранена в слот " + str(slot))
+		pass # print("Игра сохранена в слот " + str(slot))
 		
 		if slot != 0:
 			var autopath = SAVE_DIR + SAVE_FILE_PREFIX + "0" + SAVE_FILE_EXT
 			ResourceSaver.save(current_save_data, autopath)
-			print("Автосохранение обновлено")
+			pass # print("Автосохранение обновлено")
 		
 		return true
 	else:
-		print("Ошибка сохранения в слот " + str(slot) + " код: " + str(error))
+		pass # print("Ошибка сохранения в слот " + str(slot) + " код: " + str(error))
 		Signals.error_occurred.emit(error, "Ошибка сохранения", "GameManager")
 		return false
 
@@ -631,7 +631,7 @@ func load_game(slot: int) -> bool:
 	var path = SAVE_DIR + SAVE_FILE_PREFIX + str(slot) + SAVE_FILE_EXT
 	
 	if not FileAccess.file_exists(path):
-		print("Сохранение не найдено: " + path)
+		pass # print("Сохранение не найдено: " + path)
 		return false
 	
 	var save = load(path)
@@ -644,10 +644,10 @@ func load_game(slot: int) -> bool:
 		_save_settings()
 		game_loaded.emit(save)
 		Signals.game_loaded.emit(slot, save)
-		print("Игра загружена из слота " + str(slot) + ", слот активирован")
+		pass # print("Игра загружена из слота " + str(slot) + ", слот активирован")
 		return true
 	
-	print("Файл сохранения поврежден: " + path)
+	pass # print("Файл сохранения поврежден: " + path)
 	return false
 
 
@@ -658,10 +658,10 @@ func delete_save(slot: int) -> bool:
 		var error = DirAccess.remove_absolute(path)
 		if error == OK:
 			Signals.save_deleted.emit(slot)
-			print("Сохранение удалено из слота " + str(slot))
+			pass # print("Сохранение удалено из слота " + str(slot))
 			return true
 		else:
-			print("Ошибка удаления сохранения: " + str(error))
+			pass # print("Ошибка удаления сохранения: " + str(error))
 			return false
 	
 	return false
@@ -705,7 +705,7 @@ func get_all_saves_info() -> Array[Dictionary]:
 
 
 func start_new_game():
-	print("Начало новой игры")
+	pass # print("Начало новой игры")
 	current_save_data = SaveData.new()
 	current_save_data.lab_data = LabData.new()
 	current_save_data.statistics = GameStatistics.new()
@@ -715,18 +715,18 @@ func start_new_game():
 	if save_to_active_slot():
 		change_scene("lab")
 	else:
-		print("Не удалось создать новую игру")
+		pass # print("Не удалось создать новую игру")
 
 
 func get_lab_data():
 	if not current_save_data:
 		current_save_data = SaveData.new()
 		current_save_data.lab_data = LabData.new()
-		print("Создан новый LabData")
+		pass # print("Создан новый LabData")
 	
 	if not current_save_data.lab_data:
 		current_save_data.lab_data = LabData.new()
-		print("LabData создан в существующем SaveData")
+		pass # print("LabData создан в существующем SaveData")
 	
 	return current_save_data.lab_data
 
@@ -735,11 +735,11 @@ func get_statistics():
 	if not current_save_data:
 		current_save_data = SaveData.new()
 		current_save_data.statistics = GameStatistics.new()
-		print("Создан новый GameStatistics")
+		pass # print("Создан новый GameStatistics")
 	
 	if not current_save_data.statistics:
 		current_save_data.statistics = GameStatistics.new()
-		print("GameStatistics создан в существующем SaveData")
+		pass # print("GameStatistics создан в существующем SaveData")
 	
 	return current_save_data.statistics
 
@@ -750,7 +750,7 @@ func get_statistics():
 func _migrate_campaign_progress(save: SaveData):
 	if save.campaign_level <= 1 and save.lab_data and save.lab_data.run_number > 1:
 		save.campaign_level = clampi(save.lab_data.run_number, 1, CampaignData.TOTAL_LEVELS)
-		print("Кампания восстановлена по числу забегов: уровень " + str(save.campaign_level))
+		pass # print("Кампания восстановлена по числу забегов: уровень " + str(save.campaign_level))
 
 
 func get_campaign_level() -> int:
@@ -795,24 +795,24 @@ func _apply_campaign_result(result: Dictionary):
 
 	if level >= CampaignData.TOTAL_LEVELS:
 		current_save_data.campaign_completed = true
-		print("КАМПАНИЯ ПРОЙДЕНА! Все 100 колец Зоны за спиной.")
+		pass # print("КАМПАНИЯ ПРОЙДЕНА! Все 100 колец Зоны за спиной.")
 		return
 
 	if level >= current_save_data.campaign_level:
 		current_save_data.campaign_level = mini(level + 1, CampaignData.TOTAL_LEVELS)
-		print("Кампания: открыт уровень " + str(current_save_data.campaign_level))
+		pass # print("Кампания: открыт уровень " + str(current_save_data.campaign_level))
 		_grant_campaign_unlocks(current_save_data.lab_data, current_save_data.campaign_level)
 
 
 func process_run_result(result: Dictionary):
-	print("Обработка результатов забега: " + str(result))
+	pass # print("Обработка результатов забега: " + str(result))
 
 	var lab = get_lab_data()
 	var stats = get_statistics()
 
 	var reward = result.get("reward", 0.0)
 	lab.biomass += reward
-	print("Добавлено биомассы: " + str(reward))
+	pass # print("Добавлено биомассы: " + str(reward))
 
 	_apply_campaign_result(result)
 
@@ -821,22 +821,22 @@ func process_run_result(result: Dictionary):
 		var waves_survived := int(result.get("waves_survived", 0))
 		if waves_survived > stats.best_survival_wave:
 			stats.best_survival_wave = waves_survived
-			print("Новый рекорд выживания: %d волн" % waves_survived)
+			pass # print("Новый рекорд выживания: %d волн" % waves_survived)
 
 	stats.total_runs += 1
 	var success = result.get("success", false)
 	if success:
 		stats.wins += 1
-		print("Победа")
+		pass # print("Победа")
 	else:
 		stats.losses += 1
-		print("Поражение")
+		pass # print("Поражение")
 	
 	if result.has("artifacts_collected"):
 		var artifacts = result["artifacts_collected"]
 		for artifact in artifacts:
 			lab.add_artifact(str(artifact.get("type", "common")), int(artifact.get("value", 10)))
-		print("Добавлено артефактов: " + str(artifacts.size()))
+		pass # print("Добавлено артефактов: " + str(artifacts.size()))
 	
 	if result.has("statistics"):
 		var run_stats = result["statistics"]
@@ -848,7 +848,7 @@ func process_run_result(result: Dictionary):
 		stats.biomass_spent += run_stats.get("biomass_spent", 0)
 	
 	lab.run_number += 1
-	print("Номер забега: " + str(lab.run_number))
+	pass # print("Номер забега: " + str(lab.run_number))
 
 	save_to_active_slot()
 
@@ -863,18 +863,18 @@ func purchase_upgrade(upgrade_type: String, cost: float) -> bool:
 
 	# Расширенные тиры открываются прогрессом кампании
 	if not lab.is_next_level_unlocked(upgrade_type, get_campaign_level()):
-		print("Улучшение %s откроется на уровне кампании %d" % [
-			upgrade_type, lab.get_next_unlock_campaign_level(upgrade_type)])
+		pass # print("Улучшение %s откроется на уровне кампании %d" % [
+			# upgrade_type, lab.get_next_unlock_campaign_level(upgrade_type)])
 		return false
 
 	if lab.biomass < cost:
-		print("Недостаточно биомассы для " + upgrade_type + " (нужно: " + str(cost) + ", есть: " + str(lab.biomass) + ")")
+		pass # print("Недостаточно биомассы для " + upgrade_type + " (нужно: " + str(cost) + ", есть: " + str(lab.biomass) + ")")
 		return false
 	
 	lab.biomass -= cost
 	lab.purchase_upgrade(upgrade_type)
 	
-	print("Куплено улучшение: " + upgrade_type + " за " + str(cost))
+	pass # print("Куплено улучшение: " + upgrade_type + " за " + str(cost))
 	
 	save_to_active_slot()
 	
@@ -886,11 +886,11 @@ func exchange_artifact(artifact_type: String, value: int) -> bool:
 	
 	if lab.remove_artifact(artifact_type):
 		lab.biomass += value
-		print("Обменян артефакт " + artifact_type + " на " + str(value) + " биомассы")
+		pass # print("Обменян артефакт " + artifact_type + " на " + str(value) + " биомассы")
 		save_to_active_slot()
 		return true
 	
-	print("Не удалось обменять артефакт " + artifact_type)
+	pass # print("Не удалось обменять артефакт " + artifact_type)
 	return false
 
 
@@ -900,10 +900,10 @@ func exchange_all_artifacts(rarity: String) -> int:
 	
 	if total > 0:
 		lab.biomass += total
-		print("Обменяны все артефакты редкости " + rarity + " на " + str(total) + " биомассы")
+		pass # print("Обменяны все артефакты редкости " + rarity + " на " + str(total) + " биомассы")
 		save_to_active_slot()
 	else:
-		print("Нет артефактов редкости " + rarity + " для обмена")
+		pass # print("Нет артефактов редкости " + rarity + " для обмена")
 	
 	return total
 
@@ -921,7 +921,7 @@ func get_current_scene() -> String:
 
 
 func reset_game():
-	print("Сброс игры")
+	pass # print("Сброс игры")
 	current_save_data = null
 	is_in_lab = true
 	is_loading = false

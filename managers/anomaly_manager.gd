@@ -56,14 +56,14 @@ func _ready():
 		"bio_burning_fluff": preload("res://anomalies/bio_burning_fluff.tscn")
 	}
 	
-	print("AnomalyManager инициализирован")
+	# print("AnomalyManager инициализирован")
 
 
 # ==================== АНОМАЛИИ ====================
 
 func create_anomaly(anomaly_type: String, position: Vector3, difficulty: int, _energy_cost: float) -> Node:
 	if not anomaly_scenes.has(anomaly_type):
-		print("Неизвестный тип аномалии: " + anomaly_type)
+		# print("Неизвестный тип аномалии: " + anomaly_type)
 		return null
 	
 	var scene = anomaly_scenes[anomaly_type]
@@ -100,7 +100,7 @@ func create_anomaly(anomaly_type: String, position: Vector3, difficulty: int, _e
 	active_anomalies.append(anomaly)
 	
 	anomaly_created.emit(anomaly, anomaly_type, difficulty)
-	print("Аномалия создана: " + anomaly_type + " на позиции " + str(position))
+	# print("Аномалия создана: " + anomaly_type + " на позиции " + str(position))
 	
 	return anomaly
 
@@ -109,7 +109,7 @@ func remove_anomaly(anomaly: Node):
 	if is_instance_valid(anomaly):
 		active_anomalies.erase(anomaly)
 		anomaly.queue_free()
-	print("Аномалия удалена")
+	# print("Аномалия удалена")
 
 
 func get_active_anomalies() -> Array[Node]:
@@ -164,7 +164,7 @@ func _on_anomaly_destroyed(anomaly: Node):
 	create_artifact(artifact_type, position, rarity, value)
 	
 	anomaly_destroyed.emit(anomaly_type, position, difficulty)
-	print("Аномалия уничтожена, создан артефакт: " + artifact_type)
+	# print("Аномалия уничтожена, создан артефакт: " + artifact_type)
 
 
 # ==================== АРТЕФАКТЫ ====================
@@ -173,7 +173,7 @@ func create_artifact(artifact_type: String, position: Vector3, rarity: String = 
 	# Пробуем загрузить сцену
 	var scene_path = "res://entities/artifacts/" + artifact_type + ".tscn"
 	if not ResourceLoader.exists(scene_path):
-		print("Сцена артефакта не найдена: " + scene_path)
+		# print("Сцена артефакта не найдена: " + scene_path)
 		return null
 	
 	var scene = load(scene_path)
@@ -200,7 +200,7 @@ func create_artifact(artifact_type: String, position: Vector3, rarity: String = 
 	_start_artifact_timer(artifact)
 	
 	artifact_created.emit(artifact, artifact_type, position)
-	print("Артефакт создан: " + artifact_type + " на позиции " + str(position))
+	# print("Артефакт создан: " + artifact_type + " на позиции " + str(position))
 	
 	return artifact
 
@@ -210,14 +210,14 @@ func _on_artifact_stolen(artifact: Node, stalker: Node):
 	_stop_artifact_timer(artifact)
 	
 	artifact_stolen.emit(artifact, stalker)
-	print("Артефакт украден сталкером: " + str(stalker))
+	# print("Артефакт украден сталкером: " + str(stalker))
 
 
 func _on_artifact_collected(artifact: Node, collector: Node):
 	if artifact in active_artifacts:
 		active_artifacts.erase(artifact)
 	_stop_artifact_timer(artifact)
-	print("Артефакт собран: " + str(collector))
+	# print("Артефакт собран: " + str(collector))
 
 
 func _start_artifact_timer(artifact: Node):
@@ -233,7 +233,7 @@ func _start_artifact_timer(artifact: Node):
 	timer.start()
 	
 	artifact_timers[id] = timer
-	print("Таймер артефакта запущен на 30с")
+	# print("Таймер артефакта запущен на 30с")
 
 
 func _stop_artifact_timer(artifact: Node):
@@ -251,7 +251,7 @@ func _on_artifact_timeout(artifact: Node):
 		artifact_timers.erase(artifact.get_instance_id())
 		return
 	
-	print("Артефакт превращается в аномалию")
+	# print("Артефакт превращается в аномалию")
 	
 	# Удаляем артефакт
 	active_artifacts.erase(artifact)
@@ -274,14 +274,14 @@ func remove_all_artifacts():
 			timer.queue_free()
 	artifact_timers.clear()
 	
-	print("Все артефакты удалены")
+	# print("Все артефакты удалены")
 
 
 func stop_all_timers():
 	for timer in artifact_timers.values():
 		if is_instance_valid(timer):
 			timer.stop()
-	print("Все таймеры артефактов остановлены")
+	# print("Все таймеры артефактов остановлены")
 
 
 func get_active_artifacts() -> Array[Node]:
@@ -296,12 +296,12 @@ func get_artifact_count() -> int:
 
 func set_damage_multiplier(value: float):
 	damage_multiplier = value
-	print("Множитель урона аномалий: " + str(value))
+	# print("Множитель урона аномалий: " + str(value))
 
 
 func set_radius_multiplier(value: float):
 	radius_multiplier = value
-	print("Множитель радиуса аномалий: " + str(value))
+	# print("Множитель радиуса аномалий: " + str(value))
 
 
 func load_config(config: Dictionary):
@@ -314,4 +314,4 @@ func load_config(config: Dictionary):
 	if config.has("difficulty_to_rarity"):
 		difficulty_to_rarity = config["difficulty_to_rarity"]
 	
-	print("Конфигурация загружена")
+	# print("Конфигурация загружена")

@@ -178,7 +178,7 @@ func _physics_process(delta):
 		current_state = State.PATROL
 		patrol_points.clear()
 		_generate_patrol_points()
-		print("Мутант: застрял - возвращён на точку спавна")
+		# print("Мутант: застрял - возвращён на точку спавна")
 	
 	# Процедурная анимация статичной модели (скелетная анимирует сама себя)
 	var model := get_node_or_null("Model")

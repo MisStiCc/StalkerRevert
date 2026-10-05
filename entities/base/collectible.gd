@@ -27,7 +27,7 @@ func _ready():
         _start_lifetime_timer()
     
     _ready_hook()
-    print("Collectible создан: " + collectible_name + " ценность: " + str(value), "Collectible")
+    pass # print("Collectible создан: " + collectible_name + " ценность: " + str(value), "Collectible")
 
 
 func _ready_hook():
@@ -42,13 +42,13 @@ func _start_lifetime_timer():
     timer.timeout.connect(_on_lifetime_expired)
     add_child(timer)
     timer.start()
-    print("Таймер жизни запущен: " + str(lifespan) + "с", "Collectible")
+    pass # print("Таймер жизни запущен: " + str(lifespan) + "с", "Collectible")
 
 
 func _on_lifetime_expired():
     if not is_collected and is_instance_valid(self):
         expired.emit(self)
-        print("Collectible истек: " + collectible_name, "Collectible")
+        pass # print("Collectible истек: " + collectible_name, "Collectible")
         queue_free()
 
 
@@ -68,12 +68,12 @@ func get_rarity_name() -> String:
 
 func collect(collector: Node) -> bool:
     if is_collected:
-        print("Попытка собрать уже собранный collectible", "Collectible")
+        pass # print("Попытка собрать уже собранный collectible", "Collectible")
         return false
     
     # Защита от множественного сбора
     if Time.get_ticks_msec() / 1000.0 - spawn_time < collection_cooldown:
-        print("Слишком рано для сбора", "Collectible")
+        pass # print("Слишком рано для сбора", "Collectible")
         return false
     
     is_collected = true
@@ -82,7 +82,7 @@ func collect(collector: Node) -> bool:
     _collect_hook(collector)
     
     collected.emit(collector, value)
-    print("Collectible собран: " + collectible_name + " ценность: " + str(value), "Collectible")
+    pass # print("Collectible собран: " + collectible_name + " ценность: " + str(value), "Collectible")
     
     # Эффект сбора
     _spawn_collect_effect()

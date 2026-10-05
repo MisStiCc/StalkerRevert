@@ -124,7 +124,7 @@ func _update_upgrade_item(container: HBoxContainer, upgrade_id: String):
 	var level_label = container.find_child("LevelLabel", true, false)
 	var upgrade_button = container.find_child("UpgradeButton", true, false)
 	if not level_label or not upgrade_button:
-		print("UpgradePanel: в элементе апгрейда нет LevelLabel/UpgradeButton")
+		pass # print("UpgradePanel: в элементе апгрейда нет LevelLabel/UpgradeButton")
 		return
 	
 	level_label.text = "Уровень %d/%d" % [level, max_level]

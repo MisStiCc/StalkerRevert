@@ -119,7 +119,7 @@ func _ready():
 		"zombie": preload("res://entities/mutants/zombie.tscn")
 	}
 	
-	print("SpawnManager инициализирован")
+	# print("SpawnManager инициализирован")
 
 
 func _get_monolith() -> Node:
@@ -138,12 +138,12 @@ func start_spawning():
 	if not is_active:
 		return
 	_start_wave()
-	print("Спавн сталкеров запущен")
+	# print("Спавн сталкеров запущен")
 
 
 func stop_spawning():
 	is_active = false
-	print("Спавн сталкеров остановлен")
+	# print("Спавн сталкеров остановлен")
 
 
 func force_wave():
@@ -153,7 +153,7 @@ func force_wave():
 
 func set_difficulty(difficulty: float):
 	_difficulty = difficulty
-	print("Сложность спавна: " + str(difficulty))
+	# print("Сложность спавна: " + str(difficulty))
 
 
 # ==================== ВОЛНЫ СТАЛКЕРОВ ====================
@@ -173,7 +173,7 @@ func _start_wave():
 
 	var stalkers_to_spawn = _calculate_stalker_count()
 	wave_started.emit(current_wave, stalkers_to_spawn)
-	print("Волна " + str(current_wave) + " начата, сталкеров: " + str(stalkers_to_spawn))
+	# print("Волна " + str(current_wave) + " начата, сталкеров: " + str(stalkers_to_spawn))
 
 	var spawned = 0
 	for i in range(stalkers_to_spawn):
@@ -183,7 +183,7 @@ func _start_wave():
 
 	is_spawning = false
 	wave_ended.emit(current_wave, spawned)
-	print("Волна " + str(current_wave) + " завершена, создано: " + str(spawned))
+	# print("Волна " + str(current_wave) + " завершена, создано: " + str(spawned))
 
 	if not endless_mode and current_wave >= max_waves:
 		_watch_field_clear()
@@ -196,7 +196,7 @@ func _schedule_next_wave():
 	if not is_active:
 		return
 	break_started.emit(current_wave, wave_break)
-	print("Пауза между волнами: " + str(wave_break) + " с. Следующая волна: " + str(current_wave + 1))
+	# print("Пауза между волнами: " + str(wave_break) + " с. Следующая волна: " + str(current_wave + 1))
 	await get_tree().create_timer(wave_break).timeout
 	if not is_active:
 		return
@@ -208,14 +208,14 @@ func _watch_field_clear():
 	while is_active and get_stalker_count() > 0:
 		await get_tree().create_timer(1.0).timeout
 	if is_active:
-		print("Все волны отбиты, сталкеров не осталось!")
+		# print("Все волны отбиты, сталкеров не осталось!")
 		all_waves_cleared.emit()
 
 
 func queue_reward_mutant(mutant_type: String):
 	"""Наградный мутант (гача/веха): бесплатно вступит в бой на старте волны"""
 	reward_mutants.append(mutant_type)
-	print("SpawnManager: награда - ", mutant_type, " вступит в бой со следующей волной")
+	# print("SpawnManager: награда - ", mutant_type, " вступит в бой со следующей волной")
 
 
 func _spawn_reward_mutants():
@@ -230,7 +230,8 @@ func _spawn_reward_mutants():
 		var pos = hit.get("position", Vector3(cos(angle) * dist, 0.0, sin(angle) * dist)) + Vector3(0, 1.8, 0)
 		var mutant = spawn_mutant(type, pos, 0.0)
 		if mutant:
-			print("SpawnManager: наградный мутант вступил в бой: ", type)
+			pass
+			# print("SpawnManager: наградный мутант вступил в бой: ", type)
 
 
 func _calculate_stalker_count() -> int:
@@ -241,14 +242,14 @@ func _calculate_stalker_count() -> int:
 func _spawn_stalker() -> bool:
 	var scene = _get_stalker_scene_by_difficulty()
 	if not scene:
-		print("Нет сцены для сталкера")
+		# print("Нет сцены для сталкера")
 		return false
 	
 	var pos = _get_spawn_position()
 	if pos == Vector3.ZERO:
 		pos = _get_fallback_spawn_position()
 		if pos == Vector3.ZERO:
-			print("Не удалось найти позицию для спавна")
+			# print("Не удалось найти позицию для спавна")
 			return false
 	
 	var stalker = scene.instantiate()
@@ -278,7 +279,7 @@ func _spawn_stalker() -> bool:
 		stalker_type = "master"
 	
 	stalker_spawned.emit(stalker, stalker_type)
-	print("Сталкер заспавнен: " + stalker_type + " на позиции " + str(pos))
+	# print("Сталкер заспавнен: " + stalker_type + " на позиции " + str(pos))
 	
 	return true
 
@@ -421,12 +422,12 @@ func _on_stalker_died(stalker: Node):
 
 func spawn_mutant(mutant_type: String, position: Vector3, _biomass_cost: float) -> Node:
 	if not mutant_scenes.has(mutant_type):
-		print("Неизвестный тип мутанта: " + mutant_type)
+		# print("Неизвестный тип мутанта: " + mutant_type)
 		return null
 	
 	var scene = mutant_scenes[mutant_type]
 	if not scene:
-		print("Сцена не найдена для мутанта: " + mutant_type)
+		# print("Сцена не найдена для мутанта: " + mutant_type)
 		return null
 	
 	var mutant = scene.instantiate()
@@ -454,7 +455,7 @@ func spawn_mutant(mutant_type: String, position: Vector3, _biomass_cost: float) 
 	
 	mutant_spawned.emit(mutant, mutant_type)
 	var star_note := " [%d★ x%.1f]" % [stars, star_mult] if stars > 1 else ""
-	print("Мутант заспавнен: " + mutant_type + " на позиции " + str(position) + star_note)
+	# print("Мутант заспавнен: " + mutant_type + " на позиции " + str(position) + star_note)
 	
 	return mutant
 
@@ -511,24 +512,24 @@ func reset_statistics():
 	_stalkers_killed = 0
 	_artifacts_stolen = 0
 	_mutants_spawned = 0
-	print("Статистика спавна сброшена")
+	# print("Статистика спавна сброшена")
 
 
 # ==================== НАСТРОЙКИ ====================
 
 func set_health_multiplier(value: float):
 	health_multiplier = value
-	print("Множитель здоровья мутантов: " + str(value))
+	# print("Множитель здоровья мутантов: " + str(value))
 
 
 func set_damage_multiplier(value: float):
 	damage_multiplier = value
-	print("Множитель урона мутантов: " + str(value))
+	# print("Множитель урона мутантов: " + str(value))
 
 
 func set_cost_multiplier(value: float):
 	cost_multiplier = value
-	print("Множитель стоимости мутантов: " + str(value))
+	# print("Множитель стоимости мутантов: " + str(value))
 
 
 ## Звёздность из коллекции (тип -> звёзды): применяется к спавнящимся мутантам
@@ -540,7 +541,8 @@ func set_mutant_stars(stars: Dictionary):
 			if int(mutant_stars[type]) > 1:
 				starred.append("%s:%d★" % [type, int(mutant_stars[type])])
 		if not starred.is_empty():
-			print("Звёздность мутантов: " + ", ".join(starred))
+			pass
+			# print("Звёздность мутантов: " + ", ".join(starred))
 
 
 # ==================== ПАРАМЕТРЫ КАМПАНИИ ====================
@@ -548,14 +550,14 @@ func set_mutant_stars(stars: Dictionary):
 ## Весовой состав рангов из кампании: mix = [новички, ветераны, мастера] в процентах
 func set_rank_weights(mix: Array):
 	if mix.size() < 3:
-		print("set_rank_weights: ожидается массив из 3 процентов, получено: " + str(mix))
+		# print("set_rank_weights: ожидается массив из 3 процентов, получено: " + str(mix))
 		return
 	rank_weights = {
 		"novice": float(mix[0]),
 		"veteran": float(mix[1]),
 		"master": float(mix[2])
 	}
-	print("Состав рангов: н/в/м = %d/%d/%d%%" % [int(mix[0]), int(mix[1]), int(mix[2])])
+	# print("Состав рангов: н/в/м = %d/%d/%d%%" % [int(mix[0]), int(mix[1]), int(mix[2])])
 
 
 ## Множители статов врагов для текущего уровня кампании
@@ -563,4 +565,4 @@ func set_campaign_scaling(hp_mult: float, damage_mult: float, speed_mult: float)
 	campaign_hp_mult = hp_mult
 	campaign_damage_mult = damage_mult
 	campaign_speed_mult = speed_mult
-	print("Масштаб кампании: HP x%.2f, урон x%.2f, скорость x%.2f" % [hp_mult, damage_mult, speed_mult])
+	# print("Масштаб кампании: HP x%.2f, урон x%.2f, скорость x%.2f" % [hp_mult, damage_mult, speed_mult])
