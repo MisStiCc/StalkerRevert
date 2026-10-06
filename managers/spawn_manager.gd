@@ -454,7 +454,7 @@ func spawn_mutant(mutant_type: String, position: Vector3, _biomass_cost: float) 
 	_mutants_spawned += 1
 	
 	mutant_spawned.emit(mutant, mutant_type)
-	var star_note := " [%d★ x%.1f]" % [stars, star_mult] if stars > 1 else ""
+	var _star_note := " [%d★ x%.1f]" % [stars, star_mult] if stars > 1 else ""
 	# print("Мутант заспавнен: " + mutant_type + " на позиции " + str(position) + star_note)
 	
 	return mutant
