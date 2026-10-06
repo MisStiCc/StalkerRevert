@@ -15,6 +15,11 @@ var _confidence_range: float = 15.0
 const STALKER_HEIGHT: float = 1.8
 
 
+
+var _anim: AnimationPlayer
+var _death_name: String = ""
+var _dying := false
+
 func _ready():
 	stalker_type = GameEnums.StalkerType.VETERAN
 	behavior_type = GameEnums.StalkerBehavior.BRAVE
@@ -216,7 +221,33 @@ func _setup_veteran_anim():
 	if players.is_empty():
 		return
 	var ap: AnimationPlayer = players[0]
+	_anim = ap
 	var list := ap.get_animation_list()
 	if list.size() > 0:
 		ap.get_animation(list[0]).loop_mode = Animation.LOOP_LINEAR
 		ap.play(list[0])
+	var death_scene: PackedScene = load("res://models/ветеран_убит.fbx")
+	if death_scene:
+		var di: Node = death_scene.instantiate()
+		for dap in di.find_children("*", "AnimationPlayer", true, false):
+			for an in (dap as AnimationPlayer).get_animation_list():
+				if not ap.has_animation(an):
+					ap.get_animation_library("").add_animation(an, (dap as AnimationPlayer).get_animation(an))
+					_death_name = an
+		di.queue_free()
+
+func _on_died(source: Node):
+	"""Смерть: клип смерти, труп лежит, потом стандартный финал"""
+	if _dying:
+		return
+	_dying = true
+	collision_layer = 0
+	collision_mask = 0
+	set_physics_process(false)
+	var wait := 0.8
+	if _anim and _death_name != "" and _anim.has_animation(_death_name):
+		_anim.play(_death_name)
+		wait = minf(_anim.get_animation(_death_name).length + 0.5, 3.0)
+	if get_tree():
+		await get_tree().create_timer(wait).timeout
+	super._on_died(source)

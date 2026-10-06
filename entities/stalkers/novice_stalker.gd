@@ -247,7 +247,7 @@ func _on_died(source: Node):
 	var wait := 0.8
 	if _anim and _death_name != "" and _anim.has_animation(_death_name):
 		_anim.play(_death_name)
-		wait = _anim.get_animation(_death_name).length + 0.5
+		wait = minf(_anim.get_animation(_death_name).length + 0.5, 3.0)
 	if get_tree():
 		await get_tree().create_timer(wait).timeout
 	super._on_died(source)
