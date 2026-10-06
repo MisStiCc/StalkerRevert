@@ -219,7 +219,7 @@ var _gallop_phase: float = 0.0
 
 
 func _setup_skeletal_anim():
-	"""Автопоиск ног/головы/крыльев по геометрии поз покоя (кости безымянные)"""
+	"""Ноги захардкожены по анатомии, голова/крылья ищутся по геометрии rest-поз"""
 	var model := get_node_or_null("Model")
 	if model == null:
 		return
@@ -228,123 +228,52 @@ func _setup_skeletal_anim():
 		return
 	_skeleton = skels[0]
 	var bone_count := _skeleton.get_bone_count()
+	# Дети каждой кости (для подъёма по цепочкам)
 	var kids := {}
 	for j in range(bone_count):
-		var p := _skeleton.get_bone_parent(j)
-		if p >= 0:
-			kids[p] = int(kids.get(p, 0)) + 1
+		var parent_idx := _skeleton.get_bone_parent(j)
+		if parent_idx >= 0:
+			kids[parent_idx] = int(kids.get(parent_idx, 0)) + 1
 	var leaves: Array[int] = []
 	for i in range(bone_count):
 		if int(kids.get(i, 0)) == 0:
 			leaves.append(i)
-	# Ступни: концевые ниже 0.35м
-	var feet: Array[int] = []
-	var head_leaves: Array[int] = []
-	var wing_leaves: Array[int] = []
+	# НОГИ - захардкожены (автопоиск путал плечи с лапами)
+	# Bone_045 зад-лево, Bone_018 перед-право, Bone_051 зад-право, Bone_024 перед-лево
+	_leg_roots = [
+		{"bone": 16, "phase": 0.0},        # зад-лево
+		{"bone": 54, "phase": 0.0},        # перед-право (диагональ)
+		{"bone": 30, "phase": 3.14159},   # зад-право
+		{"bone": 60, "phase": 3.14159},   # перед-лево (диагональ)
+	]
+	# КРЫЛЬЯ: задние верхние концевые цепочки -> корень у развилки
+	var wing_roots := {}
+	var head_best_y := 0.0
 	for l in leaves:
 		var gp: Vector3 = _skeleton.get_bone_global_rest(l).origin
-		if gp.y < 0.35:
-			feet.append(l)
-		elif gp.y > 0.9 and gp.z < 0.0:
-			head_leaves.append(l)
-		elif gp.y > 0.6 and gp.z > 0.4:
-			wing_leaves.append(l)
-	# Корень ноги: подняться от ступни до первой крупной развилки
-	var leg_roots := {}
-	for f in feet:
-		var b := f
-		var guard := 0
-		while b >= 0 and guard < 14:
-			var par := _skeleton.get_bone_parent(b)
-			if par < 0:
-				break
-			if int(kids.get(par, 0)) > 2 and b != f:
-				break
-			b = par
-			guard += 1
-		leg_roots[b] = true
-	# Схлопнуть предков: оставляем самые глубокие корни (лапа, не бедро)
-	var roots_arr: Array = leg_roots.keys()
-	var pruned := {}
-	for a in roots_arr:
-		var is_ancestor := false
-		for b in roots_arr:
-			if a == b:
-				continue
-			var p := _skeleton.get_bone_parent(b)
-			var guard := 0
-			while p >= 0 and guard < 40:
-				if p == a:
-					is_ancestor = true
-					break
-				p = _skeleton.get_bone_parent(p)
-				guard += 1
-			if is_ancestor:
-				break
-		if not is_ancestor:
-			pruned[a] = true
-	# Если всё ещё больше 4 - берём 4 с самыми низкими концевыми костями
-	if pruned.size() > 4:
-		var scored := []
-		for a in pruned:
-			var leaf_sum := 0.0
-			var leaf_n := 0
-			for j in range(bone_count):
-				var p := _skeleton.get_bone_parent(j)
-				var walk := j
-				var guard := 0
-				var under := false
-				while walk >= 0 and guard < 40:
-					if walk == a:
-						under = true
-						break
-					walk = _skeleton.get_bone_parent(walk)
-					guard += 1
-				if under and int(kids.get(j, 0)) == 0:
-					leaf_sum += _skeleton.get_bone_global_rest(j).origin.y
-					leaf_n += 1
-			scored.append({"bone": a, "y": leaf_sum / maxf(leaf_n, 1.0)})
-		scored.sort_custom(func(a, b): return a["y"] < b["y"])
-		pruned.clear()
-		for i in range(mini(4, scored.size())):
-			pruned[scored[i]["bone"]] = true
-	for b in pruned:
-		var gp: Vector3 = _skeleton.get_bone_global_rest(b).origin
-		var phase := 0.0
-		if gp.z < 0.0:
-			phase += PI
-		if gp.x > 0.0:
-			phase += PI * 0.5
-		_leg_roots.append({"bone": b, "phase": phase})
-	# Голова: корень самой высокой передней цепочки
-	var head_best_y := 0.0
-	for l in head_leaves:
-		var gp: Vector3 = _skeleton.get_bone_global_rest(l).origin
-		if gp.y > head_best_y:
-			head_best_y = gp.y
+		if gp.y > 0.6 and gp.z > 0.4:
 			var b := l
 			var guard := 0
 			while b >= 0 and guard < 14:
 				var par := _skeleton.get_bone_parent(b)
-				if par < 0 or int(kids.get(par, 0)) > 2:
+				if par < 0:
+					break
+				if int(kids.get(par, 0)) > 2 and b != l:
 					break
 				b = par
 				guard += 1
-			_head_root = b
-	# Крылья: задние верхние цепочки
-	var wing_roots := {}
-	for l in wing_leaves:
-		var b := l
-		var guard := 0
-		while b >= 0 and guard < 14:
-			var par := _skeleton.get_bone_parent(b)
-			if par < 0:
-				break
-			if int(kids.get(par, 0)) > 2 and b != l:
-				break
-			b = par
-			guard += 1
-		wing_roots[b] = true
+			wing_roots[b] = true
+		elif gp.y > 0.9 and gp.z < 0.0 and gp.y > head_best_y:
+			head_best_y = gp.y
+			var b2 := l
+			var guard2 := 0
+			while b2 >= 0 and guard2 < 14:
+				var par2 := _skeleton.get_bone_parent(b2)
+				if par2 < 0 or int(kids.get(par2, 0)) > 2:
+					break
+				b2 = par2
+				guard2 += 1
+			_head_root = b2
 	var wi := 0.0
 	for b in wing_roots:
 		_wing_roots.append({"bone": b, "phase": wi})
@@ -355,16 +284,14 @@ func _setup_skeletal_anim():
 		_rest_rot[b] = _skeleton.get_bone_pose_rotation(b)
 	if _head_root >= 0:
 		_rest_rot[_head_root] = _skeleton.get_bone_pose_rotation(_head_root)
-	print("Галоп: ног=", _leg_roots.size(), ", крыльев=", _wing_roots.size(), ", голова=", _head_root >= 0)
-
 
 func _update_skeletal_anim(delta: float):
 	"""Галоп: ноги по диагональным фазам, взмахи крыльев, покачивание головы"""
 	if _skeleton == null:
 		return
-	var speed := Vector2(velocity.x, velocity.z).length()
-	var gait: float = clampf(speed / 6.0, 0.0, 1.5)
-	_gallop_phase += delta * maxf(speed, 1.0) * 2.2
+	var move_speed := Vector2(velocity.x, velocity.z).length()
+	var gait: float = clampf(move_speed / 6.0, 0.0, 1.5)
+	_gallop_phase += delta * maxf(move_speed, 1.0) * 2.2
 	for entry in _leg_roots:
 		var b: int = int(entry["bone"])
 		var swing: float = sin(_gallop_phase + float(entry["phase"])) * 0.5 * gait

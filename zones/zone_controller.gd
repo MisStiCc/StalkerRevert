@@ -353,11 +353,11 @@ func _initialize_run():
 	_gacha_rewards_log.clear()
 	_trophy_artifacts.clear()
 	# Фаза подготовки: спавн сталкеров начнётся по кнопке СТАРТ в HUD
-	var run_label: String = "Забег #" + str(run_number)
+	# (лог отключён)
 	if run_params.has("campaign_params"):
-		run_label = "Кампания: «" + str(run_params["campaign_params"].get("title", "Уровень")) + "»"
+		pass # (лог отключён)
 	elif run_params.get("run_mode", "") == "survival":
-		run_label = "ВЫЖИВАНИЕ: волны без предела"
+		pass # (лог отключён)
 	Signals.run_started.emit(run_number, run_difficulty, pulses)
 	pass # print(run_label + " в фазе подготовки (множитель врагов: " + str(run_difficulty) + "). Расставьте защиты и нажмите СТАРТ.")
 
@@ -641,7 +641,7 @@ func _grant_wave_milestone(waves: int):
 	_grant_artifact_reward(reward.get("artifact", "common_artifact"), reward.get("label", ""))
 
 
-func _grant_artifact_reward(artifact_type: String, source_label: String):
+func _grant_artifact_reward(artifact_type: String, _source_label: String):
 	"""Артефакт-награда: спавнится у монолита как реликвия + ресурсный бонус.
 	Звёзды типа умножают бонус и ценность реликвии"""
 	var rarity := "common"
@@ -683,9 +683,9 @@ func _grant_gacha_rewards(level: int):
 	if level >= GachaData.CHIMERA_GUARANTEE_LEVEL and gm and not gm.has_chimera_unlocked():
 		mutant_roll = {"type": "chimera", "rarity": "legendary", "guaranteed": true}
 	
-	var unlocked_msg := ""
+	var _unlocked_msg := ""
 	if gm:
-		unlocked_msg = gm.grant_mutant_reward(mutant_roll["type"], mutant_roll["rarity"])
+		pass # (лог отключён)
 		# Дубль качнул звёзды - спавнящиеся мутанты должны узнать об этом сразу
 		if spawn_manager and gm.get_lab_data():
 			spawn_manager.set_mutant_stars(gm.get_lab_data().mutant_stars)
@@ -727,7 +727,7 @@ func _on_stalker_died(stalker: Node, biomass_returned: float):
 	# (лог отключён)
 
 
-func _on_mutant_spawned(_mutant: Node, mutant_type: String):
+func _on_mutant_spawned(_mutant: Node, _mutant_type: String):
 	progression_manager.record_mutant_spawned()
 	pass # print("Мутант заспавнен: " + mutant_type)
 
@@ -757,7 +757,7 @@ func _on_anomaly_destroyed(anomaly_type: String, position: Vector3, difficulty: 
 	pass # print("Аномалия уничтожена, создан артефакт: " + artifact_type)
 
 
-func _on_artifact_created(_artifact: Node, artifact_type: String, position: Vector3):
+func _on_artifact_created(_artifact: Node, _artifact_type: String, position: Vector3):
 	if particle_manager:
 		particle_manager.spawn_particles_at(position, "spark", 0.5)
 	

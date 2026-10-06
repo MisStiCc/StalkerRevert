@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cbxxuwcrvd745"
-path="res://.godot/imported/poltergeist_1.jpg-120cc69726ded648e7a426f945d58d7c.ctex"
+path.s3tc="res://.godot/imported/poltergeist_1.jpg-120cc69726ded648e7a426f945d58d7c.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "e3fd2981709156a726868f06ae05e2d0"
@@ -14,11 +15,11 @@ generator_parameters={
 [deps]
 
 source_file="res://models/poltergeist_1.jpg"
-dest_files=["res://.godot/imported/poltergeist_1.jpg-120cc69726ded648e7a426f945d58d7c.ctex"]
+dest_files=["res://.godot/imported/poltergeist_1.jpg-120cc69726ded648e7a426f945d58d7c.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -40,4 +41,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=1
+detect_3d/compress_to=0

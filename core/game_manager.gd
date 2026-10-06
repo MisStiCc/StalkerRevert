@@ -239,7 +239,7 @@ func try_upgrade_star(mutant_type: String) -> String:
 
 
 ## Начислить крутки гачи МУТАНТОВ
-func grant_mutant_rolls(count: int, source: String = ""):
+func grant_mutant_rolls(count: int, _source: String = ""):
 	if count <= 0 or not current_save_data or not current_save_data.lab_data:
 		return
 	var lab = current_save_data.lab_data
@@ -249,7 +249,7 @@ func grant_mutant_rolls(count: int, source: String = ""):
 
 
 ## Начислить крутки АНОМАЛИЙНОЙ гачи (артефакты открывают аномалии)
-func grant_anomaly_rolls(count: int, source: String = ""):
+func grant_anomaly_rolls(count: int, _source: String = ""):
 	if count <= 0 or not current_save_data or not current_save_data.lab_data:
 		return
 	var lab = current_save_data.lab_data
