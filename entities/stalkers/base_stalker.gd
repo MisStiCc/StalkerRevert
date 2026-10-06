@@ -101,6 +101,11 @@ func _physics_process(delta):
 	# Обновление состояний эффектов
 	_update_effects(delta)
 	
+	# Плавный разворот в сторону движения (для моделей)
+	var horizontal := Vector2(velocity.x, velocity.z)
+	if horizontal.length() > 0.5:
+		rotation.y = lerp_angle(rotation.y, atan2(-horizontal.x, -horizontal.y), 8.0 * delta)
+	
 	# Хук для наследников (они должны вызвать move_and_slide)
 	if not is_stunned:
 		_physics_hook(delta)

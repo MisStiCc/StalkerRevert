@@ -53,6 +53,7 @@ func _ready():
 	_setup_visuals()
 	
 	super._ready()
+	_setup_master_anim()
 	
 	# Высоту задаёт спавн по лучу (рельеф) и физика: фиксированный Y=1.8
 	# на холмах закапывал тело в рельеф, и оно проваливалось насквозь
@@ -253,3 +254,17 @@ func _attack_target(target: Node):
 
 func _on_threat_detected(threat: Node, type: String):
 	super._on_threat_detected(threat, type)
+
+func _setup_master_anim():
+	# Единственный клип FBX крутится бесконечно
+	var model := get_node_or_null("Model")
+	if model == null:
+		return
+	var players = model.find_children("*", "AnimationPlayer", true, false)
+	if players.is_empty():
+		return
+	var ap: AnimationPlayer = players[0]
+	var list := ap.get_animation_list()
+	if list.size() > 0:
+		ap.get_animation(list[0]).loop_mode = Animation.LOOP_LINEAR
+		ap.play(list[0])

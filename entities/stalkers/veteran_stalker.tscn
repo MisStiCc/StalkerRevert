@@ -1,7 +1,18 @@
-[gd_scene load_steps=2 format=3 uid="uid://veteran_stalker"]
+[gd_scene load_steps=3 format=3 uid="uid://veteran_stalker"]
 
 [ext_resource type="PackedScene" path="res://entities/stalkers/base_stalker.tscn" id="1"]
+[ext_resource type="PackedScene" path="res://models/veteran_stalker.glb" id="3_model"]
 [ext_resource type="Script" path="res://entities/stalkers/veteran_stalker.gd" id="2"]
 
 [node name="VeteranStalker" instance=ExtResource("1")]
+script = ExtResource("2")
+
+editable_children = true
+
+[node name="Visual" parent="."]
+visible = false
+
+[node name="Model" parent="." instance=ExtResource("3_model")]
+transform = Transform3D(-1.0, 0, 0, 0, 1.0, 0, 0, 0, -1.0, 0, 0.95, 0)
+
 script = ExtResource("2")

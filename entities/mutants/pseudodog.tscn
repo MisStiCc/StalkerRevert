@@ -1,7 +1,8 @@
-[gd_scene load_steps=5 format=3 uid="uid://pseudodog"]
+[gd_scene load_steps=6 format=3 uid="uid://pseudodog"]
 
 [ext_resource type="Script" path="res://entities/mutants/pseudodog.gd" id="1"]
 [ext_resource type="PackedScene" path="res://entities/mutants/base_mutant.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://models/pseudodog.glb" id="3_model"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
 radius = 0.5
@@ -16,6 +17,13 @@ albedo_color = Color(0.5, 0.5, 0.5, 1)
 
 [node name="Pseudodog" instance=ExtResource("2")]
 script = ExtResource("1")
+editable_children = true
+
+[node name="Visual" parent="."]
+visible = false
+
+[node name="Model" parent="." instance=ExtResource("3_model")]
+transform = Transform3D(-1.6, 0, 0, 0, 1.6, 0, 0, 0, -1.6, 0, 0.05, 0)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." index="0"]
 shape = SubResource("CapsuleShape3D_1")
