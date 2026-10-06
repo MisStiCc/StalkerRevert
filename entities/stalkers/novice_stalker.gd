@@ -53,6 +53,7 @@ func _ready():
 	_setup_visuals()
 	
 	super._ready()
+	_setup_novice_anim()
 	
 	# Высоту задаёт спавн по лучу (рельеф) и физика: фиксированный Y=1.8
 	# на холмах закапывал тело в рельеф, и оно проваливалось насквозь
@@ -203,3 +204,50 @@ func _on_threat_detected(threat: Node, type: String):
 
 func _on_artifact_detected(artifact: Node):
 	super._on_artifact_detected(artifact)
+
+var _anim: AnimationPlayer
+var _death_name: String = ""
+var _dying := false
+
+
+func _setup_novice_anim():
+	"""Ходьба из новичёк.fbx, клип смерти из новичёк_убит.fbx"""
+	var model := get_node_or_null("Model")
+	if model == null:
+		return
+	var players = model.find_children("*", "AnimationPlayer", true, false)
+	if players.is_empty():
+		return
+	_anim = players[0]
+	var walk_name := ""
+	if _anim.get_animation_list().size() > 0:
+		walk_name = _anim.get_animation_list()[0]
+		_anim.get_animation(walk_name).loop_mode = Animation.LOOP_LINEAR
+		_anim.play(walk_name)
+	var death_scene: PackedScene = load("res://models/новичёк_убит.fbx")
+	if death_scene:
+		var di: Node = death_scene.instantiate()
+		for ap in di.find_children("*", "AnimationPlayer", true, false):
+			for an in (ap as AnimationPlayer).get_animation_list():
+				if an != walk_name and not _anim.has_animation(an):
+					_anim.get_animation_library("").add_animation(an, (ap as AnimationPlayer).get_animation(an))
+					_death_name = an
+		di.queue_free()
+	model.rotation.y = PI
+
+
+func _on_died(source: Node):
+	"""Смерть: клип смерти, труп лежит 2с, потом стандартный финал"""
+	if _dying:
+		return
+	_dying = true
+	collision_layer = 0
+	collision_mask = 0
+	set_physics_process(false)
+	var wait := 0.8
+	if _anim and _death_name != "" and _anim.has_animation(_death_name):
+		_anim.play(_death_name)
+		wait = _anim.get_animation(_death_name).length + 0.5
+	if get_tree():
+		await get_tree().create_timer(wait).timeout
+	super._on_died(source)
